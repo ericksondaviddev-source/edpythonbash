@@ -1,0 +1,322 @@
+[
+  {
+    "id": "F0.1-001",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Estructura semántica",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "La semántica no es estética, es comunicación. Las etiquetas HTML le dicen al navegador, a los motores de búsqueda y a los lectores de pantalla qué ES cada parte del documento, no cómo SE VE.",
+    "codigo_roto": "<div class='header'>\n  <div class='title'>Mi App</div>\n  <div class='menu'>\n    <div class='item'>Inicio</div>\n    <div class='item'>Cursos</div>\n  </div>\n</div>\n<div class='content'>\n  <div class='section'>Bienvenido</div>\n</div>",
+    "diagnostico": "Esto es divitis puro: cada elemento es un <div> genérico. Un lector de pantalla no puede distinguir el título del menú ni la sección del contenido. El SEO pierde toda la jerarquía. El código es ilegible para otros desarrolladores porque no hay información semántica.",
+    "codigo_corregido": "<header>\n  <h1>Mi App</h1>\n  <nav>\n    <ul>\n      <li><a href='/'>Inicio</a></li>\n      <li><a href='/cursos'>Cursos</a></li>\n    </ul>\n  </nav>\n</header>\n<main>\n  <section>\n    <h2>Bienvenido</h2>\n  </section>\n</main>",
+    "codigo_optimizado": "<header>\n  <h1>Mi App de Aprendizaje</h1>\n  <nav aria-label='Navegación principal'>\n    <ul role='list'>\n      <li><a href='/'>Inicio</a></li>\n      <li><a href='/cursos'>Cursos</a></li>\n    </ul>\n  </nav>\n</header>\n<main>\n  <article>\n    <h2>Bienvenido</h2>\n    <p>Aprende Python y Bash creando tu propia app.</p>\n  </article>\n</main>\n<footer>\n  <small>© 2026</small>\n</footer>",
+    "disenso_experto": "Algunos desarrolladores argumentan que para apps SPA complejas (React/Vue) la semántica HTML pierde relevancia porque el DOM se genera dinámicamente. La realidad: las SPAs bien hechas usan MÁS semántica, no menos, porque dependen de ARIA y landmarks para accesibilidad. Un principiante nunca debe sacrificar semántica por conveniencia.",
+    "pregunta_transferencia": "Si abres una web y usas Ctrl+U para ver el HTML fuente, ¿qué evidencia concreta te indicaría que el autor domina semántica aunque la página se vea 'bien' visualmente?",
+    "quiz": {
+      "pregunta": "¿Cuál es la razón PRINCIPAL por la que <nav> es mejor que <div class='nav'>?",
+      "opciones": [
+        "Se ve más bonito por defecto",
+        "Le indica al navegador y herramientas de asistencia que es una región de navegación",
+        "Hace que la página cargue más rápido",
+        "Permite usar más CSS"
+      ],
+      "correcta": "B",
+      "explicacion": "<nav> es un landmark semántico. Los lectores de pantalla lo anuncian como 'región de navegación' y los usuarios pueden saltar directamente a ella. El <div> no comunica nada más que 'contenedor genérico'."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "El siguiente HTML tiene 4 problemas de semántica. Identifícalos y reescríbelo correctamente.",
+      "estado_inicial": "<div class='page'>\n  <div class='top'>Título</div>\n  <div class='links'><div>Home</div></div>\n  <div class='middle'>Contenido principal</div>\n  <div class='bottom'>Copyright</div>\n</div>",
+      "solucion": "<div class='page'> <!-- div contenedor OK -->\n  <header>\n    <h1>Título</h1>\n    <nav><ul><li><a href='/'>Home</a></li></ul></nav>\n  </header>\n  <main>Contenido principal</main>\n  <footer>Copyright</footer>\n</div>",
+      "validacion": "Aceptar si reemplaza div.top por header+h1, div.links por nav+ul+li+a, div.middle por main, div.bottom por footer. El div.page externo puede permanecer."
+    },
+    "audio_script": "Hola, hoy vamos a hablar de semántica HTML. Imagina que tu página web es un libro. Los divs son como cajas sin etiqueta: puedes meter lo que quieras, pero nadie sabe qué hay dentro sin abrirlas. Las etiquetas semánticas como header, nav, main, article y footer son las etiquetas de esas cajas. Le dicen al navegador, a Google y a los lectores de pantalla exactamente qué contiene cada parte. Esto no es solo buena práctica, es comunicación. Un buen desarrollador no escribe HTML para que se vea bien, escribe HTML para que se entienda bien. El CSS viene después, a decorar. Primero el mensaje, luego la forma.",
+    "video_prompt": "Video educativo corto de 60 segundos. Muestra pantalla dividida: a la izquierda código HTML con divitis (muchos divs anidados sin sentido), a la derecha el mismo contenido con semántica correcta (header, nav, main, footer). Animación que resalta en rojo los divs y en verde las etiquetas semánticas. Narración en off explicando la diferencia. Estilo minimalista, fondo oscuro, tipografía clara.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN Web Docs - HTML Semantics", "Principios de HTML5 spec"],
+      "conceptos_clave": ["semántica", "landmarks", "accesibilidad", "SEO", "divitis"]
+    },
+    "tags_rag": ["html", "semantica", "estructura", "accesibilidad", "seo", "divitis"]
+  },
+  {
+    "id": "F0.1-002",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Flexbox vs Grid — cuándo cada uno",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "Flexbox es para UNA DIMENSIÓN (fila O columna). Grid es para DOS DIMENSIONES (filas Y columnas simultáneamente). La regla de oro: si puedes describir tu layout diciendo 'elementos en línea', usa Flexbox. Si dices 'elementos en una cuadrícula con filas y columnas alineadas', usa Grid.",
+    "codigo_roto": "<div style='display: flex; flex-wrap: wrap;'>\n  <div style='flex: 1 1 33.33%;'>Card 1</div>\n  <div style='flex: 1 1 33.33%;'>Card 2</div>\n  <div style='flex: 1 1 33.33%;'>Card 3</div>\n  <div style='flex: 1 1 33.33%;'>Card 4</div>\n  <div style='flex: 1 1 33.33%;'>Card 5</div>\n  <div style='flex: 1 1 33.33%;'>Card 6</div>\n</div>",
+    "diagnostico": "Estás usando Flexbox para hacer una cuadrícula 3x2. Funciona, pero es frágil: si las cards tienen alturas distintas, se rompen las filas. Además, estás calculando manualmente el 33.33%. Esto es exactamente el caso de uso de CSS Grid, que fue inventado precisamente para resolver este problema.",
+    "codigo_corregido": "<div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;'>\n  <div>Card 1</div>\n  <div>Card 2</div>\n  <div>Card 3</div>\n  <div>Card 4</div>\n  <div>Card 5</div>\n  <div>Card 6</div>\n</div>",
+    "codigo_optimizado": "<div class='cards-grid'>\n  <article>Card 1</article>\n  <article>Card 2</article>\n  <article>Card 3</article>\n  <article>Card 4</article>\n  <article>Card 5</article>\n  <article>Card 6</article>\n</div>\n\n<style>\n.cards-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));\n  gap: 1rem;\n  align-items: start;\n}\n</style>",
+    "disenso_experto": "Hay dos escuelas: (1) 'Grid para layout global, Flexbox para componentes' y (2) 'usa lo que te resulte natural'. La escuela 1 es mejor para principiantes porque da reglas claras. La escuela 2 solo funciona cuando ya tienes intuición. Un error común de juniors es mezclar ambos en el mismo contenedor sin razón, lo que complica el mantenimiento sin beneficio real.",
+    "pregunta_transferencia": "Tienes que maquetar el menú de navegación superior de tu app (logo a la izquierda, links al centro, botón de login a la derecha en una sola fila). ¿Flexbox o Grid? ¿Por qué?",
+    "quiz": {
+      "pregunta": "¿Cuál es la diferencia FUNDAMENTAL entre Flexbox y Grid?",
+      "opciones": [
+        "Grid es más moderno que Flexbox",
+        "Flexbox trabaja en una dimensión, Grid en dos dimensiones",
+        "Grid solo funciona con elementos del mismo tamaño",
+        "Flexbox es para móviles, Grid para desktop"
+      ],
+      "correcta": "B",
+      "explicacion": "Flexbox distribuye items a lo largo de un eje (horizontal O vertical). Grid crea una cuadrícula con filas Y columnas explícitas. Esto no es opinión, es la definición del spec CSS."
+    },
+    "simulador": {
+      "tipo": "drag_drop",
+      "instruccion": "Arrastra la propiedad CSS correcta al contenedor según su caso de uso.",
+      "estado_inicial": "CASOS: (1) Centrar un botón dentro de su padre. (2) Layout de dashboard con sidebar, header, main y footer en posiciones específicas. (3) Lista horizontal de tags que se ajustan al ancho. PROPIEDADES: display:flex, display:grid, display:grid con template-areas",
+      "solucion": "(1) display:flex + justify-content:center + align-items:center. (2) display:grid con grid-template-areas. (3) display:flex + flex-wrap:wrap.",
+      "validacion": "Caso 1 debe ser flex. Caso 2 debe ser grid con template-areas. Caso 3 debe ser flex con wrap."
+    },
+    "audio_script": "Piensa en Flexbox como una fila de personas esperando el autobús: están en una línea, puedes ordenarlas, centrarlas, separarlas, pero siempre en una sola fila. Ahora piensa en Grid como una hoja de cálculo: tienes filas y columnas definidas, y cada celda sabe exactamente dónde está. Si tu layout es una línea, usa Flexbox. Si es una cuadrícula, usa Grid. No intentes usar Flexbox para hacer cuadrículas complejas, vas a pelear contra el sistema. Y no uses Grid para centrar un solo botón, es matar moscas a cañonazos.",
+    "video_prompt": "Video de 75 segundos mostrando animación comparativa. Lado izquierdo: Flexbox moviendo elementos en una línea (horizontal, luego vertical). Lado derecho: Grid con filas y columnas definidas moviendo elementos en 2D. Mostrar ejemplos reales: navbar con Flexbox, dashboard con Grid. Usar colores distintos para ejes (rojo para X, azul para Y). Texto overlay explicando '1 dimensión' vs '2 dimensiones'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - CSS Grid Layout", "MDN - Flexbox", "CSS-Tricks Complete Guide to Grid"],
+      "conceptos_clave": ["flexbox", "grid", "layout", "1D vs 2D", "responsive"]
+    },
+    "tags_rag": ["css", "flexbox", "grid", "layout", "responsive", "maquetacion"]
+  },
+  {
+    "id": "F0.1-003",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Mobile-first con media queries",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "Mobile-first no es 'hacer el móvil primero por moda'. Es una estrategia de PROGRESIVIDAD: escribes el CSS base para la pantalla más restrictiva (móvil) y luego AGREGAS complejidad con min-width breakpoints para pantallas más grandes. Esto garantiza que el contenido crítico siempre funcione, incluso si el CSS avanzado falla.",
+    "codigo_roto": "body {\n  font-size: 16px;\n  width: 1200px;\n  margin: 0 auto;\n}\n\n@media (max-width: 768px) {\n  body {\n    width: 100%;\n    font-size: 14px;\n  }\n}",
+    "diagnostico": "Estás usando desktop-first: defines el diseño de 1200px como base y luego 'arreglas' el móvil con max-width. Esto es lo contrario del mobile-first. Consecuencia: en móviles con CSS cargado parcialmente, el layout de 1200px aparece roto hasta que el media query se aplica. Además, estás sobrescribiendo reglas, lo que aumenta la especificidad innecesariamente.",
+    "codigo_corregido": "body {\n  font-size: 14px;\n  width: 100%;\n  margin: 0 auto;\n}\n\n@media (min-width: 768px) {\n  body {\n    font-size: 16px;\n    max-width: 1200px;\n  }\n}",
+    "codigo_optimizado": "/* Base mobile - siempre funciona */\nbody {\n  font-size: clamp(14px, 2vw + 10px, 16px);\n  width: 100%;\n  padding-inline: 1rem;\n}\n\n/* Progresión tablet */\n@media (min-width: 768px) {\n  body {\n    max-width: 1200px;\n    margin-inline: auto;\n    padding-inline: 2rem;\n  }\n}\n\n/* Progresión desktop */\n@media (min-width: 1200px) {\n  body {\n    padding-inline: 0;\n  }\n}",
+    "disenso_experto": "Algunos diseñadores defienden desktop-first porque 'es como ven la mayoría de usuarios'. Esto fue verdad en 2012, pero hoy más del 60% del tráfico web global es móvil. Mobile-first ganó por datos, no por moda. El único caso válido para desktop-first son dashboards internos de empresa que NUNCA se usan en móvil.",
+    "pregunta_transferencia": "Un junior te muestra un CSS que usa exclusivamente min-width breakpoints y dice 'por eso mi web se ve rota en tablets'. ¿Cuál es el error conceptual y cómo se lo explicas?",
+    "quiz": {
+      "pregunta": "¿Qué significa realmente 'mobile-first' en CSS?",
+      "opciones": [
+        "Diseñar primero la versión móvil en Figma",
+        "Escribir el CSS base para móvil y usar min-width para pantallas más grandes",
+        "Usar solo unidades rem en lugar de px",
+        "Hacer que la web sea PWA"
+      ],
+      "correcta": "B",
+      "explicacion": "Mobile-first es una estrategia de escritura CSS, no de diseño. El CSS sin media queries es la versión móvil. Luego agregas reglas con min-width para tablet, desktop, etc."
+    },
+    "simulador": {
+      "tipo": "trace_execution",
+      "instruccion": "Dado este CSS mobile-first, indica qué font-size y max-width tendrá un body en una pantalla de 900px de ancho.",
+      "estado_inicial": "body { font-size: 14px; max-width: 100%; }\n@media (min-width: 600px) { body { font-size: 15px; max-width: 90%; } }\n@media (min-width: 1024px) { body { font-size: 16px; max-width: 1200px; } }",
+      "solucion": "font-size: 15px, max-width: 90%. Porque 900px activa el primer breakpoint (>=600px) pero no el segundo (<1024px).",
+      "validacion": "Aceptar si indica 15px y 90%. Explicación debe mencionar que el segundo breakpoint no se activa."
+    },
+    "audio_script": "Mobile-first es una de las decisiones más importantes que vas a tomar al hacer CSS. Imagina que escribes tu CSS como una historia que empieza simple y se va complicando. Primero describes cómo se ve en un teléfono pequeño, donde tienes poco espacio y poca atención. Luego dices: 'y si hay más espacio, añade esto'. Así siempre tienes una base sólida que funciona en cualquier pantalla. Si al revés, primero describes el escritorio gigante y luego tratas de meterlo en un teléfono, vas a estar constantemente parchando y rompiendo cosas. Mobile-first es escribir para el peor escenario primero, y mejorar progresivamente.",
+    "video_prompt": "Video de 90 segundos mostrando una misma página web renderizándose en 3 tamaños (móvil, tablet, desktop). Animación del código CSS apareciendo: primero reglas base, luego media query min-width:768px, luego min-width:1200px. Mostrar cómo cada breakpoint AGREGA reglas en lugar de sobrescribir. Usar colores para cada breakpoint (azul base, verde tablet, naranja desktop). Texto: 'Mobile-first = agregar, no sobrescribir'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Media Queries", "Luke Wroblewski - Mobile First book concepts"],
+      "conceptos_clave": ["mobile-first", "responsive", "media-queries", "min-width", "breakpoints"]
+    },
+    "tags_rag": ["css", "responsive", "mobile-first", "media-queries", "breakpoints", "rwd"]
+  },
+  {
+    "id": "F0.1-004",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Variables CSS y temas",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "Las variables CSS (custom properties) no son solo para colores. Son un sistema de tokens de diseño que vive en el DOM, se hereda, responde a media queries y puede cambiar en runtime con JavaScript. A diferencia de las variables de preprocesadores (Sass/Less), las variables CSS son vivas: el navegador las recalcula cuando cambian.",
+    "codigo_roto": ".button {\n  background-color: #3b82f6;\n  color: #ffffff;\n  padding: 0.75rem 1.5rem;\n  border-radius: 0.5rem;\n}\n\n.button-secondary {\n  background-color: #10b981;\n  color: #ffffff;\n  padding: 0.75rem 1.5rem;\n  border-radius: 0.5rem;\n}\n\n.card {\n  background-color: #ffffff;\n  border: 1px solid #e5e7eb;\n  padding: 1rem;\n}",
+    "diagnostico": "Estás repitiendo valores hexadecimales en todo el CSS. Si el cliente decide cambiar el color primario de azul a morado, tienes que buscar y reemplazar en 20 lugares. Además no hay jerarquía de colores: un azul de botón y un azul de borde parecen iguales pero pueden necesitar semántica distinta. Esto es deuda de diseño acumulada desde el día 1.",
+    "codigo_corregido": ":root {\n  --color-primary: #3b82f6;\n  --color-success: #10b981;\n  --color-text: #ffffff;\n  --color-surface: #ffffff;\n  --color-border: #e5e7eb;\n  --spacing-md: 0.75rem;\n  --spacing-lg: 1.5rem;\n  --radius-md: 0.5rem;\n}\n\n.button {\n  background-color: var(--color-primary);\n  color: var(--color-text);\n  padding: var(--spacing-md) var(--spacing-lg);\n  border-radius: var(--radius-md);\n}\n\n.button-secondary {\n  background-color: var(--color-success);\n  color: var(--color-text);\n  padding: var(--spacing-md) var(--spacing-lg);\n  border-radius: var(--radius-md);\n}\n\n.card {\n  background-color: var(--color-surface);\n  border: 1px solid var(--color-border);\n  padding: 1rem;\n}",
+    "codigo_optimizado": ":root {\n  /* Tokens semánticos, no de presentación */\n  --color-action: #3b82f6;\n  --color-action-hover: #2563eb;\n  --color-success: #10b981;\n  --color-on-action: #ffffff;\n  --color-surface: #ffffff;\n  --color-border: #e5e7eb;\n  \n  /* Escala de espaciado consistente */\n  --space-1: 0.25rem;\n  --space-2: 0.5rem;\n  --space-3: 0.75rem;\n  --space-4: 1rem;\n  --space-6: 1.5rem;\n  \n  --radius-sm: 0.25rem;\n  --radius-md: 0.5rem;\n}\n\n/* Dark mode automático */\n@media (prefers-color-scheme: dark) {\n  :root {\n    --color-surface: #1f2937;\n    --color-border: #374151;\n  }\n}\n\n.button {\n  --bg: var(--color-action);\n  background-color: var(--bg);\n  color: var(--color-on-action);\n  padding: var(--space-3) var(--space-6);\n  border-radius: var(--radius-md);\n  transition: background-color 0.2s;\n}\n\n.button:hover {\n  --bg: var(--color-action-hover);\n}\n\n.button-secondary { --bg: var(--color-success); }",
+    "disenso_experto": "Algunos argumentan que las variables CSS añaden complejidad innecesaria para proyectos pequeños. Es cierto si tu proyecto tiene 50 líneas de CSS. Pero si planeas que crezca (como tu PWA), empezar con tokens desde el día 1 evita refactor doloroso. La regla pragmática: si vas a usar un color más de 3 veces, conviértelo en variable.",
+    "pregunta_transferencia": "Si cambias --color-primary en runtime con JavaScript (document.documentElement.style.setProperty), ¿qué elementos de la página se actualizan y cuáles NO? ¿Por qué?",
+    "quiz": {
+      "pregunta": "¿Cuál es la ventaja PRINCIPAL de las variables CSS sobre las variables de Sass/Less?",
+      "opciones": [
+        "Son más rápidas de compilar",
+        "Viven en el DOM y pueden cambiar en runtime sin recompilar",
+        "Tienen mejor sintaxis",
+        "Funcionan en navegadores más antiguos"
+      ],
+      "correcta": "B",
+      "explicacion": "Las variables Sass se compilan a valores estáticos. Las variables CSS son propiedades del DOM que el navegador recalcula en runtime, permitiendo temas dinámicos, dark mode y cambios con JavaScript."
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "instruccion": "Completa el CSS para que el botón use variables y soporte dark mode automáticamente.",
+      "estado_inicial": ":root {\n  --color-bg: #3b82f6;\n  --color-text: white;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    /* ??? */\n  }\n}\n\n.btn {\n  background: var(--color-bg);\n  color: var(--color-text);\n}",
+      "solucion": "@media (prefers-color-scheme: dark) {\n  :root {\n    --color-bg: #1e40af;\n  }\n}",
+      "validacion": "Aceptar si sobrescribe --color-bg con un color oscuro válido. No debe tocar --color-text porque ya es válido para ambos modos."
+    },
+    "audio_script": "Las variables CSS son como los apodos en una conversación. En lugar de repetir 'el señor de la camisa azul que trabaja en marketing' cada vez que hablas de Juan, simplemente dices 'Juan'. En CSS, en lugar de escribir #3b82f6 quince veces, defines --color-primary una vez y lo usas donde lo necesites. Pero hay algo más poderoso: como viven en el DOM, puedes cambiarlas en cualquier momento. Quieres modo oscuro? Cambias unas variables y toda la página se transforma. Quieres que el usuario personalice los colores? Cambias las variables con JavaScript y listo. Esto no lo puedes hacer con Sass, porque Sass se compila una vez y ya.",
+    "video_prompt": "Video de 70 segundos. Muestra código CSS con colores hex repetidos. Animación: los colores se transforman en variables con icono de 'tag'. Luego muestra toggle de dark mode: al activarlo, las variables cambian y toda la página se transforma instantáneamente. Overlay: 'Variables CSS = tokens vivos'. Ejemplo final: slider de JavaScript que cambia --hue en tiempo real y toda la paleta de colores rota.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Using CSS custom properties", "Lea Verou - CSS Variables talks"],
+      "conceptos_clave": ["css-variables", "custom-properties", "design-tokens", "dark-mode", "runtime"]
+    },
+    "tags_rag": ["css", "variables", "custom-properties", "design-tokens", "dark-mode", "temas"]
+  },
+  {
+    "id": "F0.1-005",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Accesibilidad básica (ARIA mínimo)",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "La primera regla de ARIA es NO USAR ARIA si existe un elemento HTML nativo que haga lo mismo. ARIA es un parche para cuando HTML semántico no alcanza. Usar <button aria-label='Close'> es un error: debiste usar <button aria-label='Close'>X</button> con texto visible o <button class='sr-only'>Close</button>. La accesibilidad no es un feature opcional, es un requisito de calidad.",
+    "codigo_roto": "<div onclick='openMenu()' role='button' aria-label='Menu'>\n  <i class='fa fa-bars'></i>\n</div>\n\n<div role='alert' style='display:none;'>\n  Error en el formulario\n</div>",
+    "diagnostico": "Primer error: estás usando un <div> con role='button' cuando existe el <button> nativo, que ya tiene teclado (Enter/Space), foco visible y semántica. El div no es enfocable por teclado por defecto, así que usuarios con discapacidad motriz no pueden activarlo. Segundo error: role='alert' en un elemento con display:none no funciona, porque los lectores de pantalla no leen elementos ocultos por CSS. Debes usar hidden o gestionar la visibilidad con JavaScript.",
+    "codigo_corregido": "<button type='button' aria-label='Abrir menú' aria-expanded='false'>\n  <i class='fa fa-bars' aria-hidden='true'></i>\n</button>\n\n<div role='alert' hidden>\n  Error en el formulario\n</div>",
+    "codigo_optimizado": "<button \n  type='button'\n  class='menu-toggle'\n  aria-label='Abrir menú de navegación'\n  aria-expanded='false'\n  aria-controls='main-menu'\n>\n  <svg aria-hidden='true' width='24' height='24'>\n    <use href='#icon-menu'></use>\n  </svg>\n  <span class='sr-only'>Menú</span>\n</button>\n\n<nav id='main-menu' hidden>\n  <!-- Contenido del menú -->\n</nav>\n\n<div role='alert' class='toast' hidden>\n  <p>Error en el formulario</p>\n  <button type='button' aria-label='Cerrar alerta'>×</button>\n</div>\n\n<style>\n.sr-only {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border: 0;\n}\n</style>",
+    "disenso_experto": "Hay dos posturas: (1) 'Accesibilidad es responsabilidad de todos desde el día 1' y (2) 'La accesibilidad perfecta es cara, mejor hacer MVP y mejorar después'. La postura 1 es la correcta éticamente y legalmente (Europa y USA tienen leyes estrictas). Pero incluso pragmáticamente, el 80% de la accesibilidad se logra con HTML semántico y buen teclado. No necesitas ser experto, solo no sabotear.",
+    "pregunta_transferencia": "Un diseñador te entrega un mockup con un botón que es solo un ícono de corazón (sin texto) para marcar favoritos. ¿Cuál es la solución accesible correcta: aria-label, title, texto oculto con CSS, o texto visible? ¿Por qué?",
+    "quiz": {
+      "pregunta": "¿Cuál es la PRIMERA regla de ARIA?",
+      "opciones": [
+        "Siempre agregar role='button' a los divs clickeables",
+        "No usar ARIA si un elemento HTML nativo cumple la misma función",
+        "Todos los elementos deben tener aria-label",
+        "Usar aria-hidden='true' en todo lo visual"
+      ],
+      "correcta": "B",
+      "explicacion": "La primera regla de ARIA (W3C) es no usar ARIA si existe un elemento HTML nativo que haga lo mismo. <button> es mejor que <div role='button'> porque ya incluye comportamiento de teclado, foco y semántica."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "Este botón de ícono no es accesible. Corrígelo.",
+      "estado_inicial": "<div onclick='toggleFavorite()' class='icon-heart'></div>",
+      "solucion": "<button type='button' onclick='toggleFavorite()' aria-label='Agregar a favoritos' aria-pressed='false'>\n  <svg aria-hidden='true' class='icon-heart'>...</svg>\n</button>",
+      "validacion": "Aceptar si: (1) cambia div por button, (2) agrega aria-label descriptivo, (3) el SVG tiene aria-hidden='true'. Opcional: aria-pressed para estado toggle."
+    },
+    "audio_script": "La accesibilidad no es un extra para 'usuarios especiales', es para el 20% de la población que tiene alguna discapacidad temporal o permanente. Piensa en esto: si te rompes el brazo derecho y tienes que usar tu app con una mano, ¿puedes usarla? Si estás en un ambiente ruidoso y no puedes escuchar los videos, ¿tienes subtítulos? Si el sol te da en la pantalla, ¿hay suficiente contraste? La buena noticia es que la mayoría de la accesibilidad se logra con HTML semántico bien escrito. Botones reales, no divs. Etiquetas reales, no decorativas. Texto en los enlaces, no 'haz clic aquí'. ARIA es solo para cuando HTML no alcanza, y debes usarlo con respeto, no como parche para código perezoso.",
+    "video_prompt": "Video de 90 segundos. Muestra tres escenas: (1) usuario con lector de pantalla navegando una web con divs (confuso, no entiende), (2) el mismo usuario en web semántica (fluido), (3) usuario con movilidad reducida usando teclado en web con botones reales vs divs (imposible en el segundo). Overlay con tips: 'Usa <button>, no <div role=button>', 'Imágenes con alt descriptivo', 'Foco visible'. Estilo documental, tono empático.",
+    "trazabilidad": {
+      "libros_fuente": ["W3C WAI-ARIA Authoring Practices", "MDN - Accessibility"],
+      "conceptos_clave": ["accesibilidad", "aria", "a11y", "semantic-html", "keyboard-nav"]
+    },
+    "tags_rag": ["html", "accesibilidad", "a11y", "aria", "semantica", "keyboard"]
+  },
+  {
+    "id": "F0.1-006",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Formularios con validación HTML5",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "La validación HTML5 es la PRIMERA línea de defensa. Se ejecuta antes que JavaScript, funciona sin JS habilitado, y es más rápida. Nunca confíes SOLO en ella para seguridad (el backend debe revalidar), pero tampoco la ignores por pereza. Un formulario bien validado en HTML reduce el 70% del código JS necesario.",
+    "codigo_roto": "<form>\n  <input type='text' name='email' placeholder='Email'>\n  <input type='text' name='password' placeholder='Password'>\n  <input type='text' name='age' placeholder='Age'>\n  <button>Submit</button>\n</form>",
+    "diagnostico": "Todo es type='text'. El navegador no sabe qué estás pidiendo. Consecuencias: en móvil no aparece teclado específico (no hay @ para email, no oculta password, no muestra números para edad). No hay validación automática. No hay autocompletado. Además, el botón no tiene type='submit' explícito, lo que en algunos contextos causa comportamientos raros.",
+    "codigo_corregido": "<form>\n  <label for='email'>Email</label>\n  <input \n    type='email' \n    id='email' \n    name='email' \n    required\n    autocomplete='email'\n  >\n  \n  <label for='password'>Password</label>\n  <input \n    type='password' \n    id='password' \n    name='password' \n    required\n    minlength='8'\n    autocomplete='current-password'\n  >\n  \n  <label for='age'>Edad</label>\n  <input \n    type='number' \n    id='age' \n    name='age' \n    min='13'\n    max='120'\n    autocomplete='off'\n  >\n  \n  <button type='submit'>Enviar</button>\n</form>",
+    "codigo_optimizado": "<form novalidate id='signup-form'>\n  <fieldset>\n    <legend>Crear cuenta</legend>\n    \n    <div class='field'>\n      <label for='email'>Email</label>\n      <input \n        type='email' \n        id='email' \n        name='email' \n        required\n        autocomplete='email'\n        aria-describedby='email-hint'\n        pattern='[^@\\s]+@[^@\\s]+\\.[^@\\s]+'\n      >\n      <small id='email-hint'>Usaremos este email para enviarte notificaciones</small>\n    </div>\n    \n    <div class='field'>\n      <label for='password'>Contraseña</label>\n      <input \n        type='password' \n        id='password' \n        name='password' \n        required\n        minlength='8'\n        autocomplete='new-password'\n        aria-describedby='password-rules'\n      >\n      <small id='password-rules'>Mínimo 8 caracteres</small>\n    </div>\n  </fieldset>\n  \n  <button type='submit'>Crear cuenta</button>\n</form>\n\n<style>\ninput:invalid:not(:placeholder-shown) {\n  border-color: #ef4444;\n}\ninput:valid:not(:placeholder-shown) {\n  border-color: #10b981;\n}\n</style>",
+    "disenso_experto": "Algunos desarrolladores prefieren hacer toda la validación en JS porque 'les da más control del UX'. Esto es cierto para validación compleja (async, business rules), pero para validación básica (email, required, minlength) HTML5 es superior: es instantánea, nativa y no depende de librerías. La regla pragmática: validación de formato en HTML5, validación de negocio en JS, validación de seguridad en backend.",
+    "pregunta_transferencia": "Tu formulario tiene un campo 'username' que debe ser único en la base de datos. ¿Dónde haces esta validación: en HTML5, en JS del cliente, en el backend, o en los tres? ¿Por qué?",
+    "quiz": {
+      "pregunta": "¿Por qué es importante el atributo 'autocomplete' en un input?",
+      "opciones": [
+        "Solo es para estética",
+        "Ayuda al navegador a autocompletar correctamente y mejora seguridad al no guardar datos sensibles",
+        "Hace que el formulario se envíe más rápido",
+        "Es requerido por HTML5"
+      ],
+      "correcta": "B",
+      "explicacion": "autocomplete le dice al navegador qué tipo de dato es (email, password, nombre), lo que permite autocompletado inteligente y evita que el navegador guarde datos sensibles en campos incorrectos. Es crítico para UX y seguridad."
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "instruccion": "Agrega los atributos HTML5 necesarios para que este input de teléfono sea válido, accesible y tenga autocompletado.",
+      "estado_inicial": "<label for='phone'>Teléfono</label>\n<input id='phone' name='phone'>",
+      "solucion": "<label for='phone'>Teléfono</label>\n<input \n  type='tel' \n  id='phone' \n  name='phone'\n  pattern='[0-9+\\-\\s()]+'\n  autocomplete='tel'\n  inputmode='tel'\n  required\n>",
+      "validacion": "Aceptar si incluye: type='tel', autocomplete='tel'. Opcional pero deseable: pattern, inputmode='tel', required."
+    },
+    "audio_script": "Los formularios son donde más dinero se pierde en una app. Cada campo mal hecho es un usuario que abandona. La buena noticia: HTML5 te da el 80% de lo que necesitas gratis. Type='email' valida emails. Type='tel' muestra teclado numérico en móvil. Required impide enviar vacío. Minlength obliga a una longitud mínima. Autocomplete ayuda al usuario a no teclear todo de nuevo. Y lo mejor: todo esto funciona aunque el usuario tenga JavaScript deshabilitado, que es más común de lo que crees. No reinventes la rueda: usa los tipos nativos de input y deja que el navegador haga su trabajo.",
+    "video_prompt": "Video de 75 segundos mostrando lado a lado dos formularios en móvil: uno con type='text' para todo (teclado alfabético siempre), otro con tipos correctos (teclado específico para email, teléfono, número). Mostrar validación HTML5 en acción: input rojo cuando inválido, verde cuando válido. Demostrar autocompletado funcionando. Texto: 'HTML5 = UX gratis'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - HTML forms", "Web.dev - Forms best practices"],
+      "conceptos_clave": ["formularios", "html5", "validacion", "autocomplete", "input-types"]
+    },
+    "tags_rag": ["html", "formularios", "validacion", "html5", "input-types", "ux"]
+  },
+  {
+    "id": "F0.1-007",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Código IA roto: divitis crónico",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "Cuando pides a una IA que te haga una página 'rápido y funcional', tiende a generar divitis masivo porque es lo más seguro: nunca falla, nunca tiene conflictos de estilo, siempre 'funciona'. Pero esto crea código que ningún desarrollador profesional escribiría. Aprender a detectar divitis es la primera habilidad de auditoría de código que debes desarrollar.",
+    "codigo_roto": "<div class='container'>\n  <div class='header'>\n    <div class='header-content'>\n      <div class='logo'>Mi App</div>\n      <div class='nav'>\n        <div class='nav-item'>Inicio</div>\n        <div class='nav-item'>Cursos</div>\n        <div class='nav-item'>Sobre</div>\n      </div>\n    </div>\n  </div>\n  <div class='main'>\n    <div class='hero'>\n      <div class='hero-title'>Aprende a programar</div>\n      <div class='hero-subtitle'>La mejor plataforma</div>\n      <div class='hero-button'>Empezar</div>\n    </div>\n    <div class='features'>\n      <div class='feature'>\n        <div class='feature-icon'>⭐</div>\n        <div class='feature-title'>Fácil</div>\n        <div class='feature-desc'>Muy fácil de usar</div>\n      </div>\n    </div>\n  </div>\n</div>",
+    "diagnostico": "Este código fue claramente generado por IA sin supervisión. Cada elemento es un div. Los 'textos' son divs en lugar de h1/h2/p. El 'botón' es un div sin comportamiento de botón. La 'navegación' no tiene enlaces. Un desarrollador humano con 6 meses de experiencia no escribiría esto, pero una IA perezosa sí, porque técnicamente 'funciona' si le agregas CSS. El problema: es ilegible, inaccesible, pésimo para SEO, y cualquier cambio estructural es una pesadilla.",
+    "codigo_corregido": "<div class='container'>\n  <header class='header'>\n    <div class='header-content'>\n      <h1 class='logo'>Mi App</h1>\n      <nav class='nav'>\n        <a href='/'>Inicio</a>\n        <a href='/cursos'>Cursos</a>\n        <a href='/sobre'>Sobre</a>\n      </nav>\n    </div>\n  </header>\n  <main class='main'>\n    <section class='hero'>\n      <h2 class='hero-title'>Aprende a programar</h2>\n      <p class='hero-subtitle'>La mejor plataforma</p>\n      <a href='/signup' class='hero-button'>Empezar</a>\n    </section>\n    <section class='features'>\n      <article class='feature'>\n        <span class='feature-icon' aria-hidden='true'>⭐</span>\n        <h3 class='feature-title'>Fácil</h3>\n        <p class='feature-desc'>Muy fácil de usar</p>\n      </article>\n    </section>\n  </main>\n</div>",
+    "codigo_optimizado": "<header class='site-header'>\n  <div class='header-inner'>\n    <a href='/' class='logo' aria-label='Mi App - Inicio'>Mi App</a>\n    <nav aria-label='Navegación principal'>\n      <ul class='nav-list'>\n        <li><a href='/'>Inicio</a></li>\n        <li><a href='/cursos'>Cursos</a></li>\n        <li><a href='/sobre'>Sobre</a></li>\n      </ul>\n    </nav>\n  </div>\n</header>\n\n<main>\n  <section class='hero' aria-labelledby='hero-title'>\n    <h2 id='hero-title'>Aprende a programar</h2>\n    <p>La mejor plataforma para convertirte en desarrollador.</p>\n    <a href='/signup' class='cta-button'>Empezar ahora</a>\n  </section>\n  \n  <section class='features' aria-labelledby='features-title'>\n    <h2 id='features-title' class='sr-only'>Características</h2>\n    <article class='feature'>\n      <span aria-hidden='true'>⭐</span>\n      <h3>Fácil de usar</h3>\n      <p>Diseñado para principiantes absolutos.</p>\n    </article>\n  </section>\n</main>",
+    "disenso_experto": "Hay desarrolladores que dicen 'mientras funcione, no importa cómo esté escrito'. Esto es técnicamente cierto para prototipos de fin de semana. Para productos reales, el código legible es mantenible, y el mantenible es rentable. Un código con divitis cuesta 3-5x más de mantener a largo plazo. Cuando evalúes código de IA, tu primera pregunta debe ser: '¿Esto lo escribiría un humano competente?' Si la respuesta es no, pídele a la IA que lo rehaga con mejores indicaciones.",
+    "pregunta_transferencia": "Ves este código de IA: <div onclick='navigate()'>Haz clic</div>. Sin mirar nada más, enumera al menos 5 problemas que tiene este fragmento y cómo los resolverías.",
+    "quiz": {
+      "pregunta": "¿Cuál es el indicador MÁS CLARO de que un HTML fue generado por IA sin supervisión profesional?",
+      "opciones": [
+        "Tiene muchas clases CSS",
+        "Usa exclusivamente <div> para todo, incluso textos y botones",
+        "Tiene muchos comentarios",
+        "Usa etiquetas modernas como <article>"
+      ],
+      "correcta": "B",
+      "explicacion": "El divitis crónico es el sello del código IA perezoso. Los humanos usan etiquetas semánticas porque entienden su propósito. Las IAs genéricas usan divs porque 'siempre funcionan' y evitan conflictos."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "Identifica TODOS los problemas de este HTML generado por IA y reescríbelo con buenas prácticas.",
+      "estado_inicial": "<div class='card'>\n  <div class='card-img'>IMG</div>\n  <div class='card-title'>Producto</div>\n  <div class='card-price'>$100</div>\n  <div class='card-button' onclick='buy()'>Comprar</div>\n</div>",
+      "solucion": "<article class='product-card'>\n  <img src='...' alt='Descripción del producto' class='card-img'>\n  <h3 class='card-title'>Producto</h3>\n  <p class='card-price'><data value='100'>$100</data></p>\n  <button type='button' class='card-button' onclick='buy()'>Comprar</button>\n</article>",
+      "validacion": "Aceptar si: (1) div raíz → article, (2) div card-img → img con alt, (3) div card-title → h3, (4) div card-price → p, (5) div card-button → button. La estructura semántica es lo importante."
+    },
+    "audio_script": "Cuando la IA te genera HTML, lo primero que debes hacer es buscar los divs. Si ves que el 80% de los elementos son divs con clases genéricas, estás frente a código perezoso. La IA no sabe que un texto visible debería ser un párrafo o un heading, no un div. No sabe que un botón debe ser un elemento button con tipo y comportamiento de teclado. No sabe que una imagen debe ser una etiqueta img con atributo alt. Tu trabajo como desarrollador no es aceptar lo que la IA te da, es auditarlo y mejorarlo. Piensa en la IA como un junior muy rápido pero sin criterio: produce mucho código, pero necesitas revisarlo todo.",
+    "video_prompt": "Video de 90 segundos estilo 'debug session'. Muestra pantalla con código IA lleno de divs. Cursor va resaltando cada div y aparece tooltip con el problema: 'esto debería ser h1', 'esto debería ser button', etc. Luego animación de refactor: los divs se transforman en etiquetas semánticas correctas. Overlay final: 'Regla #1: Si es texto visible, no es un div'. Estilo hacker, fondo oscuro, colores neón.",
+    "trazabilidad": {
+      "libros_fuente": ["Práctica profesional de revisión de código", "Principios de HTML semántico"],
+      "conceptos_clave": ["divitis", "codigo-ia", "auditoria", "html-semantico", "code-review"]
+    },
+    "tags_rag": ["html", "divitis", "codigo-ia", "auditoria", "code-review", "semantica"]
+  },
+  {
+    "id": "F0.1-008",
+    "modulo": "F0.1 - HTML/CSS Esencial",
+    "competencia": "Código IA roto: !important y specificity wars",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Landing page estática de la app de aprendizaje",
+    "modelo_mental": "Cuando un desarrollador (o una IA) usa !important, está admitiendo que perdió el control del CSS. Es un parche desesperado para sobrescribir reglas sin entender la cascada ni la especificidad. El código con muchos !important es código que nadie entiende, donde cada cambio es una guerra. La cascada de CSS es una herramienta poderosa: úsala a tu favor, no contra ella.",
+    "codigo_roto": ".button {\n  background-color: blue !important;\n  color: white !important;\n  padding: 10px !important;\n}\n\n.button-primary {\n  background-color: red !important;\n}\n\n#main .button {\n  background-color: green !important;\n}\n\nbody header .container .button {\n  background-color: purple !important;\n}",
+    "diagnostico": "Esto es un desastre de especificidad. Tienes 4 reglas peleando por el mismo botón, todas con !important. El resultado: el último en el CSS gana, pero solo porque son todas !important. Si alguien quita un !important, el botón cambia de color de forma impredecible. Esto es deuda técnica pura. Un equipo profesional rechazaría este código en revisión. La IA lo genera porque no entiende la cascada, solo busca 'que funcione'.",
+    "codigo_corregido": "/* Base: estilos compartidos */\n.button {\n  padding: 10px;\n  border-radius: 4px;\n  border: none;\n  cursor: pointer;\n}\n\n/* Variantes por clase, sin !important */\n.button-primary {\n  background-color: blue;\n  color: white;\n}\n\n.button-secondary {\n  background-color: red;\n  color: white;\n}\n\n/* Si necesitas sobrescribir en un contexto específico, usa selectores más específicos */\n.hero .button-primary {\n  background-color: green;\n}",
+    "codigo_optimizado": "/* Design tokens con variables CSS */\n:root {\n  --btn-bg-primary: #3b82f6;\n  --btn-bg-secondary: #ef4444;\n  --btn-text: white;\n  --btn-padding: 0.75rem 1.5rem;\n  --btn-radius: 0.5rem;\n}\n\n/* Una sola clase base */\n.btn {\n  padding: var(--btn-padding);\n  border-radius: var(--btn-radius);\n  border: none;\n  cursor: pointer;\n  color: var(--btn-text);\n  font-weight: 500;\n  transition: filter 0.2s;\n}\n\n/* Variantes usando composición, no herencia */\n.btn--primary { background-color: var(--btn-bg-primary); }\n.btn--secondary { background-color: var(--btn-bg-secondary); }\n.btn:hover { filter: brightness(0.9); }\n\n/* Si necesitas override contextual, usa variables locales */\n.hero .btn--primary {\n  --btn-bg-primary: #10b981;\n}",
+    "disenso_experto": "Algunos argumentan que !important es válido para utility classes tipo Tailwind. Esto es cierto en ese paradigma específico, porque las utilities están diseñadas para ser finales. Pero en CSS tradicional, !important es casi siempre una señal de mal diseño. La regla pragmática: si necesitas !important más de 3 veces en un proyecto, tu arquitectura CSS está mal. Rehacer el CSS es más barato que mantener un código con !important a largo plazo.",
+    "pregunta_transferencia": "Calcula mentalmente la especificidad de estos 4 selectores y ordena de menor a mayor: (1) .button (2) #main .button (3) body header .button (4) div.button",
+    "quiz": {
+      "pregunta": "¿Cuál es la señal MÁS CLARA de que un CSS fue escrito sin entender la cascada?",
+      "opciones": [
+        "Tiene muchas variables CSS",
+        "Usa !important en múltiples reglas",
+        "Usa Flexbox y Grid",
+        "Tiene muchos comentarios"
+      ],
+      "correcta": "B",
+      "explicacion": "!important es el último recurso de quien no entiende la cascada ni la especificidad. Si ves !important repetido, estás frente a código escrito por alguien que no domina CSS. Una IA sin buen prompting también lo genera constantemente."
+    },
+    "simulador": {
+      "tipo": "trace_execution",
+      "instruccion": "Dado este CSS, ¿de qué color será el botón y por qué? Calcula la especificidad.",
+      "estado_inicial": ".button { color: blue; }\n#main .button { color: red; }\nbody .container .button { color: green; }",
+      "solucion": "Rojo. Especificidades: .button = (0,1,0). #main .button = (1,1,0). body .container .button = (0,3,1). #main .button gana porque ID tiene mayor peso que clases y elementos.",
+      "validacion": "Aceptar si identifica correctamente que gana el rojo y explica que el ID tiene mayor especificidad que múltiples clases."
+    },
+    "audio_script": "Imagina que estás en una reunión y todos gritan para ser escuchados. Eso es CSS con !important. Cada regla grita '¡escúchame a mí!'. La cascada de CSS es como una conversación ordenada: hay reglas de quién habla primero. Los IDs hablan con más autoridad que las clases, y las clases más que los elementos. Si entiendes estas reglas, no necesitas gritar. Si no las entiendes, terminas usando !important como un megáfono. Y cuando todos usan megáfono, nadie se escucha. La próxima vez que veas !important en tu CSS o en código generado por IA, detente y pregúntate: ¿por qué esta regla necesita gritar? Casi siempre la respuesta es: porque no entendí la cascada.",
+    "video_prompt": "Video de 80 segundos. Muestra una reunión con 4 personas gritando (analogía de !important). Luego muestra una reunión ordenada con turnos (analogía de cascada CSS bien usada). Transición a código: lado izquierdo CSS con muchos !important (caos), lado derecho CSS limpio con especificidad correcta (orden). Animación calculando especificidad: ID = 100, clase = 10, elemento = 1. Overlay: '!important = rendirse. Cascada = maestría'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Specificity", "CSS Tricks - Specificity calculator", "Harry Roberts - CSS Guidelines"],
+      "conceptos_clave": ["especificidad", "cascada", "important", "css-architecture", "deuda-tecnica"]
+    },
+    "tags_rag": ["css", "especificidad", "cascada", "important", "arquitectura-css", "deuda-tecnica"]
+  }
+]

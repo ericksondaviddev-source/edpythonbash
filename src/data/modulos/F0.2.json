@@ -1,0 +1,402 @@
+[
+  {
+    "id": "F0.2-001",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Scope, Hoisting y let/const vs var",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Agregar interactividad a la landing (Menú y animaciones)",
+    "modelo_mental": "JavaScript no ejecuta el código de arriba a abajo ciegamente. Primero 'escanea' (hoisting) y luego ejecuta. 'var' ignora los bloques { } y se filtra, creando bugs fantasma. 'let' y 'const' respetan los bloques. La regla de oro moderna es: 'const' por defecto, 'let' solo si el valor cambia, 'var' nunca.",
+    "codigo_roto": "for (var i = 0; i < 3; i++) {\n  setTimeout(function() {\n    console.log('El indice es: ' + i);\n  }, 100);\n}",
+    "diagnostico": "Clásico bug de 'var' en closures. Al usar 'var', la variable 'i' es global al bucle. Cuando el setTimeout se ejecuta 100ms después, el bucle ya terminó y 'i' vale 3. Imprimirá '3' tres veces. La IA genera esto si usa modelos antiguos o no se le fuerza a usar ES6+.",
+    "codigo_corregido": "for (let i = 0; i < 3; i++) {\n  setTimeout(function() {\n    console.log('El indice es: ' + i);\n  }, 100);\n}",
+    "codigo_optimizado": "const delays = [100, 200, 300];\ndelays.forEach((delay, i) => {\n  setTimeout(() => console.log(`El indice es: ${i}`), delay);\n});",
+    "disenso_experto": "Algunos devs veteranos defienden 'var' por su hoisting predecible en funciones complejas. Pero en el 99% del JS moderno (especialmente en móviles con ES6+ soportado), 'var' es deuda técnica. Si ves 'var' en código de IA, es tu primera señal de que el prompt no exigió estándares modernos.",
+    "pregunta_transferencia": "Si declaras 'const user = { name: 'Ana' };' y luego haces 'user.name = 'Bob';', ¿JavaScript lanzará un error? ¿Por qué 'const' permite esto pero no permite 'user = {};'?",
+    "quiz": {
+      "pregunta": "¿Por qué 'let' soluciona el bug del setTimeout dentro del bucle for?",
+      "opciones": [
+        "Porque let es más rápido que var",
+        "Porque let crea un nuevo entorno (scope) por cada iteración del bucle",
+        "Porque let bloquea el hilo de ejecución hasta que termina el setTimeout",
+        "Porque let no permite usar closures"
+      ],
+      "correcta": "B",
+      "explicacion": "let tiene scope de bloque. En un bucle for, el navegador crea una 'copia' nueva de la variable let para cada iteración, por lo que el closure captura el valor correcto de esa iteración específica."
+    },
+    "simulador": {
+      "tipo": "trace_execution",
+      "instruccion": "Predice la salida exacta en consola de este código.",
+      "estado_inicial": "let a = 1;\nif (true) {\n  let a = 2;\n  var b = 3;\n}\nconsole.log(a, b);",
+      "solucion": "1 3. La 'let a' dentro del if está en un scope distinto y no afecta a la 'let a' externa. 'var b' ignora el bloque if y se filtra al scope global.",
+      "validacion": "Debe indicar que imprime 1 y luego 3, y explicar que var se filtra fuera del bloque if."
+    },
+    "audio_script": "Hablemos de por qué 'var' es peligroso. Imagina que 'var' es un niño que no respeta las habitaciones: si lo metes en la cocina (un bloque if o for), se escapa al pasillo (la función entera) y ensucia todo. 'let' y 'const' son adultos que se quedan en la habitación donde los pusiste. Si la IA te genera un bucle con 'var' y un setTimeout, vas a ver el mismo número repetido y no entenderás por qué. Cambia a 'let' y la magia del scope de bloque solucionará el problema instantáneamente.",
+    "video_prompt": "Video de 60s. Animación de un bucle for. Con 'var', se muestra una sola caja de memoria compartida que cambia de 0 a 1, a 2, a 3. Los 3 setTimeout apuntan a la misma caja (que al final dice 3). Con 'let', se muestran 3 cajas de memoria separadas (0, 1, 2) y cada setTimeout apunta a su propia caja. Estilo pizarra blanca técnica.",
+    "trazabilidad": {
+      "libros_fuente": ["Effective Python (adaptado a JS scope)", "MDN - let vs var"],
+      "conceptos_clave": ["scope", "hoisting", "closures", "let", "const", "var"]
+    },
+    "tags_rag": ["javascript", "scope", "let", "const", "var", "closures"]
+  },
+  {
+    "id": "F0.2-002",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Arrow Functions y el contexto 'this'",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Botón de toggle para el menú móvil",
+    "modelo_mental": "Las funciones flecha (=>) no son solo 'azúcar sintáctica' para escribir menos. Su superpoder (y su trampa) es que NO tienen su propio 'this'. Heredan el 'this' del lugar donde fueron escritas (scope léxico). Si necesitas que 'this' apunte al elemento que disparó un evento, NO uses flechas.",
+    "codigo_roto": "const button = document.querySelector('.menu-toggle');\nbutton.addEventListener('click', () => {\n  this.classList.toggle('active');\n  console.log('Menu toggled');\n});",
+    "diagnostico": "Error catastrófico de contexto. Al usar una arrow function en el addEventListener, 'this' no apunta al botón. Apunta al objeto global (window) o al módulo donde está el código. 'this.classList' fallará o modificará el objeto equivocado. La IA comete este error el 50% de las veces porque asume que '=>' es siempre mejor.",
+    "codigo_corregido": "const button = document.querySelector('.menu-toggle');\nbutton.addEventListener('click', function() {\n  this.classList.toggle('active');\n  console.log('Menu toggled');\n});",
+    "codigo_optimizado": "const button = document.querySelector('.menu-toggle');\nconst toggleMenu = (event) => {\n  event.currentTarget.classList.toggle('active');\n};\nbutton.addEventListener('click', toggleMenu);",
+    "disenso_experto": "React y Vue han cambiado cómo vemos 'this'. En React (con hooks), 'this' casi ha desaparecido. Pero en Vanilla JS para DOM y eventos, entender 'this' es obligatorio. La escuela moderna prefiere usar 'event.currentTarget' en lugar de depender de 'this', porque es explícito y funciona igual con arrow functions.",
+    "pregunta_transferencia": "Tienes un objeto 'const timer = { seconds: 0, start: () => { setInterval(() => this.seconds++, 1000) } };'. Al llamar a timer.start(), los segundos no aumentan. ¿Por qué y cómo lo arreglas sin quitar las arrow functions?",
+    "quiz": {
+      "pregunta": "¿Cuándo es UN ERROR usar una Arrow Function?",
+      "opciones": [
+        "En callbacks de array.map()",
+        "En métodos de un objeto que necesitan acceder a otras propiedades del mismo objeto mediante 'this'",
+        "En funciones que retornan otra función",
+        "En promesas"
+      ],
+      "correcta": "B",
+      "explicacion": "Las arrow functions no bindean 'this' al objeto que las contiene, sino al scope superior. Si defines un método de objeto con '=>', 'this' no será el objeto."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "El siguiente código intenta deshabilitar un botón al hacer clic, pero falla. Corrígelo usando event.currentTarget.",
+      "estado_inicial": "document.querySelectorAll('.btn').forEach(btn => {\n  btn.addEventListener('click', () => {\n    this.disabled = true;\n  });\n});",
+      "solucion": "document.querySelectorAll('.btn').forEach(btn => {\n  btn.addEventListener('click', (event) => {\n    event.currentTarget.disabled = true;\n  });\n});",
+      "validacion": "Debe reemplazar 'this' por 'event.currentTarget' o 'event.target' y agregar el parámetro 'event' o 'e' a la arrow function."
+    },
+    "audio_script": "La arrow function, la flechita, es genial. Pero tiene un secreto: no sabe quién es ella misma. Cuando usas 'this' dentro de una flecha, ella mira a su alrededor y adopta el 'this' de su padre. Si la pones en un evento del DOM, el padre no es el botón, es la ventana del navegador. Por eso tu código falla. Si necesitas que 'this' sea el botón que el usuario acaba de tocar, usa la palabra 'function' tradicional, o mejor aún, usa el parámetro 'event' y llama a 'event.currentTarget'. Es más explícito y la IA lo entiende mejor si se lo pides.",
+    "video_prompt": "Video de 60s. Muestra un botón en pantalla. Al hacer clic, el código usa 'this' con arrow function y aparece un signo de interrogación rojo sobre el botón (apunta a Window). Luego cambia a función tradicional o event.currentTarget y aparece un check verde (apunta al Botón). Overlay: 'Arrow functions heredan el this. Funciones tradicionales crean su propio this'.",
+    "trazabilidad": {
+      "libros_fuente": ["Fluent Python (adaptado a JS closures/this)", "MDN - Arrow functions"],
+      "conceptos_clave": ["arrow-functions", "this", "lexical-scope", "dom-events"]
+    },
+    "tags_rag": ["javascript", "arrow-functions", "this", "eventos", "dom"]
+  },
+  {
+    "id": "F0.2-003",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "DOM Selection y Cacheo de Nodos",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Animación de scroll suave en la landing",
+    "modelo_mental": "El DOM es lento. Cada vez que llamas a 'document.querySelector' o 'getElementById', el navegador tiene que buscar en el árbol. Si haces esto dentro de un evento que se dispara 60 veces por segundo (como scroll o resize), vas a congelar el teléfono del usuario. La regla: busca una vez, cachea en una variable, usa muchas veces.",
+    "codigo_roto": "window.addEventListener('scroll', () => {\n  if (window.scrollY > 100) {\n    document.querySelector('.header').classList.add('scrolled');\n  } else {\n    document.querySelector('.header').classList.remove('scrolled');\n  }\n});",
+    "diagnostico": "Estás forzando al navegador a buscar '.header' en el árbol DOM cada vez que el usuario mueve el dedo un píxel. En un móvil de gama media, esto causa 'jank' (tartamudeo) y drena la batería. Además, no estás usando debounce/throttle para limitar la frecuencia del evento.",
+    "codigo_corregido": "const header = document.querySelector('.header');\n\nwindow.addEventListener('scroll', () => {\n  if (window.scrollY > 100) {\n    header.classList.add('scrolled');\n  } else {\n    header.classList.remove('scrolled');\n  }\n});",
+    "codigo_optimizado": "const header = document.querySelector('.header');\nlet isScrolled = false;\nlet ticking = false;\n\nconst updateHeader = () => {\n  const shouldBeScrolled = window.scrollY > 100;\n  if (shouldBeScrolled !== isScrolled) {\n    header.classList.toggle('scrolled', shouldBeScrolled);\n    isScrolled = shouldBeScrolled;\n  }\n  ticking = false;\n};\n\nwindow.addEventListener('scroll', () => {\n  if (!ticking) {\n    window.requestAnimationFrame(updateHeader);\n    ticking = true;\n  }\n}, { passive: true });",
+    "disenso_experto": "Algunos dicen 'los navegadores modernos son rápidos, no te preocupes por cachear'. Falso en móviles. La batería y el hilo principal (main thread) son recursos escasos. Usar requestAnimationFrame y passive: true no es 'optimización prematura', es higiene básica para PWAs móviles.",
+    "pregunta_transferencia": "Si cacheas un nodo en una variable (const btn = document.querySelector('#btn')) y luego ese botón es eliminado del HTML y recreado por JavaScript, ¿tu variable 'btn' seguirá funcionando? ¿Por qué?",
+    "quiz": {
+      "pregunta": "¿Qué hace la opción '{ passive: true }' en un addEventListener de scroll?",
+      "opciones": [
+        "Hace que el scroll sea más lento",
+        "Le dice al navegador que el listener no llamará a preventDefault(), permitiendo optimizar el rendering del scroll",
+        "Evita que el evento se propague a otros elementos",
+        "Ejecuta el evento en un Web Worker"
+      ],
+      "correcta": "B",
+      "explicacion": "passive: true es crítico para rendimiento en móviles. Le garantiza al navegador que no vas a cancelar el scroll, por lo que puede pintar los frames inmediatamente sin esperar a que tu JS termine de ejecutarse."
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "instruccion": "Completa el código para cachear el elemento y usar requestAnimationFrame.",
+      "estado_inicial": "const nav = /* ??? */;\nlet ticking = false;\nwindow.addEventListener('scroll', () => {\n  if (!ticking) {\n    /* ??? */(updateNav);\n    ticking = true;\n  }\n});",
+      "solucion": "const nav = document.querySelector('.nav');\nlet ticking = false;\nwindow.addEventListener('scroll', () => {\n  if (!ticking) {\n    window.requestAnimationFrame(updateNav);\n    ticking = true;\n  }\n});",
+      "validacion": "Debe usar querySelector para cachear y window.requestAnimationFrame para el callback."
+    },
+    "audio_script": "Imagina que le pides a un bibliotecario que busque un libro cada vez que parpadeas. Eso es hacer querySelector dentro de un evento scroll. El bibliotecario (el navegador) se va a agotar y la biblioteca (tu app) se va a congelar. La solución es simple: busca el libro una vez, déjalo en tu escritorio (una variable const) y úsalo todas las veces que quieras. Y si el evento es scroll o resize, usa requestAnimationFrame para sincronizar tus cambios con el refresco de la pantalla del móvil. Tu PWA se sentirá nativa.",
+    "video_prompt": "Video de 70s. Lado izquierdo: código haciendo querySelector en cada scroll. Se muestra un gráfico de CPU del móvil al 100% y la pantalla tartamudeando (jank). Lado derecho: variable cacheada y requestAnimationFrame. CPU relajada, scroll a 60fps fluido. Overlay: 'Cachea tus nodos. Usa rAF.'",
+    "trazabilidad": {
+      "libros_fuente": ["High Performance Browser Networking (conceptos de main thread)", "MDN - requestAnimationFrame"],
+      "conceptos_clave": ["dom", "performance", "scroll", "requestAnimationFrame", "cacheo"]
+    },
+    "tags_rag": ["javascript", "dom", "performance", "scroll", "raf", "pwa"]
+  },
+  {
+    "id": "F0.2-004",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Event Delegation (Delegación de Eventos)",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Lista dinámica de cursos en la landing",
+    "modelo_mental": "Los eventos en el DOM hacen 'burbujeo' (bubbling): si haces clic en un <span> dentro de un <li> dentro de un <ul>, el evento sube hasta el window. En lugar de poner 100 listeners en 100 botones (consumiendo memoria), pones 1 listener en el padre y preguntas '¿quién disparó esto?'. Esto es vital para listas generadas dinámicamente.",
+    "codigo_roto": "const items = document.querySelectorAll('.course-item');\nitems.forEach(item => {\n  item.addEventListener('click', () => {\n    console.log('Curso seleccionado:', item.dataset.id);\n  });\n});",
+    "diagnostico": "Si la lista tiene 500 cursos, acabas de crear 500 funciones en memoria y 500 listeners. Si luego agregas un curso nuevo vía Fetch API, el nuevo curso NO tendrá el evento porque el forEach ya se ejecutó. Este es un bug clásico de código IA que no piensa en datos dinámicos.",
+    "codigo_corregido": "const list = document.querySelector('.course-list');\nlist.addEventListener('click', (event) => {\n  const item = event.target.closest('.course-item');\n  if (item) {\n    console.log('Curso seleccionado:', item.dataset.id);\n  }\n});",
+    "codigo_optimizado": "const list = document.querySelector('.course-list');\n\nconst handleCourseClick = (e) => {\n  const target = e.target;\n  // Soporte si el usuario hace clic en un icono dentro del botón\n  const item = target.closest('.course-item');\n  if (!item || !list.contains(item)) return;\n  \n  const action = target.dataset.action || 'select';\n  console.log(`Action: ${action} on Course: ${item.dataset.id}`);\n};\n\nlist.addEventListener('click', handleCourseClick);",
+    "disenso_experto": "Algunos argumentan que la delegación es más lenta porque el evento tiene que burbujear. La diferencia es de microsegundos, irrelevante. El beneficio de memoria y de manejo de DOM dinámico es infinito. Siempre delega en listas, tablas y contenedores dinámicos.",
+    "pregunta_transferencia": "¿Por qué usamos 'event.target.closest('.course-item')' en lugar de simplemente 'event.target' en la delegación de eventos?",
+    "quiz": {
+      "pregunta": "¿Cuál es la ventaja PRINCIPAL de la Delegación de Eventos?",
+      "opciones": [
+        "Hace que los eventos se disparen más rápido",
+        "Permite manejar eventos en elementos que aún no existen en el DOM y ahorra memoria",
+        "Evita que el evento haga bubbling",
+        "Permite usar arrow functions"
+      ],
+      "correcta": "B",
+      "explicacion": "Al poner el listener en un padre estático, cualquier hijo (presente o futuro) que haga bubbling será capturado. Además, usas 1 listener en lugar de N."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "Este código intenta delegar un clic en botones de 'Eliminar', pero falla si el usuario hace clic en el icono SVG dentro del botón. Arréglalo.",
+      "estado_inicial": "document.body.addEventListener('click', (e) => {\n  if (e.target.matches('.delete-btn')) {\n    deleteItem(e.target.dataset.id);\n  }\n});",
+      "solucion": "document.body.addEventListener('click', (e) => {\n  const btn = e.target.closest('.delete-btn');\n  if (btn) {\n    deleteItem(btn.dataset.id);\n  }\n});",
+      "validacion": "Debe reemplazar matches() por closest() para asegurar que si el clic fue en un hijo (el icono), el código encuentre al padre (el botón)."
+    },
+    "audio_script": "La delegación de eventos es como tener un portero en la entrada de un edificio en lugar de un guardia en cada puerta de cada oficina. Cuando alguien entra (hace clic), el portero (el listener en el padre) mira su identificación (event.target) y decide qué hacer. Si usas querySelectorAll y le pones un guardia a cada oficina, cuando construyas una oficina nueva (contenido dinámico), no tendrá guardia. Usa delegación. Es más barato, más limpio y funciona con contenido que traes de una API después de que la página cargó.",
+    "video_prompt": "Video de 60s. Animación de un árbol DOM. Un clic en un nodo hoja (span) genera una onda que sube (bubbling) hasta el nodo raíz (ul). El nodo raíz intercepta la onda y ejecuta la lógica. Comparación de memoria: 100 listeners (barras rojas) vs 1 listener (barra verde).",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Event Delegation", "JavaScript.info - Bubbling and capturing"],
+      "conceptos_clave": ["event-delegation", "bubbling", "closest", "dom-dinamico"]
+    },
+    "tags_rag": ["javascript", "eventos", "delegacion", "closest", "dom"]
+  },
+  {
+    "id": "F0.2-005",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Asincronía: Promises y async/await",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Cargar lista de cursos desde una API dummy",
+    "modelo_mental": "JavaScript es de un solo hilo (single-threaded). Si bloqueas el hilo esperando una red, la app se congela. Las Promesas y async/await no hacen que el código sea 'paralelo', hacen que sea 'no bloqueante'. 'await' es solo azúcar sintáctica para '.then()', pero hace que el código asíncrono se lea como si fuera síncrono, reduciendo errores cognitivos.",
+    "codigo_roto": "function getCourses() {\n  let data;\n  fetch('/api/courses')\n    .then(res => res.json())\n    .then(json => {\n      data = json;\n    });\n  return data;\n}\nconst myCourses = getCourses();",
+    "diagnostico": "El error más común de principiantes y de IAs mal configuradas. 'getCourses()' retorna 'undefined' inmediatamente porque 'fetch' es asíncrono. El 'return data' se ejecuta ANTES de que la red responda. Estás tratando de forzar a un proceso asíncrono a comportarse como síncrono.",
+    "codigo_corregido": "async function getCourses() {\n  const res = await fetch('/api/courses');\n  const data = await res.json();\n  return data;\n}\n// Para usarla:\n// const myCourses = await getCourses();",
+    "codigo_optimizado": "const getCourses = async () => {\n  try {\n    const response = await fetch('/api/courses');\n    if (!response.ok) throw new Error(`HTTP ${response.status}`);\n    return await response.json();\n  } catch (error) {\n    console.error('Error fetching courses:', error);\n    return []; // Fallback graceful degradation\n  }\n};",
+    "disenso_experto": "Hay un debate sobre si usar '.then().catch()' o 'async/await'. La industria ha ganado con async/await por legibilidad. PERO, async/await puede causar 'blocking' si no se usa Promise.all() para tareas independientes. Si haces 3 awaits seguidos que no dependen uno del otro, estás serializando la red innecesariamente.",
+    "pregunta_transferencia": "Tienes que descargar una imagen, un JSON de usuario y un JSON de configuraciones. Ninguno depende del otro. ¿Cómo usas async/await para que los 3 se descarguen al mismo tiempo y no secuencialmente?",
+    "quiz": {
+      "pregunta": "¿Qué retorna SIEMPRE una función declarada como 'async'?",
+      "opciones": [
+        "Un objeto JSON",
+        "Undefined",
+        "Una Promesa (Promise)",
+        "El valor que se le pase a return"
+      ],
+      "correcta": "C",
+      "explicacion": "Toda función async envuelve automáticamente su valor de retorno en una Promesa. Por eso no puedes simplemente asignar su resultado a una variable síncrona sin usar 'await' o '.then()'."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "Este código intenta mostrar datos en pantalla pero la consola dice 'Cannot read properties of undefined'. Arréglalo.",
+      "estado_inicial": "const userData = fetchUser();\ndocument.getElementById('name').innerText = userData.name;",
+      "solucion": "(async () => {\n  const userData = await fetchUser();\n  document.getElementById('name').innerText = userData.name;\n})();",
+      "validacion": "Debe envolver la ejecución en una función async IIFE o usar .then() para esperar a que la promesa se resuelva antes de tocar el DOM."
+    },
+    "audio_script": "JavaScript es como un cajero en un banco. Si el cajero se queda quieto esperando a que el sistema apruebe un préstamo, la fila se detiene y todos se enojan. Eso es código síncrono bloqueante. Las promesas le dicen al cajero: 'toma este ticket, sigue atendiendo a los demás, y cuando el sistema apruebe, te aviso'. Async/await es la forma moderna de escribir esos tickets para que el código se lea de arriba a abajo, pero sin detener la fila. Si olvidas el 'await', es como si el cajero intentara entregar el dinero antes de que el sistema lo aprobara.",
+    "video_prompt": "Video de 75s. Analogía del restaurante: El mesero (JS thread) toma la orden (fetch) y la lleva a la cocina. No se queda en la cocina mirando cómo se cocina (bloqueo). Vuelve a tomar más órdenes. Cuando la comida está, la campana suena (Promise resolved) y el mesero la sirve (await).",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Async functions", "JavaScript.info - Promises, async/await"],
+      "conceptos_clave": ["async", "await", "promises", "fetch", "event-loop"]
+    },
+    "tags_rag": ["javascript", "asincronia", "async-await", "promesas", "fetch"]
+  },
+  {
+    "id": "F0.2-006",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Array Methods: map, filter, reduce",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Filtrar y renderizar cursos por categoría",
+    "modelo_mental": "Los bucles 'for' son imperativos: le dices a la máquina CÓMO hacer algo paso a paso. Los métodos de array son declarativos: le dices QUÉ quieres. 'map' transforma, 'filter' selecciona, 'reduce' acumula. Usarlos crea pipelines de datos inmutables que son infinitamente más fáciles de leer, testear y depurar que un bucle con variables temporales.",
+    "codigo_roto": "const courses = [{name: 'JS', active: true}, {name: 'Py', active: false}];\nlet activeCourses = [];\nfor (let i = 0; i < courses.length; i++) {\n  if (courses[i].active) {\n    activeCourses.push(courses[i].name);\n  }\n}",
+    "diagnostico": "Funciona, pero es ruidoso. Tienes que leer 5 líneas para entender que solo estás filtrando activos y extrayendo nombres. Además, estás mutando un array externo ('activeCourses'), lo que rompe la inmutabilidad y dificulta el razonamiento en apps complejas.",
+    "codigo_corregido": "const activeCourses = courses\n  .filter(course => course.active)\n  .map(course => course.name);",
+    "codigo_optimizado": "const activeCourses = courses\n  .filter(({ active }) => active)\n  .map(({ name }) => name);",
+    "disenso_experto": "Algunos devs de rendimiento extremo evitan map/filter en bucles críticos (ej. motores de juegos en Canvas) porque crean arrays intermedios en memoria. Para el 99% del desarrollo web, PWA y UI, la legibilidad y mantenibilidad superan por miles a los microsegundos de CPU.",
+    "pregunta_transferencia": "Si tienes un array de 10,000 elementos y necesitas hacer un filter y luego un map, ¿cuántas veces itera el array en total si encadenas '.filter().map()' vs si usas un solo bucle 'for'? ¿Importa en una PWA móvil?",
+    "quiz": {
+      "pregunta": "¿Cuál es la diferencia fundamental entre 'forEach' y 'map'?",
+      "opciones": [
+        "forEach es más rápido",
+        "map retorna un nuevo array transformado, forEach retorna undefined y solo ejecuta efectos",
+        "map no permite usar arrow functions",
+        "forEach puede romper el bucle con break"
+      ],
+      "correcta": "B",
+      "explicacion": "map es puro: toma un array, lo transforma y devuelve uno nuevo. forEach es para efectos secundarios (ej. console.log, manipular DOM) y no devuelve nada."
+    },
+    "simulador": {
+      "tipo": "drag_drop",
+      "instruccion": "Arrastra el método correcto para lograr el objetivo.",
+      "estado_inicial": "OBJETIVO: Sumar todos los precios de un carrito de compras. ARRAY: [{p: 10}, {p: 20}]. METODOS: map, filter, reduce.",
+      "solucion": "reduce",
+      "validacion": "Debe seleccionar reduce. Ejemplo: cart.reduce((sum, item) => sum + item.p, 0)."
+    },
+    "audio_script": "Deja de usar bucles 'for' para todo. Cuando usas 'for', el que lee tu código tiene que simular la computadora en su cabeza para saber qué está pasando. Cuando usas 'filter', el código dice literalmente 'filtra esto'. Cuando usas 'map', dice 'transforma esto en aquello'. Es como hablar en oraciones completas en lugar de deletrear cada letra. Además, te obligan a no mutar variables, lo cual previene el 80% de los bugs lógicos en JavaScript.",
+    "video_prompt": "Video de 60s. Animación de una cinta transportadora (el array). Pasa por una estación de rayos X (filter) que desecha los malos. Luego pasa por una estación de pintura (map) que les cambia el color. El resultado es una caja nueva. Overlay: 'Declarativo > Imperativo'.",
+    "trazabilidad": {
+      "libros_fuente": ["Functional Programming concepts", "MDN - Array methods"],
+      "conceptos_clave": ["map", "filter", "reduce", "inmutabilidad", "declarativo"]
+    },
+    "tags_rag": ["javascript", "arrays", "map", "filter", "reduce", "funcional"]
+  },
+  {
+    "id": "F0.2-007",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Destructuring y Spread Operator",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Manejo de estado de la UI (ej. configuración de usuario)",
+    "modelo_mental": "En JS, los objetos y arrays se pasan por referencia. Si copias un objeto con '=' y lo modificas, estás modificando el original (mutación). El Spread Operator (...) y el Destructuring te permiten extraer y clonar datos de forma superficial (shallow copy) sin ensuciar el estado original. Es la base de la programación predecible.",
+    "codigo_roto": "const user = { name: 'Erickson', theme: 'light' };\n\nfunction toggleTheme(u) {\n  u.theme = u.theme === 'light' ? 'dark' : 'light';\n  return u;\n}\n\nconst updatedUser = toggleTheme(user);\nconsole.log(user.theme); // Imprime 'dark' ¡El original fue mutado!",
+    "diagnostico": "Mutación de estado. Al pasar 'user' a la función y modificar 'u.theme', estás modificando el objeto original porque ambos apuntan a la misma referencia en memoria. En una app compleja, esto causa bugs donde la UI se actualiza en lugares que no esperabas porque el dato base fue corrompido.",
+    "codigo_corregido": "const user = { name: 'Erickson', theme: 'light' };\n\nfunction toggleTheme(u) {\n  const newTheme = u.theme === 'light' ? 'dark' : 'light';\n  return { ...u, theme: newTheme };\n}\n\nconst updatedUser = toggleTheme(user);\nconsole.log(user.theme); // Imprime 'light' (intacto)",
+    "codigo_optimizado": "const user = { name: 'Erickson', theme: 'light' };\n\nconst toggleTheme = ({ theme, ...rest }) => ({\n  ...rest,\n  theme: theme === 'light' ? 'dark' : 'light'\n});\n\nconst updatedUser = toggleTheme(user);",
+    "disenso_experto": "El spread operator hace una 'copia superficial' (shallow copy). Si el objeto tiene objetos anidados, los anidados siguen compartiendo referencia. Para copias profundas (deep clone), la industria usaba lodash, pero hoy se usa 'structuredClone()'. Saber cuándo basta con spread y cuándo usar structuredClone es marca de seniority.",
+    "pregunta_transferencia": "Tienes 'const config = { api: { url: 'x' }, debug: true };'. Si haces 'const copy = { ...config }; copy.api.url = 'y';', ¿el 'config' original cambia? ¿Por qué?",
+    "quiz": {
+      "pregunta": "¿Qué hace el operador Spread (...) en este contexto: 'const newObj = { ...oldObj, status: \"active\" };'?",
+      "opciones": [
+        "Modifica el oldObj agregando status",
+        "Crea un nuevo objeto copiando las propiedades de oldObj y sobrescribiendo/agregando status",
+        "Fusiona oldObj con un array",
+        "Elimina la propiedad status de oldObj"
+      ],
+      "correcta": "B",
+      "explicacion": "Spread en un objeto literal crea un nuevo objeto (nueva referencia) copiando las propiedades enumerables. Las propiedades posteriores sobrescriben a las anteriores."
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "instruccion": "Usa destructuring para extraer solo 'id' y 'title' del objeto, y spread para guardar el resto en 'meta'.",
+      "estado_inicial": "const course = { id: 1, title: 'JS', author: 'Ana', year: 2024 };\nconst /* ??? */ = course;",
+      "solucion": "const { id, title, ...meta } = course;",
+      "validacion": "Debe usar la sintaxis exacta de destructuring con rest operator (...meta)."
+    },
+    "audio_script": "Imagina que tienes un documento original en la mesa. Si le pasas el documento a un amigo y él saca un bolígrafo y lo tacha, tu original se arruinó. Eso es pasar objetos por referencia en JS. El Spread Operator, los tres puntitos, es como una fotocopiadora. Le pasas el objeto, sacas una copia, le cambias lo que quieras a la copia, y tu original sigue intacto. En aplicaciones modernas, nunca, nunca modifiques el estado original directamente. Copia, modifica la copia, y reemplaza. Tu yo del futuro te lo agradecerá cuando intentes encontrar un bug.",
+    "video_prompt": "Video de 60s. Muestra un objeto JS como una caja física. Al asignar con '=', ambas variables apuntan a la misma caja. Si una pinta la caja, la otra ve la pintura. Al usar Spread '...', aparece una segunda caja idéntica. Al pintar la segunda, la primera permanece igual. Overlay: 'Referencia vs Valor. Spread = Inmutabilidad'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Destructuring assignment", "MDN - Spread syntax"],
+      "conceptos_clave": ["destructuring", "spread", "inmutabilidad", "shallow-copy", "referencias"]
+    },
+    "tags_rag": ["javascript", "spread", "destructuring", "inmutabilidad", "objetos"]
+  },
+  {
+    "id": "F0.2-008",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "LocalStorage y Persistencia de Datos",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Recordar preferencia de Dark Mode del usuario",
+    "modelo_mental": "LocalStorage es una base de datos clave-valor síncrona y persistente en el navegador. PERO solo guarda STRINGS. Si intentas guardar un objeto o un array, JS lo convertirá a la cadena '[object Object]', destruyendo tus datos. Siempre debes serializar (JSON.stringify) al guardar y deserializar (JSON.parse) al leer.",
+    "codigo_roto": "const settings = { theme: 'dark', notifications: true };\nlocalStorage.setItem('userSettings', settings);\n\nconst savedSettings = localStorage.getItem('userSettings');\nconsole.log(savedSettings.theme); // Error: undefined",
+    "diagnostico": "Guardaste un objeto directamente. LocalStorage llamó al método .toString() del objeto, guardando literalmente el texto '[object Object]'. Al leerlo, te devuelve esa cadena de texto, que no tiene la propiedad 'theme'. Este bug es ubicuo en código generado por IA que olvida la naturaleza string-only de Web Storage.",
+    "codigo_corregido": "const settings = { theme: 'dark', notifications: true };\nlocalStorage.setItem('userSettings', JSON.stringify(settings));\n\nconst savedString = localStorage.getItem('userSettings');\nconst savedSettings = JSON.parse(savedString);\nconsole.log(savedSettings.theme); // 'dark'",
+    "codigo_optimizado": "const Storage = {\n  get: (key, fallback = null) => {\n    try {\n      const item = localStorage.getItem(key);\n      return item ? JSON.parse(item) : fallback;\n    } catch (e) {\n      console.warn(`Error reading ${key}`, e);\n      return fallback;\n    }\n  },\n  set: (key, value) => {\n    try {\n      localStorage.setItem(key, JSON.stringify(value));\n    } catch (e) {\n      console.warn(`Storage quota exceeded for ${key}`, e);\n    }\n  }\n};\n\nStorage.set('userSettings', settings);\nconst saved = Storage.get('userSettings', { theme: 'light' });",
+    "disenso_experto": "LocalStorage es síncrono y bloquea el hilo principal. Guardar megabytes de datos congelará la UI. Además, si el usuario navega en modo incógnito en algunos navegadores (o con almacenamiento lleno), lanzará un error de QuotaExceeded que tumbará tu app si no usas try/catch. Siempre encapsula LocalStorage.",
+    "pregunta_transferencia": "Si guardas una fecha (new Date()) en LocalStorage con JSON.stringify, y la lees mañana con JSON.parse, ¿seguirá siendo un objeto Date con métodos como .getFullYear(), o será otra cosa? ¿Cómo lo solucionas?",
+    "quiz": {
+      "pregunta": "¿Qué sucede si llamas a JSON.parse() sobre un string que no es JSON válido (ej. 'undefined' o texto plano)?",
+      "opciones": [
+        "Retorna null",
+        "Retorna un objeto vacío",
+        "Lanza una Excepción (SyntaxError) que detiene la ejecución si no hay try/catch",
+        "Retorna el string original"
+      ],
+      "correcta": "C",
+      "explicacion": "JSON.parse es estricto. Si el string está malformado o es la palabra 'undefined' (que localStorage devuelve si la key no existe), lanzará un error que romperá tu app si no lo atrapas."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "El usuario reporta que su Dark Mode no se guarda al recargar. Encuentra el error en este código.",
+      "estado_inicial": "function saveTheme(isDark) {\n  localStorage.setItem('darkMode', isDark);\n}\nfunction loadTheme() {\n  return localStorage.getItem('darkMode');\n}",
+      "solucion": "function saveTheme(isDark) {\n  localStorage.setItem('darkMode', JSON.stringify(isDark)); // Opcional para booleanos, pero buena práctica\n}\nfunction loadTheme() {\n  const val = localStorage.getItem('darkMode');\n  return val === null ? false : JSON.parse(val);\n}",
+      "validacion": "El error real suele estar en que al leer un booleano guardado como string 'true'/'false', JS lo evalúa como string (truthy). Debe parsearlo o comparar estrictamente. Aceptar soluciones que envuelvan en try/catch y manejen el null inicial."
+    },
+    "audio_script": "LocalStorage es genial para recordar cosas pequeñas: si el usuario prefiere modo oscuro, su idioma, o el último formulario que llenó. Pero tiene una regla de oro que la IA olvida constantemente: LocalStorage es tonto, solo sabe guardar texto. Si le das un número, un booleano o un objeto, lo convierte a texto a su manera, y cuando lo lees, ya no es lo que era. Tienes que usar JSON.stringify para empacar tu dato en una caja de texto, y JSON.parse para desempacarlo al leerlo. Y siempre, siempre usa try/catch, porque si el teléfono del usuario está lleno, LocalStorage fallará y tumbará tu app si no estás preparado.",
+    "video_prompt": "Video de 60s. Muestra un objeto JS complejo intentando entrar por una puerta que dice 'Solo Texto'. El objeto se aplasta y se convierte en el texto '[object Object]'. Luego muestra el mismo objeto pasando por una máquina 'JSON.stringify' que lo mete en una caja de cartón plana, entra por la puerta, y al salir pasa por 'JSON.parse' que lo rearma. Overlay: 'LocalStorage = Solo Strings'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Window.localStorage", "Web.dev - Storage API"],
+      "conceptos_clave": ["localstorage", "json", "persistencia", "try-catch", "pwa"]
+    },
+    "tags_rag": ["javascript", "localstorage", "json", "persistencia", "pwa"]
+  },
+  {
+    "id": "F0.2-009",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Código IA roto: Validación de Formularios Asíncrona",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Formulario de registro en la landing",
+    "modelo_mental": "Validar un formulario que requiere una llamada a la red (ej. comprobar si el email ya existe) es una carrera contra el tiempo. El evento 'submit' del navegador es síncrono por defecto: si no lo detienes INMEDIATAMENTE con 'preventDefault()', el navegador recargará la página antes de que tu Fetch termine. La IA suele poner el preventDefault dentro del callback asíncrono, lo cual es demasiado tarde.",
+    "codigo_roto": "document.querySelector('form').addEventListener('submit', () => {\n  const email = document.getElementById('email').value;\n  \n  fetch(`/api/check-email?e=${email}`)\n    .then(res => res.json())\n    .then(data => {\n      if (data.exists) {\n        event.preventDefault(); // BUG: Demasiado tarde\n        alert('El email ya existe');\n      }\n    });\n});",
+    "diagnostico": "El formulario se enviará y recargará la página inmediatamente al hacer clic. El 'event.preventDefault()' está dentro del '.then()', que se ejecuta 500ms después, cuando el navegador ya navegó a otra página o recargó. Además, 'event' no está definido como parámetro en la función principal, causando un ReferenceError si el scope global no lo atrapa.",
+    "codigo_corregido": "document.querySelector('form').addEventListener('submit', async (event) => {\n  event.preventDefault(); // DETENER INMEDIATAMENTE\n  \n  const email = document.getElementById('email').value;\n  const submitBtn = event.target.querySelector('button[type=submit]');\n  submitBtn.disabled = true;\n  \n  try {\n    const res = await fetch(`/api/check-email?e=${email}`);\n    const data = await res.json();\n    \n    if (data.exists) {\n      alert('El email ya existe');\n    } else {\n      event.target.submit(); // Enviar manualmente si todo está bien\n    }\n  } catch (err) {\n    alert('Error de red');\n  } finally {\n    submitBtn.disabled = false;\n  }\n});",
+    "codigo_optimizado": "const form = document.querySelector('form');\n\nform.addEventListener('submit', async (e) => {\n  e.preventDefault(); // 1. Frenar el navegador\n  \n  const formData = new FormData(form);\n  const submitBtn = form.querySelector('button[type=submit]');\n  \n  // 2. Feedback visual (Loading state)\n  submitBtn.disabled = true;\n  submitBtn.innerText = 'Verificando...';\n  \n  try {\n    const res = await fetch('/api/check-email', {\n      method: 'POST',\n      body: formData\n    });\n    \n    if (!res.ok) throw new Error('Server error');\n    const { exists } = await res.json();\n    \n    if (exists) {\n      showError('email-error', 'Este correo ya está registrado');\n    } else {\n      form.submit(); // 3. Liberar el envío\n    }\n  } catch (error) {\n    showError('form-error', 'No pudimos verificar. Intenta de nuevo.');\n  } finally {\n    submitBtn.disabled = false;\n    submitBtn.innerText = 'Registrarme';\n  }\n});",
+    "disenso_experto": "Algunos argumentan que validar en el cliente es innecesario si el backend valida. Falso. La validación de cliente es por UX (evitar recargas innecesarias y dar feedback rápido). La de backend es por Seguridad. Ambas son obligatorias. La IA suele mezclar los tiempos de ejecución de ambas.",
+    "pregunta_transferencia": "Si tu validación asíncrona tarda 3 segundos por una red lenta, y el usuario hace clic en 'Enviar' 5 veces seguidas por desesperación, ¿qué va a pasar con tu servidor y cómo lo previenes en JS?",
+    "quiz": {
+      "pregunta": "¿Por qué 'event.preventDefault()' DEBE estar al principio del listener de 'submit' si hay código asíncrono?",
+      "opciones": [
+        "Porque hace que fetch sea más rápido",
+        "Porque el evento submit recarga la página por defecto de forma síncrona, abortando cualquier promesa pendiente",
+        "Porque limpia el formulario automáticamente",
+        "Porque convierte el evento en asíncrono"
+      ],
+      "correcta": "B",
+      "explicacion": "El comportamiento por defecto de un form es enviar los datos y navegar/recargar. Si no lo frenas en la primera línea, el navegador destruye el contexto de JS antes de que tu fetch termine."
+    },
+    "simulador": {
+      "tipo": "trace_execution",
+      "instruccion": "Ordena cronológicamente (1 al 4) lo que sucede en el código roto al hacer clic en Enviar.",
+      "estado_inicial": "A) Se muestra la alerta 'El email ya existe'\nB) El navegador inicia la recarga de página\nC) Se dispara el evento submit\nD) La petición fetch es enviada al servidor",
+      "solucion": "C -> B -> D -> A (Aunque A y D pueden no completarse nunca porque B destruye el contexto al recargar).",
+      "validacion": "Debe identificar que B (recarga) ocurre casi inmediatamente después de C, interrumpiendo el flujo normal."
+    },
+    "audio_script": "Cuando la IA te genera un formulario que consulta una API, revisa siempre la primera línea de la función submit. Si no dice 'event.preventDefault()', tu app está rota. El navegador es impaciente: cuando tocas enviar, quiere recargar la página YA. Si tu código le dice 'espera, voy a preguntar a la base de datos', pero no lo frenas con preventDefault, el navegador no espera, recarga, y tu consulta a la API muere en el aire. Primero frenas, luego preguntas, luego decides si dejas que el formulario avance o lo detienes.",
+    "video_prompt": "Video de 80s. Muestra una línea de tiempo. Evento Submit -> Milisegundo 1: preventDefault (barrera roja). Milisegundo 10: Fetch inicia. Milisegundo 500: Fetch responde. Milisegundo 501: form.submit(). Luego muestra el código roto: Evento Submit -> Milisegundo 1: Navegador recarga (pantalla blanca) -> Fetch se cancela con error de red. Overlay: 'Frena al navegador antes de pensar'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - FormData", "Web.dev - Forms best practices"],
+      "conceptos_clave": ["formularios", "submit", "preventDefault", "async-validation", "ux"]
+    },
+    "tags_rag": ["javascript", "formularios", "submit", "preventDefault", "async"]
+  },
+  {
+    "id": "F0.2-010",
+    "modulo": "F0.2 - JavaScript Fundamentos",
+    "competencia": "Código IA roto: Fugas de Memoria (Memory Leaks) en Listeners",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Componentes dinámicos (ej. Modales o Acordeones)",
+    "modelo_mental": "JavaScript tiene un Garbage Collector (recolector de basura) que libera memoria de los objetos que ya no se usan. PERO, si un objeto del DOM tiene un Event Listener atado a una función global o a un closure, el navegador asume que 'lo necesitas' y no lo borra, aunque lo quites de la pantalla. Si creas y destruyes componentes (como modales) sin limpiar sus listeners, tu PWA consumirá RAM hasta que el móvil la cierre por agotamiento.",
+    "codigo_roto": "function openModal() {\n  const modal = document.createElement('div');\n  modal.className = 'modal';\n  document.body.appendChild(modal);\n  \n  // BUG: Añade un listener a WINDOW cada vez que abres el modal\n  window.addEventListener('resize', () => {\n    adjustModalSize(modal);\n  });\n}\n\nfunction closeModal() {\n  const modal = document.querySelector('.modal');\n  modal.remove(); // Quitas el HTML, pero el listener en window sigue vivo y apunta a la variable 'modal' en memoria\n}",
+    "diagnostico": "Fuga de memoria clásica. Si el usuario abre y cierra el modal 20 veces, habrá 20 listeners de 'resize' activos en el objeto Window, todos intentando ajustar un modal que ya no existe, consumiendo CPU en cada movimiento de pantalla y reteniendo la memoria del nodo DOM. La IA genera esto porque encapsula la lógica de 'setup' pero olvida la lógica de 'teardown' (limpieza).",
+    "codigo_corregido": "let resizeHandler = null;\n\nfunction openModal() {\n  const modal = document.createElement('div');\n  modal.className = 'modal';\n  document.body.appendChild(modal);\n  \n  resizeHandler = () => adjustModalSize(modal);\n  window.addEventListener('resize', resizeHandler);\n}\n\nfunction closeModal() {\n  const modal = document.querySelector('.modal');\n  if (modal) modal.remove();\n  \n  if (resizeHandler) {\n    window.removeEventListener('resize', resizeHandler);\n    resizeHandler = null;\n  }\n}",
+    "codigo_optimizado": "class Modal {\n  constructor() {\n    this.element = null;\n    this.resizeHandler = this.handleResize.bind(this);\n  }\n\n  open() {\n    this.element = document.createElement('div');\n    this.element.className = 'modal';\n    document.body.appendChild(this.element);\n    window.addEventListener('resize', this.resizeHandler);\n  }\n\n  handleResize() {\n    if (this.element) adjustModalSize(this.element);\n  }\n\n  close() {\n    if (this.element) {\n      this.element.remove();\n      this.element = null;\n    }\n    window.removeEventListener('resize', this.resizeHandler);\n  }\n}",
+    "disenso_experto": "En SPAs modernas (React/Vue/Svelte), el framework maneja los listeners y los limpia automáticamente al desmontar el componente. Pero en Vanilla JS (que es lo que usas para tu PWA base y Service Workers), TÚ eres el recolector de basura. Si no haces 'removeEventListener' con la EXACTA misma referencia de función que usaste para añadirlo, el listener se queda para siempre.",
+    "pregunta_transferencia": "¿Por qué este código NO limpia el listener aunque se llame a removeEventListener?\n`window.addEventListener('resize', () => console.log('A'));\nwindow.removeEventListener('resize', () => console.log('A'));`",
+    "quiz": {
+      "pregunta": "¿Qué condición es OBLIGATORIA para que removeEventListener funcione?",
+      "opciones": [
+        "Debe llamarse dentro de un setTimeout",
+        "Debe pasarse la misma referencia exacta de la función que se usó en addEventListener",
+        "El elemento DOM debe seguir existiendo",
+        "Debe usarse la palabra clave 'passive'"
+      ],
+      "correcta": "B",
+      "explicacion": "Las funciones anónimas (flechas o tradicionales) crean una nueva referencia en memoria cada vez que se evalúan. Para quitar un listener, debes guardar la función en una variable y pasar esa misma variable a ambos métodos."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "instruccion": "Refactoriza este código para que el listener de 'click' pueda ser removido correctamente al cerrar.",
+      "estado_inicial": "function setup() {\n  document.getElementById('btn').addEventListener('click', () => {\n    console.log('Clicked');\n  });\n}\nfunction teardown() {\n  document.getElementById('btn').removeEventListener('click', () => {\n    console.log('Clicked');\n  });\n}",
+      "solucion": "const handleClick = () => console.log('Clicked');\nfunction setup() {\n  document.getElementById('btn').addEventListener('click', handleClick);\n}\nfunction teardown() {\n  document.getElementById('btn').removeEventListener('click', handleClick);\n}",
+      "validacion": "Debe extraer la arrow function a una variable con nombre (handleClick) y usar esa variable en ambos métodos."
+    },
+    "audio_script": "Tu PWA va a vivir en el teléfono del usuario. Si tu código tiene fugas de memoria, el teléfono se calentará, la batería se drenará y el sistema operativo cerrará tu app a la fuerza. Una de las fugas más comunes que la IA ignora es agregar Event Listeners a elementos globales como 'window' o 'document' cada vez que abres una vista o un modal, y olvidarte de quitarlos al cerrar. Recuerda: agregar es fácil, quitar requiere la misma referencia exacta de la función. Si usas funciones anónimas, no podrás quitarlas nunca. Nómbralas, guárdalas, y límpialas.",
+    "video_prompt": "Video de 70s. Animación de un celular. Cada vez que se abre un modal, se le pega un 'chupete' (listener) que drena batería (línea roja bajando). Al cerrar el modal, el chupete se queda pegado aunque el modal desaparezca. Luego muestra el código correcto con 'removeEventListener' que despega los chupetes. Overlay: 'Setup & Teardown. Siempre limpia tu rastro'.",
+    "trazabilidad": {
+      "libros_fuente": ["MDN - Memory Management", "Web.dev - Memory leaks"],
+      "conceptos_clave": ["memory-leaks", "garbage-collection", "removeEventListener", "performance"]
+    },
+    "tags_rag": ["javascript", "memoria", "memory-leak", "event-listener", "performance"]
+  }
+]

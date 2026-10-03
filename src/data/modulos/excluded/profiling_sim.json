@@ -1,0 +1,9 @@
+"simulador": {
+  "tipo": "performance_test",
+  "engine": "profiling_sim",
+  "setup_code": "# helpers de timing y medición de memoria inyectados",
+  "codigo_inicial": "# código lento o ineficiente",
+  "test_code": "# verificación de que la optimización funciona",
+  "asserts_performance": ["speedup >= 2x", "memoria < 10MB"],
+  "solucion": "# código optimizado con evidencia"
+}

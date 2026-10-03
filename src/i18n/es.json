@@ -1,0 +1,95 @@
+{
+  "common": {
+    "appName": "Python-bash Learning",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "skip": "Saltar",
+    "run": "Ejecutar",
+    "reset": "Reiniciar",
+    "copy": "Copiar",
+    "copied": "Copiado"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "modules": "Módulos",
+    "search": "Buscar lecciones...",
+    "progress": "Progreso",
+    "settings": "Configuración"
+  },
+  "dashboard": {
+    "title": "Panel de Aprendizaje",
+    "welcome": "Bienvenido de vuelta",
+    "continue": "Continuar aprendiendo",
+    "start": "Empezar",
+    "xp": "XP",
+    "level": "Nivel",
+    "streak": "Racha",
+    "days": "días",
+    "lessonsCompleted": "Lecciones completadas",
+    "of": "de"
+  },
+  "lesson": {
+    "title": "Lección",
+    "objectives": "Objetivos",
+    "mentalModel": "Modelo Mental",
+    "brokenCode": "Código Roto",
+    "diagnosis": "Diagnóstico",
+    "fixedCode": "Código Corregido",
+    "optimizedCode": "Código Optimizado",
+    "expertDebate": "Disenso Experto",
+    "transferQuestion": "Pregunta de Transferencia",
+    "quiz": "Quiz",
+    "simulator": "Simulador",
+    "audio": "Audio",
+    "video": "Video",
+    "markComplete": "Marcar como completada",
+    "completed": "Completada"
+  },
+  "quiz": {
+    "title": "Quiz",
+    "question": "Pregunta",
+    "options": "Opciones",
+    "correct": "¡Correcto!",
+    "incorrect": "Incorrecto",
+    "explanation": "Explicación",
+    "nextQuestion": "Siguiente pregunta",
+    "finish": "Finalizar",
+    "score": "Puntuación"
+  },
+  "simulator": {
+    "title": "Simulador",
+    "instruction": "Instrucción",
+    "initialCode": "Código Inicial",
+    "output": "Salida",
+    "solution": "Solución",
+    "showSolution": "Mostrar solución",
+    "hideSolution": "Ocultar solución",
+    "tests": "Tests",
+    "passed": "Tests pasados",
+    "failed": "Tests fallidos"
+  },
+  "video": {
+    "title": "Video",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "skip": "Saltar animación",
+    "speed": "Velocidad"
+  },
+  "theme": {
+    "light": "Modo claro",
+    "dark": "Modo oscuro",
+    "toggle": "Cambiar tema"
+  },
+  "language": {
+    "title": "Idioma",
+    "es": "Español",
+    "en": "Inglés"
+  }
+}

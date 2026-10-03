@@ -1,0 +1,10 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="60" rx="8" fill="#1E1E2E"/>
+  <text x="16" y="28" font-family="monospace" font-size="14" fill="#3776AB">ED</text>
+  <text x="44" y="28" font-family="monospace" font-size="14" fill="#FFD43B">-python</text>
+  <text x="116" y="28" font-family="monospace" font-size="14" fill="#4EAA25">/bash</text>
+  <text x="16" y="48" font-family="monospace" font-size="10" fill="#8B949E">by ED-Dev</text>
+  <rect x="150" y="12" width="36" height="36" rx="4" fill="#FF6B35"/>
+  <path d="M158 22L164 28L158 34" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M168 34H178" stroke="white" stroke-width="2" stroke-linecap="round"/>
+</svg>

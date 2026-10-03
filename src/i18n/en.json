@@ -1,0 +1,95 @@
+{
+  "common": {
+    "appName": "Python-bash Learning",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "skip": "Skip",
+    "run": "Run",
+    "reset": "Reset",
+    "copy": "Copy",
+    "copied": "Copied"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "modules": "Modules",
+    "search": "Search lessons...",
+    "progress": "Progress",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Learning Dashboard",
+    "welcome": "Welcome back",
+    "continue": "Continue learning",
+    "start": "Start",
+    "xp": "XP",
+    "level": "Level",
+    "streak": "Streak",
+    "days": "days",
+    "lessonsCompleted": "Lessons completed",
+    "of": "of"
+  },
+  "lesson": {
+    "title": "Lesson",
+    "objectives": "Objectives",
+    "mentalModel": "Mental Model",
+    "brokenCode": "Broken Code",
+    "diagnosis": "Diagnosis",
+    "fixedCode": "Fixed Code",
+    "optimizedCode": "Optimized Code",
+    "expertDebate": "Expert Debate",
+    "transferQuestion": "Transfer Question",
+    "quiz": "Quiz",
+    "simulator": "Simulator",
+    "audio": "Audio",
+    "video": "Video",
+    "markComplete": "Mark as complete",
+    "completed": "Completed"
+  },
+  "quiz": {
+    "title": "Quiz",
+    "question": "Question",
+    "options": "Options",
+    "correct": "Correct!",
+    "incorrect": "Incorrect",
+    "explanation": "Explanation",
+    "nextQuestion": "Next question",
+    "finish": "Finish",
+    "score": "Score"
+  },
+  "simulator": {
+    "title": "Simulator",
+    "instruction": "Instruction",
+    "initialCode": "Initial Code",
+    "output": "Output",
+    "solution": "Solution",
+    "showSolution": "Show solution",
+    "hideSolution": "Hide solution",
+    "tests": "Tests",
+    "passed": "Tests passed",
+    "failed": "Tests failed"
+  },
+  "video": {
+    "title": "Video",
+    "play": "Play",
+    "pause": "Pause",
+    "skip": "Skip animation",
+    "speed": "Speed"
+  },
+  "theme": {
+    "light": "Light mode",
+    "dark": "Dark mode",
+    "toggle": "Toggle theme"
+  },
+  "language": {
+    "title": "Language",
+    "es": "Spanish",
+    "en": "English"
+  }
+}

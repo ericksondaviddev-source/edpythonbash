@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #FFF8E7;
+  --bg-secondary: #FFF3D6;
+  --bg-tertiary: #FFE8C2;
+  --text-primary: #1A1A2E;
+  --text-secondary: #4A4A68;
+  --accent: #FF6B35;
+  --accent-hover: #E55A2B;
+  --success: #2ECC71;
+  --error: #E74C3C;
+  --warning: #F39C12;
+  --code-bg: #1E1E2E;
+  --code-text: #CDD6F4;
+  --border: #E0D5C1;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0D1117;
+  --bg-secondary: #161B22;
+  --bg-tertiary: #21262D;
+  --text-primary: #E6EDF3;
+  --text-secondary: #8B949E;
+  --accent: #FF6B35;
+  --accent-hover: #FF8C5A;
+  --success: #3FB950;
+  --error: #F85149;
+  --warning: #D29922;
+  --code-bg: #1E1E2E;
+  --code-text: #CDD6F4;
+  --border: #30363D;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+button, a, input, textarea, select {
+  touch-action: manipulation;
+}
+
+header {
+  padding-top: env(safe-area-inset-top);
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+}
+
+footer {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+}
+
+.code-cursor {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+button, a, input, textarea, select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+
+  .react-flow__node {
+    font-size: 12px;
+  }
+
+  .react-flow__controls {
+    bottom: 10px;
+    left: 10px;
+  }
+
+  .react-flow__minimap {
+    display: none;
+  }
+
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 13px;
+  }
+
+  .react-flow__node {
+    font-size: 11px;
+    min-width: 120px;
+  }
+}

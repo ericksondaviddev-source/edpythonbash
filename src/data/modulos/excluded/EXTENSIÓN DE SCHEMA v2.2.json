@@ -1,0 +1,18 @@
+// ENGINE 1: subprocess_sim (Track A parcial — ejecutable en Pyodide sin SO)
+// El setup_code inyecta un módulo `subprocess` falso con bitácora global.
+"engine": "subprocess_sim"
+// API expuesta al test_code:
+//   CALLS        → lista de dicts {args, shell, timeout, check, capture_output, text}
+//   DESTRUCTIVOS → lista de strings que llegaron como shell=True con metacaracteres [;&|`$]
+//   _SIM         → dict {(tupla_args): (rc, stdout, stderr)} que el test puede poblar
+//   subprocess.TimeoutExpired / CalledProcessError reales
+// Fidelidad: sin text=True devuelve bytes; ("colgar",) lanza TimeoutExpired si timeout=None
+
+// ENGINE 2: bash_sim (simulador determinista, sin shell real)
+"engine": "bash_sim",
+"filesystem": { "dirs": ["proyecto/"], "archivos": {"mi nota.txt": "contenido"} },
+"comandos_permitidos": ["echo","ls","rm","cp","mv","cat","mkdir","find","grep","wc"],
+"casos": [
+  { "vars": {"DIR": "/backup"}, "salida_esperada": "...", "exit_code": 0,
+    "fs_esperado": {"existe": ["proyecto/a.txt"]} }
+]
