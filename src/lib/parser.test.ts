@@ -113,3 +113,61 @@ describe('parser.ts', () => {
     expect(lessons).toHaveLength(0)
   })
 })
+
+const fakeLesson = (id: string, modulo: string, fase: number) =>
+  ({
+    id,
+    modulo,
+    competencia: `C ${id}`,
+    nivel: 'principiante',
+    fase,
+    microproyecto: '',
+    modelo_mental: 'm',
+    codigo_roto: 'c',
+    diagnostico: 'd',
+    codigo_corregido: 'cc',
+    codigo_optimizado: 'co',
+    disenso_experto: 'de',
+    pregunta_transferencia: 'pt',
+    quiz: { pregunta: 'p', opciones: ['a', 'b'], correcta: 'A', explicacion: 'e' },
+    audio_script: 'a',
+    video_prompt: 'v',
+    trazabilidad: { libros_fuente: [], conceptos_clave: [] },
+    tags_rag: []
+  }) as Lesson
+
+describe('orden de secuencia', () => {
+  it('ordena lecciones por id numérico dentro del módulo', () => {
+    const lessons = [
+      fakeLesson('M3.4-006', 'Módulo 3.4', 3),
+      fakeLesson('M3.4-003', 'Módulo 3.4', 3),
+      fakeLesson('M3.4-010', 'Módulo 3.4', 3)
+    ]
+    const modules = groupLessonsByModule(lessons)
+    expect(modules[0].lecciones.map(l => l.id)).toEqual([
+      'M3.4-003',
+      'M3.4-006',
+      'M3.4-010'
+    ])
+  })
+
+  it('ordena módulos por fase y número (3.1 antes que 3.4)', () => {
+    const lessons = [
+      fakeLesson('M3.4-001', 'Módulo 3.4', 3),
+      fakeLesson('M3.1-001', 'Módulo 3.1', 3),
+      fakeLesson('F0.1-001', 'F0.1', 0),
+      fakeLesson('M1.1-001', 'Módulo 1.1', 1)
+    ]
+    const modules = groupLessonsByModule(lessons)
+    expect(modules.map(m => m.id)).toEqual(['F0.1', 'Módulo 1.1', 'Módulo 3.1', 'Módulo 3.4'])
+  })
+
+  it('extrae el número de módulos con nombre descriptivo', () => {
+    const lessons = [
+      fakeLesson('M3.5-001', '3.5 - Rendimiento y Optimización', 3),
+      fakeLesson('M3.2-001', 'Módulo 3.2', 3)
+    ]
+    const modules = groupLessonsByModule(lessons)
+    expect(modules.map(m => m.id)).toEqual(['Módulo 3.2', '3.5 - Rendimiento y Optimización'])
+  })
+})

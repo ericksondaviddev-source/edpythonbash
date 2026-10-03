@@ -36,6 +36,11 @@ function isValidLesson(item: any): boolean {
   )
 }
 
+function extractModuleNumber(modulo: string): number {
+  const match = modulo.match(/(\d+(?:\.\d+)?)/)
+  return match ? parseFloat(match[1]) : 999
+}
+
 export function groupLessonsByModule(lessons: Lesson[]): Module[] {
   const moduleMap = new Map<string, Lesson[]>()
 
@@ -48,15 +53,24 @@ export function groupLessonsByModule(lessons: Lesson[]): Module[] {
 
   const modules: Module[] = []
   for (const [modulo, lecciones] of moduleMap) {
+    const sorted = [...lecciones].sort((a, b) =>
+      a.id.localeCompare(b.id, 'en', { numeric: true })
+    )
     modules.push({
       id: modulo,
       nombre: modulo,
-      fase: lecciones[0].fase,
-      lecciones
+      fase: sorted[0].fase,
+      lecciones: sorted
     })
   }
 
-  return modules.sort((a, b) => a.fase - b.fase)
+  return modules.sort(
+    (a, b) => a.fase - b.fase || extractModuleNumber(a.id) - extractModuleNumber(b.id)
+  )
+}
+
+export function flattenOrderedLessons(modules: Module[]): Lesson[] {
+  return modules.flatMap(m => m.lecciones)
 }
 
 export function getLessonById(lessons: Lesson[], id: string): Lesson | undefined {
