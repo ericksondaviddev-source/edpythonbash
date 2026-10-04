@@ -1,45 +1,39 @@
 import { useState } from 'react'
 import type { Simulator } from '../../types'
 import { useTranslation } from 'react-i18next'
-import { Button, Card } from '../atoms'
+import { Button, Card, Icon } from '../atoms'
 import BlockEditor from '../organisms/BlockEditor'
-import StepByStepGuide from '../organisms/StepByStepGuide'
+import { useProgressStore } from '../../store/useProgressStore'
 
 interface SimulatorPanelProps {
   simulator: Simulator
+  lessonId?: string
+  nextLessonId?: string
+  onNavigate?: (lessonId: string) => void
 }
 
-const GUIDE_STEPS = [
-  {
-    title: 'Analiza el problema',
-    description: 'Lee cuidadosamente el código inicial y entiende qué está mal.',
-    hint: 'Identifica el error antes de intentar arreglarlo.'
-  },
-  {
-    title: 'Planifica la solución',
-    description: 'Piensa en los pasos necesarios para corregir el código.',
-    hint: 'Divide el problema en pasos pequeños.'
-  },
-  {
-    title: 'Implementa la solución',
-    description: 'Escribe el código corregido paso a paso.',
-    hint: 'Prueba cada cambio antes de continuar.'
-  },
-  {
-    title: 'Verifica el resultado',
-    description: 'Ejecuta el código y verifica que funcione correctamente.',
-    hint: 'Si no funciona, revisa tus cambios anteriores.'
-  }
-]
+type VerifyResult = { name: string; passed: boolean; detail?: string }
 
-export default function SimulatorPanel({ simulator }: SimulatorPanelProps) {
+export default function SimulatorPanel({ simulator, lessonId, nextLessonId, onNavigate }: SimulatorPanelProps) {
   const { t } = useTranslation()
-  const [code, setCode] = useState(simulator.codigo_inicial)
+  const { addXP, completeLesson } = useProgressStore()
+  const [code, setCode] = useState(() => simulator.codigo_inicial ?? simulator.solucion ?? '')
   const [output, setOutput] = useState('')
   const [showSolution, setShowSolution] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const [showBlockEditor, setShowBlockEditor] = useState(false)
-  const [showGuide, setShowGuide] = useState(false)
+  const [verifyResults, setVerifyResults] = useState<VerifyResult[] | null>(null)
+  const [challengePassed, setChallengePassed] = useState(false)
+
+  const hasTests = Boolean(
+    simulator.test_code ||
+      simulator.asserts_stdout?.length ||
+      simulator.asserts_return?.length ||
+      simulator.asserts_exception?.length ||
+      simulator.asserts_forbidden?.length
+  )
+  const canExecute = simulator.engine === 'pyodide' || simulator.engine === 'bash_sim'
 
   const handleRun = async () => {
     setIsRunning(true)
@@ -47,9 +41,8 @@ export default function SimulatorPanel({ simulator }: SimulatorPanelProps) {
 
     try {
       if (simulator.engine === 'pyodide') {
-        const { PyodideRunner } = await import('../../services/pyodide')
-        const runner = new PyodideRunner()
-        await runner.init()
+        const { getPyodideRunner } = await import('../../services/pyodide')
+        const runner = getPyodideRunner()
         if (simulator.setup_code) {
           await runner.run(simulator.setup_code)
         }
@@ -61,7 +54,7 @@ export default function SimulatorPanel({ simulator }: SimulatorPanelProps) {
         const result = sim.run(code)
         setOutput(result.stdout + (result.stderr ? `\n${result.stderr}` : ''))
       } else {
-        setOutput('Simulador no implementado para este engine')
+        setOutput(t('simulator.notImplemented'))
       }
     } catch (error: any) {
       setOutput(`Error: ${error.message}`)
@@ -70,24 +63,58 @@ export default function SimulatorPanel({ simulator }: SimulatorPanelProps) {
     }
   }
 
-  const handleReset = () => {
-    setCode(simulator.codigo_inicial)
-    setOutput('')
+  const handleVerify = async () => {
+    if (!hasTests || simulator.engine !== 'pyodide') return
+    setIsVerifying(true)
+    setVerifyResults(null)
+
+    try {
+      const { getPyodideRunner } = await import('../../services/pyodide')
+      const runner = getPyodideRunner()
+      const results = await runner.verify(simulator, code)
+      setVerifyResults(results)
+      const allPassed = results.length > 0 && results.every(r => r.passed)
+      if (allPassed && !challengePassed && lessonId) {
+        setChallengePassed(true)
+        completeLesson(lessonId)
+        addXP(25)
+      }
+    } catch (error: any) {
+      setVerifyResults([{ name: t('simulator.verifyError'), passed: false, detail: error.message }])
+    } finally {
+      setIsVerifying(false)
+    }
   }
+
+  const handleReset = () => {
+    setCode(simulator.codigo_inicial ?? '')
+    setOutput('')
+    setVerifyResults(null)
+  }
+
+  const allPassed = verifyResults ? verifyResults.length > 0 && verifyResults.every(r => r.passed) : false
 
   return (
     <Card title={t('simulator.title')}>
-      <div className="mb-4">
-        <p className="text-sm font-medium text-[var(--text-primary)] mb-1">
+      <div className="mb-4 p-4 rounded-lg bg-[var(--bg-tertiary)]/60 border-l-4 border-[var(--accent)]">
+        <p className="text-sm font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+          <Icon name="check" size={14} className="text-[var(--accent)]" />
           {t('simulator.instruction')}
         </p>
-        <p className="text-sm text-[var(--text-secondary)]">{simulator.instruccion}</p>
+        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{simulator.instruccion}</p>
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
-        <Button onClick={handleRun} disabled={isRunning}>
-          {isRunning ? t('common.loading') : t('common.run')}
-        </Button>
+        {canExecute && (
+          <Button onClick={handleRun} disabled={isRunning}>
+            {isRunning ? t('common.loading') : t('common.run')}
+          </Button>
+        )}
+        {canExecute && hasTests && simulator.engine === 'pyodide' && (
+          <Button onClick={handleVerify} disabled={isVerifying} className="bg-[var(--success)] hover:opacity-90">
+            {isVerifying ? t('common.loading') : t('simulator.verify')}
+          </Button>
+        )}
         <Button variant="secondary" onClick={handleReset}>
           {t('common.reset')}
         </Button>
@@ -95,21 +122,9 @@ export default function SimulatorPanel({ simulator }: SimulatorPanelProps) {
           {showSolution ? t('simulator.hideSolution') : t('simulator.showSolution')}
         </Button>
         <Button variant="ghost" onClick={() => setShowBlockEditor(!showBlockEditor)}>
-          {showBlockEditor ? 'Ocultar Bloques' : 'Editor de Bloques'}
-        </Button>
-        <Button variant="ghost" onClick={() => setShowGuide(!showGuide)}>
-          {showGuide ? 'Ocultar Guía' : 'Guía Paso a Paso'}
+          {showBlockEditor ? t('simulator.hideBlocks') : t('simulator.showBlocks')}
         </Button>
       </div>
-
-      {showGuide && (
-        <div className="mb-4">
-          <StepByStepGuide
-            steps={GUIDE_STEPS}
-            onComplete={() => setShowGuide(false)}
-          />
-        </div>
-      )}
 
       {showBlockEditor && (
         <div className="mb-4">
@@ -140,6 +155,59 @@ export default function SimulatorPanel({ simulator }: SimulatorPanelProps) {
           <pre className="p-4 bg-[var(--code-bg)] text-[var(--code-text)] rounded-lg font-mono text-sm overflow-x-auto whitespace-pre-wrap">
             {output}
           </pre>
+        </div>
+      )}
+
+      {verifyResults && (
+        <div className="mb-4">
+          <p className="text-sm font-semibold text-[var(--text-primary)] mb-2">
+            {t('simulator.tests')}
+          </p>
+          <div className="space-y-2">
+            {verifyResults.map((r, i) => (
+              <div
+                key={i}
+                className={`flex items-start gap-2 p-3 rounded-lg ${
+                  r.passed ? 'bg-[var(--success)]/15' : 'bg-[var(--error)]/15'
+                }`}
+              >
+                <span className={`mt-0.5 ${r.passed ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
+                  <Icon name={r.passed ? 'check' : 'close'} size={14} />
+                </span>
+                <div className="min-w-0">
+                  <p className={`text-sm font-medium ${r.passed ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
+                    {r.name}
+                  </p>
+                  {r.detail && (
+                    <pre className="text-xs text-[var(--text-secondary)] font-mono mt-1 whitespace-pre-wrap">
+                      {r.detail}
+                    </pre>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {allPassed && (
+            <div className="mt-4 p-4 rounded-lg bg-[var(--success)]/20 text-center">
+              <p className="font-semibold text-[var(--success)]">
+                🎉 {t('simulator.challengePassed')} (+25 XP)
+              </p>
+              {nextLessonId && onNavigate && (
+                <Button onClick={() => onNavigate(nextLessonId)} className="mt-3 w-full">
+                  {t('lesson.goToNextLesson')}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!canExecute && !hasTests && (
+        <div className="mb-4 p-4 rounded-lg bg-[var(--warning)]/10">
+          <p className="text-sm text-[var(--text-secondary)] mb-2">
+            {t('simulator.fallbackHint')}
+          </p>
         </div>
       )}
 

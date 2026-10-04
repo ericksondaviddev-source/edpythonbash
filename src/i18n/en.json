@@ -85,9 +85,15 @@
     "solution": "Solution",
     "showSolution": "Show solution",
     "hideSolution": "Hide solution",
-    "tests": "Tests",
+    "tests": "Automatic verification",
     "passed": "Tests passed",
-    "failed": "Tests failed"
+    "failed": "Tests failed",
+    "verify": "Verify",
+    "challengePassed": "Challenge passed!",
+    "fallbackHint": "This simulator cannot run code yet. Compare your solution with the model solution and manually verify each criterion.",
+    "notImplemented": "Simulator not implemented for this engine. Use the model solution as reference.",
+    "showBlocks": "Block Editor",
+    "hideBlocks": "Hide Blocks"
   },
   "video": {
     "title": "Video",

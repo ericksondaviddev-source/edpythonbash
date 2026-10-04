@@ -257,7 +257,12 @@ export default function LessonView({
       )}
 
       {activeTab === 'simulator' && lesson.simulador && (
-        <SimulatorPanel simulator={lesson.simulador} />
+        <SimulatorPanel
+          simulator={lesson.simulador}
+          lessonId={lesson.id}
+          nextLessonId={nextLesson?.id}
+          onNavigate={(id) => onNavigate(id)}
+        />
       )}
     </div>
   )

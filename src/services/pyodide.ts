@@ -54,6 +54,92 @@ class PyodideRunner {
     return output.trim()
   }
 
+  async verify(
+    simulator: {
+      setup_code?: string
+      test_code?: string
+      asserts_stdout?: string[]
+      asserts_return?: { caso: string; esperado: number | string | boolean }[]
+      asserts_exception?: { caso: string; esperada: string }[]
+      asserts_forbidden?: string[]
+    },
+    userCode: string
+  ): Promise<{ name: string; passed: boolean; detail?: string }[]> {
+    if (!this.pyodide) await this.init()
+
+    const results: { name: string; passed: boolean; detail?: string }[] = []
+
+    // 1. cargar setup + código del usuario en el namespace
+    const setup = (simulator.setup_code || '') + '\n' + userCode
+    try {
+      await this.pyodide.runPythonAsync(setup)
+    } catch (error: any) {
+      return [{ name: 'El código se ejecuta sin errores', passed: false, detail: error.message }]
+    }
+
+    // 2. test_code completo (si existe)
+    if (simulator.test_code) {
+      const out = await this.runTestCode(simulator.test_code)
+      results.push({ name: 'Tests del ejercicio (test_code)', passed: out.passed, detail: out.detail })
+    }
+
+    // 3. asserts_stdout
+    for (const expected of simulator.asserts_stdout || []) {
+      const out = await this.run(userCode)
+      results.push({ name: `Salida contiene: ${expected}`, passed: out.includes(expected) })
+    }
+
+    // 4. asserts_return
+    for (const { caso, esperado } of simulator.asserts_return || []) {
+      const expectedRepr = typeof esperado === 'string' ? JSON.stringify(esperado) : String(esperado)
+      const code = `
+try:
+    _r = ${caso}
+    assert _r == (${expectedRepr}), f"obtuvo {_r!r}, esperado ${expectedRepr}"
+    print("PASS")
+except AssertionError as _e:
+    print(f"FAIL: {_e}")
+except Exception as _e:
+    print(f"FAIL: {type(_e).__name__}: {_e}")`
+      const out = await this.runTestCode(code)
+      results.push({ name: `${caso} == ${expectedRepr}`, passed: out.passed, detail: out.detail })
+    }
+
+    // 5. asserts_exception
+    for (const { caso, esperada } of simulator.asserts_exception || []) {
+      const code = `
+try:
+    ${caso}
+    print("FAIL: no lanzó excepción")
+except ${esperada}:
+    print("PASS")
+except Exception as _e:
+    print(f"FAIL: esperaba ${esperada}, obtuvo {type(_e).__name__}")`
+      const out = await this.runTestCode(code)
+      results.push({ name: `${caso} lanza ${esperada}`, passed: out.passed, detail: out.detail })
+    }
+
+    // 6. asserts_forbidden
+    for (const forbidden of simulator.asserts_forbidden || []) {
+      results.push({
+        name: `No usa: ${forbidden}`,
+        passed: !userCode.includes(forbidden)
+      })
+    }
+
+    return results
+  }
+
+  private async runTestCode(code: string): Promise<{ passed: boolean; detail?: string }> {
+    if (!this.pyodide) await this.init()
+    try {
+      const out = await this.run(code)
+      return { passed: out.includes('PASS') && !out.includes('FAIL'), detail: out || undefined }
+    } catch (error: any) {
+      return { passed: false, detail: error.message }
+    }
+  }
+
   async installPackage(packageName: string) {
     if (!this.pyodide) {
       await this.init()
@@ -67,6 +153,13 @@ class PyodideRunner {
       throw new Error(`No se pudo instalar ${packageName}: ${error.message}`)
     }
   }
+}
+
+let instance: PyodideRunner | null = null
+
+export function getPyodideRunner(): PyodideRunner {
+  if (!instance) instance = new PyodideRunner()
+  return instance
 }
 
 export { PyodideRunner }
