@@ -7,6 +7,8 @@ const MODULOS_DIR = path.join(__dirname, '..', 'src', 'data', 'modulos')
 
 const MODELS = ['openrouter/free', 'google/gemma-4-31b-it:free', 'qwen/qwen3.8-27b:free']
 const API_KEY = process.env.OPENROUTER_API_KEY
+const REQUEST_DELAY_MS = 15000
+const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 if (!API_KEY) {
   console.error('ERROR: set OPENROUTER_API_KEY env var')
@@ -43,29 +45,37 @@ Responde SOLO con JSON válido (sin markdown fences):
 
 async function callOpenRouter(prompt) {
   for (const model of MODELS) {
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.6
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.6
+          })
         })
-      })
-      if (!res.ok) {
-        console.warn(`  [${model}] HTTP ${res.status}, probando fallback...`)
-        continue
+        if (res.status === 429) {
+          console.warn(`  [${model}] 429 rate limit, esperando 30s (intento ${attempt + 1}/3)...`)
+          await sleep(30000)
+          continue
+        }
+        if (!res.ok) {
+          console.warn(`  [${model}] HTTP ${res.status}, probando fallback...`)
+          break
+        }
+        const data = await res.json()
+        const text = data.choices?.[0]?.message?.content
+        if (!text) continue
+        return { model, text }
+      } catch (err) {
+        console.warn(`  [${model}] ${err.message}, probando fallback...`)
+        break
       }
-      const data = await res.json()
-      const text = data.choices?.[0]?.message?.content
-      if (!text) continue
-      return { model, text }
-    } catch (err) {
-      console.warn(`  [${model}] ${err.message}, probando fallback...`)
     }
   }
   return null
@@ -106,6 +116,7 @@ for (const file of files) {
     }
 
     console.log(`→ ${lesson.id} (${lesson.modulo})`)
+    await sleep(REQUEST_DELAY_MS)
     const result = await callOpenRouter(buildPrompt(lesson))
 
     if (!result) {
