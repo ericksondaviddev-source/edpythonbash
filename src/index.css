@@ -43,16 +43,18 @@ button, a, input, textarea, select {
   touch-action: manipulation;
 }
 
-header {
-  padding-top: env(safe-area-inset-top);
-  padding-left: max(1.5rem, env(safe-area-inset-left));
-  padding-right: max(1.5rem, env(safe-area-inset-right));
-}
+@layer base {
+  header {
+    padding-top: env(safe-area-inset-top);
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
 
-footer {
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-  padding-left: max(1.5rem, env(safe-area-inset-left));
-  padding-right: max(1.5rem, env(safe-area-inset-right));
+  footer {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+  }
 }
 
 .code-cursor {
@@ -70,8 +72,14 @@ footer {
 }
 
 button, a, input, textarea, select {
+  touch-action: manipulation;
   min-height: 44px;
   min-width: 44px;
+}
+
+.no-min-touch {
+  min-height: 0 !important;
+  min-width: 0 !important;
 }
 
 @media (max-width: 768px) {

@@ -56,7 +56,7 @@ export default function AIReviewCard({ code, language }: AIReviewCardProps) {
       </div>
 
       {needsCode && (
-        <div className="px-4 py-2 bg-[var(--warning)] bg-opacity-10">
+        <div className="px-4 py-2 bg-[var(--warning)]/10">
           <p className="text-xs text-[var(--warning)]">
             Agrega bloques primero para poder revisar el código.
           </p>
@@ -74,7 +74,7 @@ export default function AIReviewCard({ code, language }: AIReviewCardProps) {
       )}
 
       {error && (
-        <div className="px-4 py-3 bg-[var(--error)] bg-opacity-10">
+        <div className="px-4 py-3 bg-[var(--error)]/10">
           <p className="text-sm text-[var(--error)]">{error}</p>
         </div>
       )}

@@ -31,7 +31,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}

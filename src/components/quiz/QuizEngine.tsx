@@ -97,9 +97,9 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <span className={`px-2 py-1 rounded text-xs font-medium ${
-            currentQuestion.tipo === 'concepto' ? 'bg-blue-500 bg-opacity-20 text-blue-500' :
-            currentQuestion.tipo === 'codigo' ? 'bg-green-500 bg-opacity-20 text-green-500' :
-            'bg-red-500 bg-opacity-20 text-red-500'
+            currentQuestion.tipo === 'concepto' ? 'bg-blue-500/20 text-blue-500' :
+            currentQuestion.tipo === 'codigo' ? 'bg-green-500/20 text-green-500' :
+            'bg-red-500/20 text-red-500'
           }`}>
             {currentQuestion.tipo === 'concepto' ? 'Concepto' : currentQuestion.tipo === 'codigo' ? 'Código' : 'Debugging'}
           </span>
@@ -130,7 +130,7 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
 
       {showExplanation && (
         <div className="space-y-4">
-          <div className={`p-4 rounded-lg ${isCorrect ? 'bg-[var(--success)] bg-opacity-20' : 'bg-[var(--error)] bg-opacity-20'}`}>
+          <div className={`p-4 rounded-lg ${isCorrect ? 'bg-[var(--success)]/20' : 'bg-[var(--error)]/20'}`}>
             <p className={`font-medium ${isCorrect ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
               {isCorrect ? t('quiz.correct') : t('quiz.incorrect')}
             </p>

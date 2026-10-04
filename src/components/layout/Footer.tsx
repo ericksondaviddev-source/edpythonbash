@@ -13,11 +13,11 @@ export default function Footer() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <a
+            <a
             href="https://linkedin.com/in/ed-dev"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+            className="no-min-touch flex items-center gap-1 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
           >
             <Icon name="linkedin" size={16} />
             <span className="hidden sm:inline">LinkedIn</span>
@@ -26,7 +26,7 @@ export default function Footer() {
             href="https://github.com/ed-dev"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+            className="no-min-touch flex items-center gap-1 text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
           >
             <Icon name="github" size={16} />
             <span className="hidden sm:inline">GitHub</span>

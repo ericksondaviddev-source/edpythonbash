@@ -107,7 +107,7 @@ Pregunta del usuario: ${messageText}`
         )}
         {error && (
           <div className="flex justify-start">
-            <div className="bg-[var(--error)] bg-opacity-20 p-3 rounded-lg">
+            <div className="bg-[var(--error)]/20 p-3 rounded-lg">
               <p className="text-sm text-[var(--error)]">{error}</p>
             </div>
           </div>

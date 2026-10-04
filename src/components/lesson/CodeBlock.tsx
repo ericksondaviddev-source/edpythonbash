@@ -81,14 +81,14 @@ export default function CodeBlock({
             {animate && isTyping && (
               <button
                 onClick={handleSkip}
-                className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white transition-colors"
+                className="no-min-touch text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white transition-colors"
               >
                 {t('common.skip')}
               </button>
             )}
             <button
               onClick={handleCopy}
-              className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white transition-colors"
+              className="no-min-touch text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white transition-colors"
             >
               {copied ? t('common.copied') : t('common.copy')}
             </button>

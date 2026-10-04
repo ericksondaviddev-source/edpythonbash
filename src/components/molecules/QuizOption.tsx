@@ -19,14 +19,14 @@ export default function QuizOption({
 
   if (showResult) {
     if (isCorrect) {
-      buttonClass += 'bg-[var(--success)] bg-opacity-20 border-[var(--success)] text-[var(--success)]'
+      buttonClass += 'bg-[var(--success)]/20 border-[var(--success)] text-[var(--success)]'
     } else if (isSelected && !isCorrect) {
-      buttonClass += 'bg-[var(--error)] bg-opacity-20 border-[var(--error)] text-[var(--error)]'
+      buttonClass += 'bg-[var(--error)]/20 border-[var(--error)] text-[var(--error)]'
     } else {
       buttonClass += 'bg-[var(--bg-tertiary)] border-[var(--border)] text-[var(--text-secondary)]'
     }
   } else {
-    buttonClass += 'bg-[var(--bg-tertiary)] border-[var(--border)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:bg-opacity-10'
+    buttonClass += 'bg-[var(--bg-tertiary)] border-[var(--border)] text-[var(--text-primary)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/10'
   }
 
   return (

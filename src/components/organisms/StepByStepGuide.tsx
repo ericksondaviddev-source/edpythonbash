@@ -60,7 +60,7 @@ export default function StepByStepGuide({ steps, onComplete }: StepByStepGuidePr
               {showHint ? 'Ocultar pista' : 'Mostrar pista'}
             </Button>
             {showHint && (
-              <p className="mt-2 text-sm text-[var(--warning)] bg-[var(--warning)] bg-opacity-10 p-3 rounded-lg">
+              <p className="mt-2 text-sm text-[var(--warning)] bg-[var(--warning)]/10 p-3 rounded-lg">
                 {step.hint}
               </p>
             )}

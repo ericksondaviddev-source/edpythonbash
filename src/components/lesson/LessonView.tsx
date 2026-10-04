@@ -56,7 +56,7 @@ export default function LessonView({
           </p>
         </div>
         {isCompleted && (
-          <span className="px-3 py-1 bg-[var(--success)] bg-opacity-20 text-[var(--success)] rounded-full text-sm font-medium">
+          <span className="px-3 py-1 bg-[var(--success)]/20 text-[var(--success)] rounded-full text-sm font-medium">
             {t('lesson.completed')}
           </span>
         )}

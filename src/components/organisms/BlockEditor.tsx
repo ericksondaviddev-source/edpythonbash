@@ -309,7 +309,7 @@ function PlacedBlockRow({ uid, def, indent, onRemove, onIndent, onOutdent }: Pla
       </button>
       <button
         onClick={onRemove}
-        className="p-1.5 rounded text-[var(--error)] hover:bg-[var(--error)] hover:bg-opacity-20"
+        className="p-1.5 rounded text-[var(--error)] hover:bg-[var(--error)]/20"
         aria-label="Eliminar bloque"
       >
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
