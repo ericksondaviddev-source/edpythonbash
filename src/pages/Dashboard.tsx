@@ -9,12 +9,13 @@ interface DashboardProps {
   modules: Module[]
   lessons: Lesson[]
   onLessonSelect: (lesson: Lesson) => void
+  initialView?: 'mindmap' | 'dashboard'
 }
 
-export default function Dashboard({ modules, lessons, onLessonSelect }: DashboardProps) {
+export default function Dashboard({ modules, lessons, onLessonSelect, initialView = 'dashboard' }: DashboardProps) {
   const { t } = useTranslation()
   const { completedLessons, xp, level, streak } = useProgressStore()
-  const [view, setView] = useState<'mindmap' | 'dashboard'>('mindmap')
+  const [view, setView] = useState<'mindmap' | 'dashboard'>(initialView)
 
   const nextLesson = lessons.find(l => !completedLessons.includes(l.id))
 
@@ -31,16 +32,6 @@ export default function Dashboard({ modules, lessons, onLessonSelect }: Dashboar
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setView('mindmap')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              view === 'mindmap'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-            }`}
-          >
-            Mapa Mental
-          </button>
-          <button
             onClick={() => setView('dashboard')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               view === 'dashboard'
@@ -48,7 +39,17 @@ export default function Dashboard({ modules, lessons, onLessonSelect }: Dashboar
                 : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
             }`}
           >
-            Dashboard
+            {t('nav.dashboard')}
+          </button>
+          <button
+            onClick={() => setView('mindmap')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              view === 'mindmap'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+            }`}
+          >
+            {t('nav.mindmap')}
           </button>
         </div>
       </div>
@@ -98,9 +99,10 @@ export default function Dashboard({ modules, lessons, onLessonSelect }: Dashboar
               const modulePercent = moduleTotal > 0 ? Math.round((moduleCompleted / moduleTotal) * 100) : 0
 
               return (
-                <div
+                <button
                   key={module.id}
-                  className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]"
+                  onClick={() => onLessonSelect(module.lecciones[0])}
+                  className="text-left p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] hover:border-[var(--accent)] transition-colors"
                 >
                   <h3 className="font-semibold text-[var(--text-primary)] mb-2 text-sm">
                     {module.nombre}
@@ -115,7 +117,7 @@ export default function Dashboard({ modules, lessons, onLessonSelect }: Dashboar
                       style={{ width: `${modulePercent}%` }}
                     />
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>

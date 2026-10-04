@@ -115,7 +115,7 @@ export default function LessonView({
               className="w-full px-4 py-3 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors flex items-center justify-between"
             >
               <span className="font-medium text-[var(--text-primary)]">{t('lesson.audio')}</span>
-              <span className="text-[var(--text-secondary)]">{showAudio ? 'Ocultar' : 'Mostrar'}</span>
+              <span className="text-[var(--text-secondary)]">{showAudio ? t('common.hide') : t('common.show')}</span>
             </button>
             {showAudio && (
               <div className="p-4 border-t border-[var(--border)]">
@@ -155,7 +155,7 @@ export default function LessonView({
               className="w-full px-4 py-3 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors flex items-center justify-between"
             >
               <span className="font-medium text-[var(--text-primary)]">{t('lesson.video')}</span>
-              <span className="text-[var(--text-secondary)]">{showVideo ? 'Ocultar' : 'Mostrar'}</span>
+              <span className="text-[var(--text-secondary)]">{showVideo ? t('common.hide') : t('common.show')}</span>
             </button>
             {showVideo && (
               <div className="p-4 border-t border-[var(--border)]">

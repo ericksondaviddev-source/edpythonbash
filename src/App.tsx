@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore } from './store/useThemeStore'
 import { useLanguageStore } from './store/useLanguageStore'
 import { useProgressStore } from './store/useProgressStore'
@@ -8,7 +9,6 @@ import type { Lesson } from './types'
 import Header from './components/layout/Header'
 import Sidebar from './components/layout/Sidebar'
 import Footer from './components/layout/Footer'
-import LoadingScreen from './components/layout/LoadingScreen'
 import Dashboard from './pages/Dashboard'
 import LessonView from './components/lesson/LessonView'
 import AIPanel from './components/organisms/AIPanel'
@@ -30,8 +30,8 @@ function AppShell() {
     : null
   const { theme } = useThemeStore()
   const { lang } = useLanguageStore()
-  const { completeLesson } = useProgressStore()
-  const [isLoading, setIsLoading] = useState(true)
+  const { t } = useTranslation()
+  const { completeLesson, touchVisit } = useProgressStore()
   const [lessons] = useState<Lesson[]>(() => parseLessonsFromJSON(validFiles))
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -50,8 +50,7 @@ function AppShell() {
   }, [lang])
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500)
-    return () => clearTimeout(timer)
+    touchVisit()
   }, [])
 
   useEffect(() => {
@@ -73,10 +72,6 @@ function AppShell() {
 
   const currentIndex = orderedLessons.findIndex(l => l.id === currentLesson?.id)
 
-  if (isLoading) {
-    return <LoadingScreen />
-  }
-
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-16">
       <Header
@@ -94,7 +89,7 @@ function AppShell() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-              <span className="font-semibold text-[var(--text-primary)]">Módulos</span>
+              <span className="font-semibold text-[var(--text-primary)]">{t('nav.modules')}</span>
               <button
                 onClick={() => setIsSidebarOpen(false)}
                 className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)]"
@@ -189,8 +184,8 @@ function AppShell() {
           onClick={() => setIsAIPanelOpen(true)}
           className="fixed bottom-20 right-6 z-40"
         >
-          <Icon name="play" size={16} />
-          Tutor IA
+          <Icon name="chat" size={16} />
+          {t('nav.aiTutor')}
         </Button>
       )}
 

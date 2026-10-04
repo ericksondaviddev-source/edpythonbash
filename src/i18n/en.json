@@ -14,10 +14,14 @@
     "run": "Run",
     "reset": "Reset",
     "copy": "Copy",
-    "copied": "Copied"
+    "copied": "Copied",
+    "show": "Show",
+    "hide": "Hide"
   },
   "nav": {
     "dashboard": "Dashboard",
+    "mindmap": "Mind Map",
+    "aiTutor": "AI Tutor",
     "modules": "Modules",
     "search": "Search lessons...",
     "progress": "Progress",

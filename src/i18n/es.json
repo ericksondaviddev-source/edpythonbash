@@ -14,10 +14,14 @@
     "run": "Ejecutar",
     "reset": "Reiniciar",
     "copy": "Copiar",
-    "copied": "Copiado"
+    "copied": "Copiado",
+    "show": "Mostrar",
+    "hide": "Ocultar"
   },
   "nav": {
     "dashboard": "Panel",
+    "mindmap": "Mapa Mental",
+    "aiTutor": "Tutor IA",
     "modules": "Módulos",
     "search": "Buscar lecciones...",
     "progress": "Progreso",

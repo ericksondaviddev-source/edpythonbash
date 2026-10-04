@@ -11,6 +11,7 @@ interface ProgressState {
   completeLesson: (id: string) => void
   addXP: (amount: number) => void
   resetProgress: () => void
+  touchVisit: () => void
 }
 
 export const useProgressStore = create<ProgressState>()(
@@ -21,6 +22,20 @@ export const useProgressStore = create<ProgressState>()(
       level: 1,
       streak: 0,
       lastVisit: new Date().toISOString(),
+
+      touchVisit: () =>
+        set((state) => {
+          const today = new Date()
+          const todayStr = today.toISOString().slice(0, 10)
+          const lastStr = state.lastVisit.slice(0, 10)
+          if (lastStr === todayStr) return state
+          const diffDays = Math.floor((today.getTime() - new Date(state.lastVisit).getTime()) / 86400000)
+          return {
+            ...state,
+            streak: diffDays === 1 ? state.streak + 1 : 1,
+            lastVisit: today.toISOString()
+          }
+        }),
 
       completeLesson: (id: string) =>
         set((state) => {
