@@ -8,6 +8,7 @@ import AudioPlayer from '../audio/AudioPlayer'
 import CodeTypingVideo from '../video/CodeTypingVideo'
 import { useProgressStore } from '../../store/useProgressStore'
 import { useLanguageStore } from '../../store/useLanguageStore'
+import Markdown from '../molecules/Markdown'
 
 
 interface LessonViewProps {
@@ -36,6 +37,8 @@ export default function LessonView({
   const [showAudio, setShowAudio] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const isCompleted = completedLessons.includes(lesson.id)
+  const lessonLanguage: 'python' | 'bash' | 'html' =
+    lesson.id.startsWith('M3.7') ? 'bash' : lesson.id.startsWith('F0.1') ? 'html' : 'python'
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -103,7 +106,7 @@ export default function LessonView({
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.mentalModel')}
             </h2>
-            <p className="text-[var(--text-secondary)] leading-relaxed">{lesson.modelo_mental}</p>
+            <Markdown content={lesson.modelo_mental} />
           </section>
 
           <div className="border border-[var(--border)] rounded-xl overflow-hidden">
@@ -123,7 +126,7 @@ export default function LessonView({
 
           <CodeBlock
             code={lesson.codigo_roto}
-            language="python"
+            language={lessonLanguage}
             title={t('lesson.brokenCode')}
           />
 
@@ -131,18 +134,18 @@ export default function LessonView({
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.diagnosis')}
             </h2>
-            <p className="text-[var(--text-secondary)] leading-relaxed">{lesson.diagnostico}</p>
+            <Markdown content={lesson.diagnostico} />
           </section>
 
           <CodeBlock
             code={lesson.codigo_corregido}
-            language="python"
+            language={lessonLanguage}
             title={t('lesson.fixedCode')}
           />
 
           <CodeBlock
             code={lesson.codigo_optimizado}
-            language="python"
+            language={lessonLanguage}
             title={t('lesson.optimizedCode')}
           />
 
@@ -173,15 +176,42 @@ export default function LessonView({
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.expertDebate')}
             </h2>
-            <p className="text-[var(--text-secondary)] leading-relaxed">{lesson.disenso_experto}</p>
+            <Markdown content={lesson.disenso_experto} />
           </section>
 
           <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.transferQuestion')}
             </h2>
-            <p className="text-[var(--text-secondary)] leading-relaxed">{lesson.pregunta_transferencia}</p>
+            <Markdown content={lesson.pregunta_transferencia} />
           </section>
+
+          {lesson.colab && lesson.colab.celdas?.length > 0 && (
+            <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+                Notebook Colab
+              </h2>
+              {lesson.colab.objetivo && (
+                <p className="text-sm text-[var(--text-secondary)] mb-4">{lesson.colab.objetivo}</p>
+              )}
+              <div className="space-y-3">
+                {lesson.colab.celdas.map((cell, i) =>
+                  cell.tipo === 'code' ? (
+                    <div key={i} className="relative">
+                      <span className="absolute top-2 left-2 text-xs text-[var(--text-secondary)] font-mono z-10">
+                        [{i}]
+                      </span>
+                      <pre className="bg-[var(--code-bg)] text-[var(--code-text)] p-4 pl-10 rounded-lg overflow-x-auto text-sm font-mono">
+                        {cell.contenido}
+                      </pre>
+                    </div>
+                  ) : (
+                    <Markdown key={i} content={cell.contenido} className="pl-1" />
+                  )
+                )}
+              </div>
+            </section>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             {prevLesson && (

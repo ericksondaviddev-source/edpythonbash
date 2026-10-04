@@ -61,6 +61,19 @@ button, a, input, textarea, select {
   animation: blink 1s infinite;
 }
 
+.token.keyword { color: #C792EA; }
+.token.string, .token.char, .token.attr-value { color: #A5E075; }
+.token.number, .token.boolean { color: #F78C6C; }
+.token.comment, .token.prolog, .token.doctype { color: #6A737D; font-style: italic; }
+.token.function, .token.class-name { color: #82AAFF; }
+.token.operator, .token.punctuation { color: #89DDFF; }
+.token.builtin { color: #FFCB6B; }
+.token.variable { color: #F07178; }
+.token.tag { color: #F07178; }
+.token.attr-name { color: #FFCB6B; }
+.token.selector { color: #C792EA; }
+.token.property { color: #82AAFF; }
+
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }

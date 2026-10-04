@@ -13,7 +13,9 @@ beforeEach(() => {
 describe('CodeBlock', () => {
   it('should render code', () => {
     render(<CodeBlock code="print('hello')" language="python" />)
-    expect(screen.getByText("print('hello')")).toBeDefined()
+    const codeElement = document.querySelector('code.language-python')
+    expect(codeElement).toBeDefined()
+    expect(codeElement?.textContent).toContain("print('hello')")
   })
 
   it('should render title', () => {

@@ -36,6 +36,7 @@ export interface Lesson {
   pregunta_transferencia: string
   quiz: Quiz
   simulador?: Simulator
+  colab?: Colab
   audio_script: string
   video_prompt: string
   trazabilidad: Trazabilidad
@@ -52,6 +53,17 @@ export interface Module {
 export interface Trazabilidad {
   libros_fuente: string[]
   conceptos_clave: string[]
+}
+
+export interface Colab {
+  objetivo?: string
+  sitios_practica?: string[]
+  celdas: ColabCell[]
+}
+
+export interface ColabCell {
+  tipo: 'markdown' | 'code'
+  contenido: string
 }
 
 export interface AssertReturn {

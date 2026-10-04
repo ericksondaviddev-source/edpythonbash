@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import Prism from 'prismjs'
+import 'prismjs/components/prism-python'
+import 'prismjs/components/prism-bash'
+import 'prismjs/components/prism-markup'
+import 'prismjs/components/prism-css'
+import 'prismjs/components/prism-javascript'
 
 interface CodeBlockProps {
   code: string
@@ -13,6 +19,7 @@ interface CodeBlockProps {
 
 export default function CodeBlock({
   code,
+  language,
   title,
   animate = false,
   speed = 30,
@@ -105,10 +112,11 @@ export default function CodeBlock({
       )}
       <div className="bg-[var(--code-bg)] p-4 overflow-x-auto">
         <pre className="text-sm font-mono">
-          <code className="text-[var(--code-text)]">
-            {displayedCode}
-            {isTyping && <span className="code-cursor">|</span>}
-          </code>
+          <code
+            className={`text-[var(--code-text)] language-${language}`}
+            dangerouslySetInnerHTML={{ __html: Prism.highlight(displayedCode, Prism.languages[language] || Prism.languages.plain, language) }}
+          />
+          {isTyping && <span className="code-cursor">|</span>}
         </pre>
       </div>
     </div>
