@@ -18,6 +18,10 @@
     "show": "Mostrar",
     "hide": "Ocultar"
   },
+  "mindmap": {
+    "expandAll": "Expandir todo",
+    "collapseAll": "Colapsar todo"
+  },
   "nav": {
     "dashboard": "Panel",
     "mindmap": "Mapa Mental",

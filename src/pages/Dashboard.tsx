@@ -10,9 +10,10 @@ interface DashboardProps {
   lessons: Lesson[]
   onLessonSelect: (lesson: Lesson) => void
   initialView?: 'mindmap' | 'dashboard'
+  currentLessonId?: string
 }
 
-export default function Dashboard({ modules, lessons, onLessonSelect, initialView = 'dashboard' }: DashboardProps) {
+export default function Dashboard({ modules, lessons, onLessonSelect, initialView = 'dashboard', currentLessonId }: DashboardProps) {
   const { t } = useTranslation()
   const { completedLessons, xp, level, streak } = useProgressStore()
   const [view, setView] = useState<'mindmap' | 'dashboard'>(initialView)
@@ -57,6 +58,7 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
       {view === 'mindmap' ? (
         <MindMap
           modules={modules}
+          currentLessonId={currentLessonId}
           onLessonSelect={(lessonId) => {
             const lesson = lessons.find(l => l.id === lessonId)
             if (lesson) onLessonSelect(lesson)

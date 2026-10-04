@@ -12,11 +12,13 @@ import type { Node, Edge } from 'reactflow'
 import 'reactflow/dist/style.css'
 import type { Module } from '../../types'
 import { useProgressStore } from '../../store/useProgressStore'
+import { useTranslation } from 'react-i18next'
 import { Button, Icon } from '../atoms'
 
 interface MindMapProps {
   modules: Module[]
   onLessonSelect: (lessonId: string) => void
+  currentLessonId?: string
 }
 
 interface LessonNodeData {
@@ -70,12 +72,13 @@ function ModuleNode({ data }: { data: ModuleNodeData }) {
   )
 }
 
-export default function MindMap({ modules, onLessonSelect }: MindMapProps) {
+export default function MindMap({ modules, onLessonSelect, currentLessonId }: MindMapProps) {
   const nodeTypes = useMemo(() => ({
     lesson: LessonNode,
     module: ModuleNode,
   }), [])
   const { completedLessons } = useProgressStore()
+  const { t } = useTranslation()
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
 
   const toggleModule = useCallback((moduleId: string) => {
@@ -151,7 +154,7 @@ export default function MindMap({ modules, onLessonSelect }: MindMapProps) {
               data: {
                 label: lesson.competencia,
                 isCompleted: completedLessons.includes(lesson.id),
-                isCurrent: false,
+                isCurrent: lesson.id === currentLessonId,
                 onClick: () => onLessonSelect(lesson.id),
               },
             })
@@ -169,7 +172,7 @@ export default function MindMap({ modules, onLessonSelect }: MindMapProps) {
     })
 
     return { nodes, edges }
-  }, [modules, completedLessons, onLessonSelect, expandedModules])
+  }, [modules, completedLessons, onLessonSelect, expandedModules, currentLessonId])
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -193,13 +196,13 @@ export default function MindMap({ modules, onLessonSelect }: MindMapProps) {
   return (
     <div className="w-full h-[55vh] max-h-[600px] min-h-[380px] md:h-[600px] bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)]">
       <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Mapa Mental</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t('nav.mindmap')}</h2>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={expandAll}>
-            Expandir todo
+            {t('mindmap.expandAll')}
           </Button>
           <Button variant="ghost" size="sm" onClick={collapseAll}>
-            Colapsar todo
+            {t('mindmap.collapseAll')}
           </Button>
         </div>
       </div>
@@ -213,7 +216,7 @@ export default function MindMap({ modules, onLessonSelect }: MindMapProps) {
         fitView
         attributionPosition="bottom-left"
       >
-        <Background color="#30363D" gap={16} />
+        <Background color="var(--border)" gap={16} />
         <Controls />
         <MiniMap
           nodeColor={(node) => {

@@ -123,6 +123,7 @@ function AppShell() {
                   modules={modules}
                   lessons={lessons}
                   onLessonSelect={handleLessonSelect}
+                  currentLessonId={currentLesson?.id}
                 />
               }
             />
@@ -133,6 +134,7 @@ function AppShell() {
                   modules={modules}
                   lessons={lessons}
                   onLessonSelect={handleLessonSelect}
+                  currentLessonId={currentLesson?.id}
                 />
               }
             />
@@ -170,6 +172,7 @@ function AppShell() {
                   modules={modules}
                   lessons={lessons}
                   onLessonSelect={handleLessonSelect}
+                  currentLessonId={currentLesson?.id}
                 />
               }
             />

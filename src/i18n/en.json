@@ -18,6 +18,10 @@
     "show": "Show",
     "hide": "Hide"
   },
+  "mindmap": {
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "mindmap": "Mind Map",
