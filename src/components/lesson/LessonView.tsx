@@ -52,7 +52,7 @@ export default function LessonView({
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">{lesson.competencia}</h1>
           <p className="text-sm text-[var(--text-secondary)]">{lesson.modulo}</p>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            {t('lessonPosition', { current: position.index + 1, total: position.total })}
+            {t('lesson.lessonPosition', { current: position.index + 1, total: position.total })}
           </p>
         </div>
         {isCompleted && (
@@ -189,7 +189,7 @@ export default function LessonView({
                 onClick={() => onNavigate(prevLesson.id)}
                 className="flex-1 py-3 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)] font-medium hover:bg-[var(--bg-tertiary)] transition-colors"
               >
-                ← {t('previousLesson')}
+                ← {t('lesson.previousLesson')}
               </button>
             )}
             {isCompleted ? (
@@ -198,11 +198,11 @@ export default function LessonView({
                   onClick={() => onNavigate(nextLesson.id)}
                   className="flex-1 py-3 bg-[var(--accent)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
                 >
-                  {t('goToNextLesson')}
+                  {t('lesson.goToNextLesson')}
                 </button>
               ) : (
                 <span className="flex-1 py-3 text-center font-medium text-[var(--success)]">
-                  {t('courseCompleted')}
+                  {t('lesson.courseCompleted')}
                 </span>
               )
             ) : (
@@ -210,7 +210,7 @@ export default function LessonView({
                 onClick={onComplete}
                 className="flex-1 py-3 bg-[var(--success)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
               >
-                {t('markComplete')}
+                {t('lesson.markComplete')}
               </button>
             )}
           </div>

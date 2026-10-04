@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { HashRouter, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom'
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useThemeStore } from './store/useThemeStore'
 import { useLanguageStore } from './store/useLanguageStore'
 import { useProgressStore } from './store/useProgressStore'
@@ -24,8 +24,10 @@ for (const [path, content] of Object.entries(lessonFiles)) {
 
 function AppShell() {
   const navigate = useNavigate()
-  const { lessonId } = useParams()
   const location = useLocation()
+  const lessonId = location.pathname.startsWith('/leccion/')
+    ? decodeURIComponent(location.pathname.split('/')[2])
+    : null
   const { theme } = useThemeStore()
   const { lang } = useLanguageStore()
   const { completeLesson } = useProgressStore()
