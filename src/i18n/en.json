@@ -55,7 +55,8 @@
     "previousLesson": "Previous",
     "nextLesson": "Next",
     "goToNextLesson": "Go to next lesson →",
-    "courseCompleted": "You completed the course! 🎉"
+    "courseCompleted": "You completed the course! 🎉",
+    "quizGatingHint": "Pass the quiz with at least 70% to mark this lesson as completed"
   },
   "quiz": {
     "title": "Quiz",
@@ -66,7 +67,15 @@
     "explanation": "Explanation",
     "nextQuestion": "Next question",
     "finish": "Finish",
-    "score": "Score"
+    "score": "Score",
+    "scoreLabel": "Score",
+    "completed": "Quiz Completed",
+    "retry": "Retry Quiz",
+    "excellent": "Excellent work!",
+    "practice": "Keep practicing",
+    "tipoConcepto": "Concept",
+    "tipoCodigo": "Code",
+    "tipoDebugging": "Debugging"
   },
   "simulator": {
     "title": "Simulator",

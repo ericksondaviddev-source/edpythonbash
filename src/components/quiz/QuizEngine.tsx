@@ -33,7 +33,13 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
       ...generated,
       ...codeQuestions
     ]
-    return all.sort(() => Math.random() - 0.5).slice(0, 8)
+    let seed = 0
+    for (const ch of lesson.id) seed = (seed * 31 + ch.charCodeAt(0)) % 2147483647
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    return all.sort(() => rand() - 0.5).slice(0, 8)
   }, [quiz, lesson])
 
   const currentQuestion = allQuestions[currentQuestionIndex]
@@ -48,6 +54,8 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
     }
   }
 
+  const passed = score / allQuestions.length >= 0.7
+
   const handleNext = () => {
     if (currentQuestionIndex < allQuestions.length - 1) {
       setCurrentQuestionIndex(i => i + 1)
@@ -55,7 +63,7 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
       setShowExplanation(false)
     } else {
       setIsComplete(true)
-      onComplete(score >= allQuestions.length / 2)
+      onComplete(passed)
     }
   }
 
@@ -69,20 +77,20 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
 
   if (isComplete) {
     return (
-      <Card title="Quiz Completado">
+      <Card title={t('quiz.completed')}>
         <div className="text-center">
           <p className="text-4xl font-bold text-[var(--accent)] mb-2">
             {score}/{allQuestions.length}
           </p>
           <p className="text-[var(--text-secondary)] mb-4">
-            {score >= allQuestions.length / 2 ? '¡Excelente trabajo!' : 'Sigue practicando'}
+            {passed ? t('quiz.excellent') : t('quiz.practice')}
           </p>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={handleRetry} className="flex-1">
-              Repetir Quiz
+              {t('quiz.retry')}
             </Button>
-            <Button onClick={() => onComplete(score >= allQuestions.length / 2)} className="flex-1">
-              Finalizar
+            <Button onClick={() => onComplete(passed)} className="flex-1">
+              {t('quiz.finish')}
             </Button>
           </div>
         </div>
@@ -101,10 +109,10 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
             currentQuestion.tipo === 'codigo' ? 'bg-green-500/20 text-green-500' :
             'bg-red-500/20 text-red-500'
           }`}>
-            {currentQuestion.tipo === 'concepto' ? 'Concepto' : currentQuestion.tipo === 'codigo' ? 'Código' : 'Debugging'}
+            {currentQuestion.tipo === 'concepto' ? t('quiz.tipoConcepto') : currentQuestion.tipo === 'codigo' ? t('quiz.tipoCodigo') : t('quiz.tipoDebugging')}
           </span>
           <span className="text-sm text-[var(--text-secondary)]">
-            Puntuación: {score}/{currentQuestionIndex}
+            {t('quiz.scoreLabel')}: {score}/{allQuestions.length}
           </span>
         </div>
 
@@ -144,7 +152,7 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
           </div>
 
           <Button onClick={handleNext} className="w-full">
-            {currentQuestionIndex < allQuestions.length - 1 ? 'Siguiente' : 'Finalizar'}
+            {currentQuestionIndex < allQuestions.length - 1 ? t('quiz.next') : t('quiz.finish')}
           </Button>
         </div>
       )}

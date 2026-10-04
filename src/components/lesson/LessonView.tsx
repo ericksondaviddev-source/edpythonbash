@@ -236,12 +236,9 @@ export default function LessonView({
                 </span>
               )
             ) : (
-              <button
-                onClick={onComplete}
-                className="flex-1 py-3 bg-[var(--success)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
-              >
-                {t('lesson.markComplete')}
-              </button>
+              <p className="flex-1 py-3 text-center text-sm text-[var(--text-secondary)] self-center">
+                {t('lesson.quizGatingHint')}
+              </p>
             )}
           </div>
         </div>
@@ -251,8 +248,8 @@ export default function LessonView({
         <QuizEngine
           quiz={lesson.quiz}
           lesson={lesson}
-          onComplete={() => {
-            if (!isCompleted) {
+          onComplete={(correct) => {
+            if (correct && !isCompleted) {
               onComplete()
             }
           }}

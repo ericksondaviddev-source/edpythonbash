@@ -81,7 +81,7 @@ describe('QuizEngine', () => {
     render(<QuizEngine quiz={mockQuiz} lesson={mockLesson} onComplete={() => {}} />)
     const optionButtons = screen.getAllByRole('button').filter(b => /^[A-D]\./.test(b.textContent?.trim() || ''))
     fireEvent.click(optionButtons[1])
-    fireEvent.click(screen.getByText(/Siguiente|Finalizar/))
+    fireEvent.click(screen.getByText(/Siguiente|Finalizar|quiz\.next|quiz\.finish/))
     expect(screen.getByText(/Pregunta 2\/3/)).toBeDefined()
   })
 
@@ -90,9 +90,9 @@ describe('QuizEngine', () => {
     for (let i = 0; i < 3; i++) {
       const optionButtons = screen.getAllByRole('button').filter(b => /^[A-D]\./.test(b.textContent?.trim() || ''))
       fireEvent.click(optionButtons[0])
-      fireEvent.click(screen.getByText(/Siguiente|Finalizar/))
+      fireEvent.click(screen.getByText(/Siguiente|Finalizar|quiz\.next|quiz\.finish/))
     }
-    expect(screen.getByText(/Quiz Completado/i)).toBeDefined()
-    expect(screen.getByText(/Repetir Quiz/i)).toBeDefined()
+    expect(screen.getByText(/Quiz Completado|quiz\.completed/i)).toBeDefined()
+    expect(screen.getByText(/Repetir Quiz|quiz\.retry/i)).toBeDefined()
   })
 })

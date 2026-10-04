@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Agregar interactividad a la landing (Menú y animaciones)",
-    "modelo_mental": "JavaScript no ejecuta el código de arriba a abajo ciegamente. Primero 'escanea' (hoisting) y luego ejecuta. 'var' ignora los bloques { } y se filtra, creando bugs fantasma. 'let' y 'const' respetan los bloques. La regla de oro moderna es: 'const' por defecto, 'let' solo si el valor cambia, 'var' nunca.",
+    "modelo_mental": "**Hoisting** es como un técnico que, antes de que empiece la función, coloca todos los elementos en el escenario. En JavaScript, las declaraciones de variables y funciones son 'elevadas' al inicio de su contexto de ejecución, lo que significa que el motor 've' la variable antes de que se ejecute la línea donde fue escrita. Esta analogía central ayuda a entender por qué una variable puede ser usada antes de su definición, pero también por qué el valor puede no ser el esperado.\n\nEntender este comportamiento es crucial para evitar **bugs** comunes, como el famoso problema de cierres (**closures**) que capturan la variable por referencia en lugar de por valor. Sin una comprensión clara de **hoisting** y del alcance (**scope**), es fácil caer en errores de tipo 'variable no definida' o 'valor inesperado', que pueden ser difíciles de depurar.\n\nAl reconocer que `var` ignora los bloques y crea variables a nivel de función, se previene el error de que una variable se comparta entre iteraciones, como en el caso de `for (var i = 0; i < 3; i++)`. Además, se evita la **zona muerta temporal** (**temporal dead zone**) que ocurre con `let` y `const`, donde la variable existe pero no puede ser accedida hasta que se ejecuta la línea de declaracion.",
     "codigo_roto": "for (var i = 0; i < 3; i++) {\n  setTimeout(function() {\n    console.log('El indice es: ' + i);\n  }, 100);\n}",
-    "diagnostico": "Clásico bug de 'var' en closures. Al usar 'var', la variable 'i' es global al bucle. Cuando el setTimeout se ejecuta 100ms después, el bucle ya terminó y 'i' vale 3. Imprimirá '3' tres veces. La IA genera esto si usa modelos antiguos o no se le fuerza a usar ES6+.",
+    "diagnostico": "1. La línea `for (var i = 0; i < 3; i++) { setTimeout(function() { console.log('El indice es: ' + i); }, 100); }` utiliza `var` para declarar `i`. En JavaScript, `var` tiene alcance de función, por lo que la variable `i` es la misma en cada iteración del bucle. Cuando el bucle termina, `i` vale 3, y las tres callbacks del `setTimeout` se ejecutarán más tarde, todas viendo el mismo valor 3.\n\n2. El `setTimeout` programado con un retardo de 100 ms no se ejecuta inmediatamente; se coloca en la cola de eventos. Mientras tanto, el bucle continúa y aumenta `i` hasta 3. Cuando finalmente los callbacks se ejecutan, el valor de `i` ya es 3, lo que produce la salida 'El indice es: 3' tres veces, en lugar de 0, 1, 2.\n\n3. El patrón general que se debe aprender es evitar `var` en contextos donde se crean closures o se usa bucles; en su lugar, usar `let` o `const` para limitar el alcance al bloque, o bien encapsular el valor en una función inmediata (IIFE) para capturar el valor actual de `i`.",
     "codigo_corregido": "for (let i = 0; i < 3; i++) {\n  setTimeout(function() {\n    console.log('El indice es: ' + i);\n  }, 100);\n}",
     "codigo_optimizado": "const delays = [100, 200, 300];\ndelays.forEach((delay, i) => {\n  setTimeout(() => console.log(`El indice es: ${i}`), delay);\n});",
     "disenso_experto": "Algunos devs veteranos defienden 'var' por su hoisting predecible en funciones complejas. Pero en el 99% del JS moderno (especialmente en móviles con ES6+ soportado), 'var' es deuda técnica. Si ves 'var' en código de IA, es tu primera señal de que el prompt no exigió estándares modernos.",
-    "pregunta_transferencia": "Si declaras 'const user = { name: 'Ana' };' y luego haces 'user.name = 'Bob';', ¿JavaScript lanzará un error? ¿Por qué 'const' permite esto pero no permite 'user = {};'?",
+    "pregunta_transferencia": "Imagina que escribes `const user = { name: 'Ana' };` y luego realizas `user.name = 'Bob';`. ¿Qué sucede en JavaScript? ¿Se lanza un error o se permite la modificación?\n\nPiensa en la diferencia entre la reasignación de la variable (`user = {}`) y la modificación de una propiedad del objeto al que apunta la variable. `const` impide que el identificador cambie de referencia, pero no protege el contenido del objeto al que apunta.",
     "quiz": {
       "pregunta": "¿Por qué 'let' soluciona el bug del setTimeout dentro del bucle for?",
       "opciones": [
@@ -34,10 +34,28 @@
     "audio_script": "Hablemos de por qué 'var' es peligroso. Imagina que 'var' es un niño que no respeta las habitaciones: si lo metes en la cocina (un bloque if o for), se escapa al pasillo (la función entera) y ensucia todo. 'let' y 'const' son adultos que se quedan en la habitación donde los pusiste. Si la IA te genera un bucle con 'var' y un setTimeout, vas a ver el mismo número repetido y no entenderás por qué. Cambia a 'let' y la magia del scope de bloque solucionará el problema instantáneamente.",
     "video_prompt": "Video de 60s. Animación de un bucle for. Con 'var', se muestra una sola caja de memoria compartida que cambia de 0 a 1, a 2, a 3. Los 3 setTimeout apuntan a la misma caja (que al final dice 3). Con 'let', se muestran 3 cajas de memoria separadas (0, 1, 2) y cada setTimeout apunta a su propia caja. Estilo pizarra blanca técnica.",
     "trazabilidad": {
-      "libros_fuente": ["Effective Python (adaptado a JS scope)", "MDN - let vs var"],
-      "conceptos_clave": ["scope", "hoisting", "closures", "let", "const", "var"]
+      "libros_fuente": [
+        "Effective Python (adaptado a JS scope)",
+        "MDN - let vs var"
+      ],
+      "conceptos_clave": [
+        "scope",
+        "hoisting",
+        "closures",
+        "let",
+        "const",
+        "var"
+      ]
     },
-    "tags_rag": ["javascript", "scope", "let", "const", "var", "closures"]
+    "tags_rag": [
+      "javascript",
+      "scope",
+      "let",
+      "const",
+      "var",
+      "closures"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-002",
@@ -46,13 +64,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Botón de toggle para el menú móvil",
-    "modelo_mental": "Las funciones flecha (=>) no son solo 'azúcar sintáctica' para escribir menos. Su superpoder (y su trampa) es que NO tienen su propio 'this'. Heredan el 'this' del lugar donde fueron escritas (scope léxico). Si necesitas que 'this' apunte al elemento que disparó un evento, NO uses flechas.",
+    "modelo_mental": "Las funciones flecha (=>) representan un cambio fundamental en cómo JavaScript maneja el contexto de ejecución. A diferencia de las funciones tradicionales, las flechas **no tienen su propio binding de `this`**. Piénsalas como **funciones anónimas que heredan el `this` del ámbito circundante** (scope léxico), tal como si fueran sombra del código que las rodea. Este diseño intencional las hace ideales para operaciones matemáticas, callbacks de alto orden y situaciones donde se quiere capturar el `this` del entorno, pero peligrosas cuando se usan como métodos de objeto o controladores de eventos.\n\nEntender este comportamiento es crucial porque `this` dinámico es una de las fuentes más comunes de bugs en aplicaciones reales. Cuando se usan flechas como métodos de objeto o controladores de eventos, se rompe la expectativa de que `this` referencia al receptor inmediato. La ausencia de su propio binding obliga a los desarrolladores a pensar explícitamente en el flujo léxico, lo que previene confusiones pero requiere un cambio de mentalidad. Si se usa una flecha en addEventListener, por ejemplo, `this` no será el elemento DOM que disparó el evento, sino el contexto circundante, lo que provoca fallos silenciosos o errores de propiedad.\n\nEste modelo mental previene errores como intentar modificar el estado del componente con this.setState() en React functional components sin clases, o acceder a propiedades de un objeto dentro de un callback de setTimeout. Al saber que la flecha no crea su propio this, el programador evita el patrón antipático de var self = this; setTimeout(function() { ... }, 1000) y en su lugar puede diseñar código más limpio con closures o bind, o decidir conscientemente cuándo la herencia léxico es beneficioso. En resumen, conocer el scope léxico de this con flechas evita la polución del ámbito global y bugs difíciles de rastrear en aplicaciones asíncronas.",
     "codigo_roto": "const button = document.querySelector('.menu-toggle');\nbutton.addEventListener('click', () => {\n  this.classList.toggle('active');\n  console.log('Menu toggled');\n});",
-    "diagnostico": "Error catastrófico de contexto. Al usar una arrow function en el addEventListener, 'this' no apunta al botón. Apunta al objeto global (window) o al módulo donde está el código. 'this.classList' fallará o modificará el objeto equivocado. La IA comete este error el 50% de las veces porque asume que '=>' es siempre mejor.",
+    "diagnostico": "1. La linea const button = document.querySelector('.menu-toggle'); selecciona el elemento DOM con clase .menu-toggle y lo asigna a la variable button. No hay error aqui, pero establece el escenario: estamos trabajando con el DOM, donde el contexto this suele referirse al elemento que dispara el evento en funciones tradicionales.\n\n2. Al llegar a button.addEventListener('click', () => {, se comete el error critico: se utiliza una arrow function como callback. A diferencia de una funcion tradicional, la arrow function no crea su propio binding de this. En el motor de JavaScript, cuando una funcion flecha se ejecuta, el motor busca this en el ambito lexico circundante (donde fue definida), no en el objeto que recibio el evento. Por eso, en entornos de navegador, this hace referencia al objeto global window (o undefined en modo estricto), no al boton.\n\n3. La tercera linea this.classList.toggle('active'); es donde falla el programa: al no tener la arrow function su propio this, intentar acceder a this.classList intenta leer la propiedad classList del objeto global o del modulo, no del boton. Dado que window.classList no existe o no es el elemento esperado, el metodo falla silenciosamente (devuelve undefined) o lanza TypeError: Cannot read property 'toggle' of undefined. El patron general a aprender es: nunca asuma que una arrow function mantendra el contexto this del llamador; este comportamiento es propio del motor de JavaScript y no se replica en Python o Bash, donde el manejo de contexto y `this` funciona de manera diferente. Si se necesita this dinamico, use funciones tradicionales o bind paraforzar el contexto correcto.",
     "codigo_corregido": "const button = document.querySelector('.menu-toggle');\nbutton.addEventListener('click', function() {\n  this.classList.toggle('active');\n  console.log('Menu toggled');\n});",
     "codigo_optimizado": "const button = document.querySelector('.menu-toggle');\nconst toggleMenu = (event) => {\n  event.currentTarget.classList.toggle('active');\n};\nbutton.addEventListener('click', toggleMenu);",
     "disenso_experto": "React y Vue han cambiado cómo vemos 'this'. En React (con hooks), 'this' casi ha desaparecido. Pero en Vanilla JS para DOM y eventos, entender 'this' es obligatorio. La escuela moderna prefiere usar 'event.currentTarget' en lugar de depender de 'this', porque es explícito y funciona igual con arrow functions.",
-    "pregunta_transferencia": "Tienes un objeto 'const timer = { seconds: 0, start: () => { setInterval(() => this.seconds++, 1000) } };'. Al llamar a timer.start(), los segundos no aumentan. ¿Por qué y cómo lo arreglas sin quitar las arrow functions?",
+    "pregunta_transferencia": "Escenario de transferencia: imagina que estás refactorizando un temporizador en JavaScript, buscando aprovechar la sintaxis concisa de las funciones flecha para mantener el codigo limpio y funcional. Has definido un objeto timer con una propiedad seconds y un metodo start que utiliza una flecha interna dentro de setInterval. Al invocar timer.start(), esperas que el contador avance, pero los segundos se quedan congelados en cero. Este patron es clasico en JavaScript y surge de la misma regla de scope lexico que afecta al contexto this en eventos y controladores, donde la flecha hereda el this del ambito externo en lugar del objeto que contiene el metodo.\n\nLa raiz del problema radica en que la arrow function () => { setInterval(() => this.seconds++, 1000) } hereda this del ambito donde fue escrita, que en este caso es el ambito global o del modulo donde reside el objeto timer, y no el propio objeto timer. Como resultado, this.seconds intenta acceder a una propiedad seconds del objeto global (que probablemente es undefined), por lo que la instruccion seconds++ no afecta al seconds del objeto timer. La pista para abordar este reto sin eliminar las flechas es recordar que, al no tener su propio this, puedes capturar la referencia al objeto deseado antes de entrar al intervalo, estableciendo un puente explicito entre el contexto heredado y el objeto timer, en lugar de confiar en que this se auto-resolvera correctamente al llamar al metodo.",
     "quiz": {
       "pregunta": "¿Cuándo es UN ERROR usar una Arrow Function?",
       "opciones": [
@@ -74,10 +92,25 @@
     "audio_script": "La arrow function, la flechita, es genial. Pero tiene un secreto: no sabe quién es ella misma. Cuando usas 'this' dentro de una flecha, ella mira a su alrededor y adopta el 'this' de su padre. Si la pones en un evento del DOM, el padre no es el botón, es la ventana del navegador. Por eso tu código falla. Si necesitas que 'this' sea el botón que el usuario acaba de tocar, usa la palabra 'function' tradicional, o mejor aún, usa el parámetro 'event' y llama a 'event.currentTarget'. Es más explícito y la IA lo entiende mejor si se lo pides.",
     "video_prompt": "Video de 60s. Muestra un botón en pantalla. Al hacer clic, el código usa 'this' con arrow function y aparece un signo de interrogación rojo sobre el botón (apunta a Window). Luego cambia a función tradicional o event.currentTarget y aparece un check verde (apunta al Botón). Overlay: 'Arrow functions heredan el this. Funciones tradicionales crean su propio this'.",
     "trazabilidad": {
-      "libros_fuente": ["Fluent Python (adaptado a JS closures/this)", "MDN - Arrow functions"],
-      "conceptos_clave": ["arrow-functions", "this", "lexical-scope", "dom-events"]
+      "libros_fuente": [
+        "Fluent Python (adaptado a JS closures/this)",
+        "MDN - Arrow functions"
+      ],
+      "conceptos_clave": [
+        "arrow-functions",
+        "this",
+        "lexical-scope",
+        "dom-events"
+      ]
     },
-    "tags_rag": ["javascript", "arrow-functions", "this", "eventos", "dom"]
+    "tags_rag": [
+      "javascript",
+      "arrow-functions",
+      "this",
+      "eventos",
+      "dom"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-003",
@@ -86,13 +119,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Animación de scroll suave en la landing",
-    "modelo_mental": "El DOM es lento. Cada vez que llamas a 'document.querySelector' o 'getElementById', el navegador tiene que buscar en el árbol. Si haces esto dentro de un evento que se dispara 60 veces por segundo (como scroll o resize), vas a congelar el teléfono del usuario. La regla: busca una vez, cachea en una variable, usa muchas veces.",
+    "modelo_mental": "Imagina que el DOM es una biblioteca inmensa y desordenada. Cada vez que usas `document.querySelector`, es como enviar a un bibliotecario a buscar un libro específico en los estantes; el navegador debe recorrer la estructura de nodos desde la raíz hasta encontrar el elemento. Si haces esto dentro de un evento que se dispara cientos de veces por segundo, como `scroll`, estás enviando a ese bibliotecario a correr sin parar, lo que satura el hilo principal y congela la interfaz. La regla de oro es: **busca una vez, usa muchas veces**.\n\nAl guardar el resultado en una variable (por ejemplo, `const header = document.querySelector('.header')`), estás guardando la dirección exacta del elemento en tu memoria local, que es instantánea de leer. Esto separa el costo alto (encontrar el nodo) del costo bajo (modificar sus clases o estilos). No se trata solo de velocidad, sino de **eficiencia de recursos**: cada búsqueda innecesaria consume ciclos de CPU y puede disparar cálculos de **layout** o **paint** si no se maneja bien.\n\nEste patrón previene el error clásico de escribir código que funciona en una PC potente pero **se rompe en móviles** de gama media o baja. Un teléfono con menos núcleos no puede permitirse el lujo de buscar el mismo elemento 60 veces por segundo mientras anima una transición. Cacheando los nodos, garantizas que la lógica de tu aplicación sea ligera y predecible, independientemente de la potencia del dispositivo del usuario.",
     "codigo_roto": "window.addEventListener('scroll', () => {\n  if (window.scrollY > 100) {\n    document.querySelector('.header').classList.add('scrolled');\n  } else {\n    document.querySelector('.header').classList.remove('scrolled');\n  }\n});",
-    "diagnostico": "Estás forzando al navegador a buscar '.header' en el árbol DOM cada vez que el usuario mueve el dedo un píxel. En un móvil de gama media, esto causa 'jank' (tartamudeo) y drena la batería. Además, no estás usando debounce/throttle para limitar la frecuencia del evento.",
+    "diagnostico": "1. **Línea `document.querySelector('.header')` dentro del `if` y `else`:** Aunque esta línea no lanza un error de sintaxis ni de ejecución, es la raíz del problema de rendimiento. Cada vez que el usuario hace scroll, el navegador debe recorrer el árbol del DOM desde `document` hasta encontrar el elemento con la clase `.header`. Al repetirlo dos veces por cada evento `scroll` (una para añadir, otra para quitar), duplicas un trabajo costoso innecesariamente. El patrón a aprender es: **selecciona antes del evento**, no dentro de él.\n\n2. **Frecuencia del evento `scroll`:** El evento `scroll` no espera a que el usuario deje de moverse; se dispara decenas de veces por segundo mientras el dedo se desliza. Esto significa que el navegador ejecuta el selector y modifica la clase `.scrolled` constantemente, forzando **repaints** (redibujos) continuos de la página. Esto es lo que genera el 'jank' o tartamudeo visual y consume batería rápidamente, porque la GPU y la CPU trabajan sin descanso en animaciones que el usuario ni siquiera nota.\n\n3. **Falta de optimización de disparadores:** No estás limitando la frecuencia a la que se ejecuta la lógica. En desarrollo profesional, los eventos de alto disparo deben protegerse con **throttle** (limitar a un máximo de ejecuciones por segundo) o **debounce** (esperar a que el usuario deje de moverse). La solución correcta combina el cacheo del nodo con un mecanismo de limitación, asegurando que el navegador solo procese cambios cuando sea estrictamente necesario para mantener los **60 FPS** estables.",
     "codigo_corregido": "const header = document.querySelector('.header');\n\nwindow.addEventListener('scroll', () => {\n  if (window.scrollY > 100) {\n    header.classList.add('scrolled');\n  } else {\n    header.classList.remove('scrolled');\n  }\n});",
     "codigo_optimizado": "const header = document.querySelector('.header');\nlet isScrolled = false;\nlet ticking = false;\n\nconst updateHeader = () => {\n  const shouldBeScrolled = window.scrollY > 100;\n  if (shouldBeScrolled !== isScrolled) {\n    header.classList.toggle('scrolled', shouldBeScrolled);\n    isScrolled = shouldBeScrolled;\n  }\n  ticking = false;\n};\n\nwindow.addEventListener('scroll', () => {\n  if (!ticking) {\n    window.requestAnimationFrame(updateHeader);\n    ticking = true;\n  }\n}, { passive: true });",
     "disenso_experto": "Algunos dicen 'los navegadores modernos son rápidos, no te preocupes por cachear'. Falso en móviles. La batería y el hilo principal (main thread) son recursos escasos. Usar requestAnimationFrame y passive: true no es 'optimización prematura', es higiene básica para PWAs móviles.",
-    "pregunta_transferencia": "Si cacheas un nodo en una variable (const btn = document.querySelector('#btn')) y luego ese botón es eliminado del HTML y recreado por JavaScript, ¿tu variable 'btn' seguirá funcionando? ¿Por qué?",
+    "pregunta_transferencia": "Imagina que en tu aplicación tienes un botón de \"Cerrar Modal\" y lo has guardado en una constante al cargar la página: `const btnClose = document.querySelector('#close-modal')`. Más tarde, el usuario cambia de idioma o navega a otra vista, y tu sistema elimina todo el contenido del `body` para montar una nueva vista desde cero, incluyendo un nuevo botón con el mismo ID `#close-modal`. Si ahora intentas llamar a `btnClose.addEventListener(...)`, ¿funcionará? Piensa en qué es exactamente lo que guardaste en esa variable: ¿el texto del botón, o una dirección de memoria que apunta a un objeto específico?\n\nLa clave para resolverlo está en entender la diferencia entre una **referencia a un objeto** y el **elemento actual en el DOM**. Si el nodo original fue eliminado del árbol, tu variable sigue apuntando al \"fantasma\" de ese nodo antiguo, que ya no tiene conexión con la página visible. Pista: no necesitas borrar la variable, pero sí necesitas verificar si el nodo sigue existiendo en el árbol antes de usarlo, o reasignar la variable seleccionando el elemento fresco cada vez que la vista se renderiza.",
     "quiz": {
       "pregunta": "¿Qué hace la opción '{ passive: true }' en un addEventListener de scroll?",
       "opciones": [
@@ -114,10 +147,27 @@
     "audio_script": "Imagina que le pides a un bibliotecario que busque un libro cada vez que parpadeas. Eso es hacer querySelector dentro de un evento scroll. El bibliotecario (el navegador) se va a agotar y la biblioteca (tu app) se va a congelar. La solución es simple: busca el libro una vez, déjalo en tu escritorio (una variable const) y úsalo todas las veces que quieras. Y si el evento es scroll o resize, usa requestAnimationFrame para sincronizar tus cambios con el refresco de la pantalla del móvil. Tu PWA se sentirá nativa.",
     "video_prompt": "Video de 70s. Lado izquierdo: código haciendo querySelector en cada scroll. Se muestra un gráfico de CPU del móvil al 100% y la pantalla tartamudeando (jank). Lado derecho: variable cacheada y requestAnimationFrame. CPU relajada, scroll a 60fps fluido. Overlay: 'Cachea tus nodos. Usa rAF.'",
     "trazabilidad": {
-      "libros_fuente": ["High Performance Browser Networking (conceptos de main thread)", "MDN - requestAnimationFrame"],
-      "conceptos_clave": ["dom", "performance", "scroll", "requestAnimationFrame", "cacheo"]
+      "libros_fuente": [
+        "High Performance Browser Networking (conceptos de main thread)",
+        "MDN - requestAnimationFrame"
+      ],
+      "conceptos_clave": [
+        "dom",
+        "performance",
+        "scroll",
+        "requestAnimationFrame",
+        "cacheo"
+      ]
     },
-    "tags_rag": ["javascript", "dom", "performance", "scroll", "raf", "pwa"]
+    "tags_rag": [
+      "javascript",
+      "dom",
+      "performance",
+      "scroll",
+      "raf",
+      "pwa"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-004",
@@ -126,13 +176,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Lista dinámica de cursos en la landing",
-    "modelo_mental": "Los eventos en el DOM hacen 'burbujeo' (bubbling): si haces clic en un <span> dentro de un <li> dentro de un <ul>, el evento sube hasta el window. En lugar de poner 100 listeners en 100 botones (consumiendo memoria), pones 1 listener en el padre y preguntas '¿quién disparó esto?'. Esto es vital para listas generadas dinámicamente.",
+    "modelo_mental": "La **delegación de eventos** se basa en el principio del **burbujeo** (event bubbling): cuando un usuario hace clic en un `<span>` dentro de un `<li>` que a su vez está dentro de un `<ul>`, el evento de clic viaja hacia arriba por cada nivel de ancestros hasta llegar a `window`. En lugar de registrar un **listener** en cada elemento, se puede registrar un único listener en un contenedo y luego determinar cuál fue el elemento que originó el evento.\n\nEsta técnica es crucial porque **optimiza el uso de memoria** y **mejora el rendimiento**; al evitar crear una función por cada elemento, reducimos la cantidad de closures y manejadores de eventos. Además, permite que elementos añadidos dinámicamente (por ejemplo, mediante `fetch` o `insertAdjacentHTML`) hereden automáticamente el comportamiento, sin necesidad de re-enlazar los eventos.\n\nEl patrón también **previene errores comunes** como la fuga de memoria al generar miles de listeners, y evita el problema de que los elementos nuevos no tengan el evento asociado. Utilizando `event.target` junto con `closest` se puede identificar de forma segura el elemento de interés.",
     "codigo_roto": "const items = document.querySelectorAll('.course-item');\nitems.forEach(item => {\n  item.addEventListener('click', () => {\n    console.log('Curso seleccionado:', item.dataset.id);\n  });\n});",
-    "diagnostico": "Si la lista tiene 500 cursos, acabas de crear 500 funciones en memoria y 500 listeners. Si luego agregas un curso nuevo vía Fetch API, el nuevo curso NO tendrá el evento porque el forEach ya se ejecutó. Este es un bug clásico de código IA que no piensa en datos dinámicos.",
+    "diagnostico": "1. **Uso excesivo de memoria**: El código registra un event listener para cada elemento mediante `items.forEach(item => { item.addEventListener('click', ...); });`. En Python, esto equivaldría a definir una closure dentro de un bucle, generando múltiples funciones y consumiendo memoria adicional; en Bash, sería como ejecutar un comando por cada elemento, lo que puede agotar los recursos del sistema. El patrón general es evitar registrar listeners individuales y delegar en un contenedo.\n\n2. **Falta de actualización para elementos dinámicos**: Al usar `forEach` sobre la lista inicial, los elementos que se añades después (por ejemplo, mediante `fetch` o `insertAdjacentHTML`) no tendrán el event listener. En Python, esto sería como iterar sobre una lista y luego agregar elementos sin re-iterar, perdiéndolos; en Bash, equivaldría a ejecutar un script una vez y luego agregar nuevos archivos sin re-ejecutarlo. La solución es usar delegación de eventos en un contenedo que siempre esté presente.",
     "codigo_corregido": "const list = document.querySelector('.course-list');\nlist.addEventListener('click', (event) => {\n  const item = event.target.closest('.course-item');\n  if (item) {\n    console.log('Curso seleccionado:', item.dataset.id);\n  }\n});",
     "codigo_optimizado": "const list = document.querySelector('.course-list');\n\nconst handleCourseClick = (e) => {\n  const target = e.target;\n  // Soporte si el usuario hace clic en un icono dentro del botón\n  const item = target.closest('.course-item');\n  if (!item || !list.contains(item)) return;\n  \n  const action = target.dataset.action || 'select';\n  console.log(`Action: ${action} on Course: ${item.dataset.id}`);\n};\n\nlist.addEventListener('click', handleCourseClick);",
     "disenso_experto": "Algunos argumentan que la delegación es más lenta porque el evento tiene que burbujear. La diferencia es de microsegundos, irrelevante. El beneficio de memoria y de manejo de DOM dinámico es infinito. Siempre delega en listas, tablas y contenedores dinámicos.",
-    "pregunta_transferencia": "¿Por qué usamos 'event.target.closest('.course-item')' en lugar de simplemente 'event.target' en la delegación de eventos?",
+    "pregunta_transferencia": "Imagina que tienes una lista de cursos y cada elemento `.course-item` contiene un botón de 'Ver detalles' y un icono. Si el usuario hace clic en el icono, `event.target` será el icono, no el contenedor del curso. Al usar `event.target.closest('.course-item')` se remonta el árbol hasta encontrar el primer ancestro con esa clase, permitiendo identificar el curso al que pertenece el clic.\n\nPiensa en la diferencia entre el elemento que disparó el evento y el elemento que te interesa; la función `closest` actúa como un 'escalador' que sube por los padres hasta encontrar el selector que buscas.",
     "quiz": {
       "pregunta": "¿Cuál es la ventaja PRINCIPAL de la Delegación de Eventos?",
       "opciones": [
@@ -154,10 +204,25 @@
     "audio_script": "La delegación de eventos es como tener un portero en la entrada de un edificio en lugar de un guardia en cada puerta de cada oficina. Cuando alguien entra (hace clic), el portero (el listener en el padre) mira su identificación (event.target) y decide qué hacer. Si usas querySelectorAll y le pones un guardia a cada oficina, cuando construyas una oficina nueva (contenido dinámico), no tendrá guardia. Usa delegación. Es más barato, más limpio y funciona con contenido que traes de una API después de que la página cargó.",
     "video_prompt": "Video de 60s. Animación de un árbol DOM. Un clic en un nodo hoja (span) genera una onda que sube (bubbling) hasta el nodo raíz (ul). El nodo raíz intercepta la onda y ejecuta la lógica. Comparación de memoria: 100 listeners (barras rojas) vs 1 listener (barra verde).",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Event Delegation", "JavaScript.info - Bubbling and capturing"],
-      "conceptos_clave": ["event-delegation", "bubbling", "closest", "dom-dinamico"]
+      "libros_fuente": [
+        "MDN - Event Delegation",
+        "JavaScript.info - Bubbling and capturing"
+      ],
+      "conceptos_clave": [
+        "event-delegation",
+        "bubbling",
+        "closest",
+        "dom-dinamico"
+      ]
     },
-    "tags_rag": ["javascript", "eventos", "delegacion", "closest", "dom"]
+    "tags_rag": [
+      "javascript",
+      "eventos",
+      "delegacion",
+      "closest",
+      "dom"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-005",
@@ -166,13 +231,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Cargar lista de cursos desde una API dummy",
-    "modelo_mental": "JavaScript es de un solo hilo (single-threaded). Si bloqueas el hilo esperando una red, la app se congela. Las Promesas y async/await no hacen que el código sea 'paralelo', hacen que sea 'no bloqueante'. 'await' es solo azúcar sintáctica para '.then()', pero hace que el código asíncrono se lea como si fuera síncrono, reduciendo errores cognitivos.",
+    "modelo_mental": "**JavaScript es de un solo hilo (single‑threaded)**, lo que significa que solo hay una cola de ejecución que procesa una instrucción a la vez. Cuando llamas a `fetch('/api/courses')`, la función retorna inmediatamente una **Promesa** que representa la operación de red, pero el hilo no se detiene a esperar la respuesta. Si escribimos código que asume que `fetch` es síncrono (por ejemplo, asignar `data` y luego retornar su valor), estamos **bloqueando mentalmente** el hilo, pensando que la operación completará antes de que el siguiente paso ocurra. Las **Promesas** y `async/await` no hacen que el código sea \"paralelo\" (eso requeriría web workers o hilos separados); en cambio, permiten que el hilo continúe ejecutando otras tareas mientras la operación asíncrona se resuelve en segundo plano, y luego **saltan de vuelta** cuando el resultado está listo. `await` es solo un **azúcar sintáctico** sobre `.then()` que hace que la secuencia asíncrona parezca síncrona, reduciendo la carga cognitiva y evitando errores como el retorno prematuro de `undefined`.\n\nAl entender esta analogía—imagina una cocina donde un chef (el hilo principal) no puede preparar otros platos mientras espera a que la hornilla (una solicitud de red) se caliente—aprendemos por qué **es importante mantener el hilo principal libre** y cómo `async/await` ayuda a escribir código que parece lineal sin sacrificar la capacidad de respuesta. Este modelo previene errores comunes como el **retorno anticipado de datos** (`undefined`), el **manejo incorrecto de errores** y la **inversión de callbacks**, porque el programador puede tratar la operación asíncrona como un paso más en el flujo de control, sabiendo que el motor gestionará la cola de resolución de la Promesa.\n\nEn resumen, la lección enfatiza que **la asincronía es una forma de delegar trabajo** a un \"reloj\" externo (el ciclo de eventos del navegador/node), no de ejecutar múltiples hilos simultáneamente. Dominar esta idea permite escribir código más claro, mantenible y resistente a los errores de temporización.",
     "codigo_roto": "function getCourses() {\n  let data;\n  fetch('/api/courses')\n    .then(res => res.json())\n    .then(json => {\n      data = json;\n    });\n  return data;\n}\nconst myCourses = getCourses();",
-    "diagnostico": "El error más común de principiantes y de IAs mal configuradas. 'getCourses()' retorna 'undefined' inmediatamente porque 'fetch' es asíncrono. El 'return data' se ejecuta ANTES de que la red responda. Estás tratando de forzar a un proceso asíncrono a comportarse como síncrono.",
+    "diagnostico": "1. **Línea `fetch('/api/courses')`**: Esta línea crea una Promesa que resuelve con la respuesta de la red. La Promesa es **asíncrona**, por lo que la asignación `data = json` dentro del `.then()` no ocurre inmediatamente. Si el código intentara usar `data` antes de que la Promesa resuelva, Python/Bash (o JavaScript en este caso) simplemente no tendría el valor aún, lo que resulta en una lectura de `undefined`.\n\n2. **Línea `return data`**: Esta línea está **fuera** de la cadena de `.then()`, por lo que se ejecuta en el momento en que `getCourses` es invocado, mucho antes de que la solicitud de red complete. El motor JavaScript lanza un **error silencioso** (no un error de sintaxis) porque `data` aún es `undefined`, causando que la función retorne `undefined`. El patrón general que los principiantes deben internalizar es que **cualquier operación que pueda tardar** (red, temporizadores, E/S) debe ser tratada como asíncrona y su resultado debe ser obtenido a través de una Promesa, `async/await` o un callback.\n\n3. **Defecto de gestión de errores**: La cadena de `.then()` encadenada **no tiene un `.catch()`**, por lo que si la solicitud de red falla, el error se propagará silenciosamente y podría causar un rechazo no capturado en la aplicación. El patrón correcto es envolver la cadena asíncrona en un bloque `try/catch` (si se usa `async/await`) o agregar un `.catch()` para manejar fallos de manera explícita.",
     "codigo_corregido": "async function getCourses() {\n  const res = await fetch('/api/courses');\n  const data = await res.json();\n  return data;\n}\n// Para usarla:\n// const myCourses = await getCourses();",
     "codigo_optimizado": "const getCourses = async () => {\n  try {\n    const response = await fetch('/api/courses');\n    if (!response.ok) throw new Error(`HTTP ${response.status}`);\n    return await response.json();\n  } catch (error) {\n    console.error('Error fetching courses:', error);\n    return []; // Fallback graceful degradation\n  }\n};",
     "disenso_experto": "Hay un debate sobre si usar '.then().catch()' o 'async/await'. La industria ha ganado con async/await por legibilidad. PERO, async/await puede causar 'blocking' si no se usa Promise.all() para tareas independientes. Si haces 3 awaits seguidos que no dependen uno del otro, estás serializando la red innecesariamente.",
-    "pregunta_transferencia": "Tienes que descargar una imagen, un JSON de usuario y un JSON de configuraciones. Ninguno depende del otro. ¿Cómo usas async/await para que los 3 se descarguen al mismo tiempo y no secuencialmente?",
+    "pregunta_transferencia": "Imagina que necesitas descargar tres recursos para una aplicación web: una **imagen** (`/assets/logo.png`), un **JSON de usuario** (`/api/user`) y un **JSON de configuraciones** (`/api/settings`). Ninguno de estos depende de los otros, pero todos deben estar disponibles antes de que la interfaz de usuario pueda renderizarse completamente. ¿Cómo puedes reescribir el código usando `async/await` y `Promise.all` para que las tres solicitudes se inicien **simultáneamente**, en lugar de secuencialmente, y luego manejar cualquier fallo en cualquiera de las descargas? La pista está en agrupar las Promesas en un array y usar `await` sobre `Promise.all`, lo que te da un array de resultados en el orden de las solicitudes originales.",
     "quiz": {
       "pregunta": "¿Qué retorna SIEMPRE una función declarada como 'async'?",
       "opciones": [
@@ -194,10 +259,26 @@
     "audio_script": "JavaScript es como un cajero en un banco. Si el cajero se queda quieto esperando a que el sistema apruebe un préstamo, la fila se detiene y todos se enojan. Eso es código síncrono bloqueante. Las promesas le dicen al cajero: 'toma este ticket, sigue atendiendo a los demás, y cuando el sistema apruebe, te aviso'. Async/await es la forma moderna de escribir esos tickets para que el código se lea de arriba a abajo, pero sin detener la fila. Si olvidas el 'await', es como si el cajero intentara entregar el dinero antes de que el sistema lo aprobara.",
     "video_prompt": "Video de 75s. Analogía del restaurante: El mesero (JS thread) toma la orden (fetch) y la lleva a la cocina. No se queda en la cocina mirando cómo se cocina (bloqueo). Vuelve a tomar más órdenes. Cuando la comida está, la campana suena (Promise resolved) y el mesero la sirve (await).",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Async functions", "JavaScript.info - Promises, async/await"],
-      "conceptos_clave": ["async", "await", "promises", "fetch", "event-loop"]
+      "libros_fuente": [
+        "MDN - Async functions",
+        "JavaScript.info - Promises, async/await"
+      ],
+      "conceptos_clave": [
+        "async",
+        "await",
+        "promises",
+        "fetch",
+        "event-loop"
+      ]
     },
-    "tags_rag": ["javascript", "asincronia", "async-await", "promesas", "fetch"]
+    "tags_rag": [
+      "javascript",
+      "asincronia",
+      "async-await",
+      "promesas",
+      "fetch"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-006",
@@ -206,13 +287,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Filtrar y renderizar cursos por categoría",
-    "modelo_mental": "Los bucles 'for' son imperativos: le dices a la máquina CÓMO hacer algo paso a paso. Los métodos de array son declarativos: le dices QUÉ quieres. 'map' transforma, 'filter' selecciona, 'reduce' acumula. Usarlos crea pipelines de datos inmutables que son infinitamente más fáciles de leer, testear y depurar que un bucle con variables temporales.",
+    "modelo_mental": "Los bucles **for** son imperativos: te dicen al procesador exactamente cuándo y cómo avanzar paso a paso, como una receta de cocina escrita paso a paso. En contraste, los métodos de array **map**, **filter** y **reduce** son declarativos: te dicen **QUÉ** quieres obtener —transformar, seleccionar o acumular— sin especificar el orden de las iteraciones. Esta diferencia se traduce en código más legible porque el flujo está encapsulado en funciones nativas del lenguaje, lo que permite construir **pipelines** de datos inmutables que no alteran el estado original. Al pensar así, evitas errores comunes como usar la misma variable en dos iteraciones (**side‑effects**) y facilitas la depuración, ya que cada etapa puede probarse de forma aislada.\n\nLa analogía central es la de una línea de producción: **map** toma cada producto, **filter** descarta los defectuosos, y **reduce** concatena las piezas en un resultado final. Al usar estas operaciones encadenadas (`.filter().map()`), el array subyacente nunca se modifica; cada llamada recibe su propia copia y devuelve una nueva estructura. Esto previene la propagación de errores como el **mutación inadvertida** que ocurre cuando una variable temporal se reutiliza entre iteraciones, y hace que el código sea más fácil de probar porque cada pieza funciona de forma aislada.\n\nEn aplicaciones reales —como una PWA móvil que carga listas de tareas— la inmutabilidad garantiza que los cambios en el estado no se pierdan en otros hilos ni en actualizaciones posteriores. Para transferir este conocimiento, debes internalizar el patrón de **transformación funcional**: primero filtra, luego mapea, eventualmente reduciendo, sin mantener referencias a índices o a variables auxiliares. Con esto, podrás cambiar cualquier algoritmo imperativo por una cadena de funciones declarativas y seguir comprobar cada etapa individualmente.",
     "codigo_roto": "const courses = [{name: 'JS', active: true}, {name: 'Py', active: false}];\nlet activeCourses = [];\nfor (let i = 0; i < courses.length; i++) {\n  if (courses[i].active) {\n    activeCourses.push(courses[i].name);\n  }\n}",
-    "diagnostico": "Funciona, pero es ruidoso. Tienes que leer 5 líneas para entender que solo estás filtrando activos y extrayendo nombres. Además, estás mutando un array externo ('activeCourses'), lo que rompe la inmutabilidad y dificulta el razonamiento en apps complejas.",
+    "diagnostico": "1. Mutación del array externo: La línea `activeCourses.push(courses[i].name);` modifica directamente la lista `activeCourses`. En **JavaScript** esto altera el estado compartido, lo que puede causar comportamientos impredecibles en entornos concurrentes o cuando la función es reutilizada. Si traducimos este patrón a **Python**, intentar modificar una lista dentro de una función que también usa listas internas produciría efectos secundarios difíciles de rastrear. En **Bash**, las asignaciones a variables mantienen el valor en el contexto, por lo que la práctica de mutar un array interno sin crear una nueva estructura sería equivalente a alterar el estado global, generando errores de carrera o pérdida de datos.\\n\\n2. Uso de un bucle **for** manual en lugar de métodos declarativos: El bucle explícito con índice y condicional es verboso y propenso a errores de límite (off‑by‑one) y a la creación accidental de variables temporales que persisten después de la iteración. Un programa escrito con bucles imperativos requiere más pruebas unitarias porque el flujo de control está implícito en las líneas de código. La alternativa funcional elimina la necesidad de gestionar índices y permite que el lenguaje maneje la iteración internamente, reduciendo la superficie de errores. Aprender a reconocer cuándo aplicar un método de array (`filter`, `map`, `reduce`) es esencial para escribir código limpio y escalable.",
     "codigo_corregido": "const activeCourses = courses\n  .filter(course => course.active)\n  .map(course => course.name);",
     "codigo_optimizado": "const activeCourses = courses\n  .filter(({ active }) => active)\n  .map(({ name }) => name);",
     "disenso_experto": "Algunos devs de rendimiento extremo evitan map/filter en bucles críticos (ej. motores de juegos en Canvas) porque crean arrays intermedios en memoria. Para el 99% del desarrollo web, PWA y UI, la legibilidad y mantenibilidad superan por miles a los microsegundos de CPU.",
-    "pregunta_transferencia": "Si tienes un array de 10,000 elementos y necesitas hacer un filter y luego un map, ¿cuántas veces itera el array en total si encadenas '.filter().map()' vs si usas un solo bucle 'for'? ¿Importa en una PWA móvil?",
+    "pregunta_transferencia": "Imagina que tienes un conjunto de 10 000 registros de usuarios donde cada registro contiene un campo `isActive`. Necesitas obtener primero todos los usuarios activos y, sobre ellos, calcular la suma de sus puntuaciones. ¿Cuál es la estrategia más eficiente para realizar ambas operaciones en una sola pasada y evitar mutar el array original? Una pista: piensa en cómo podrías encadenar los métodos **filter** y **map** (o combinarlos en un solo método de reducción) para lograr el resultado deseado sin crear estructuras intermedias innecesarias.",
     "quiz": {
       "pregunta": "¿Cuál es la diferencia fundamental entre 'forEach' y 'map'?",
       "opciones": [
@@ -234,10 +315,27 @@
     "audio_script": "Deja de usar bucles 'for' para todo. Cuando usas 'for', el que lee tu código tiene que simular la computadora en su cabeza para saber qué está pasando. Cuando usas 'filter', el código dice literalmente 'filtra esto'. Cuando usas 'map', dice 'transforma esto en aquello'. Es como hablar en oraciones completas en lugar de deletrear cada letra. Además, te obligan a no mutar variables, lo cual previene el 80% de los bugs lógicos en JavaScript.",
     "video_prompt": "Video de 60s. Animación de una cinta transportadora (el array). Pasa por una estación de rayos X (filter) que desecha los malos. Luego pasa por una estación de pintura (map) que les cambia el color. El resultado es una caja nueva. Overlay: 'Declarativo > Imperativo'.",
     "trazabilidad": {
-      "libros_fuente": ["Functional Programming concepts", "MDN - Array methods"],
-      "conceptos_clave": ["map", "filter", "reduce", "inmutabilidad", "declarativo"]
+      "libros_fuente": [
+        "Functional Programming concepts",
+        "MDN - Array methods"
+      ],
+      "conceptos_clave": [
+        "map",
+        "filter",
+        "reduce",
+        "inmutabilidad",
+        "declarativo"
+      ]
     },
-    "tags_rag": ["javascript", "arrays", "map", "filter", "reduce", "funcional"]
+    "tags_rag": [
+      "javascript",
+      "arrays",
+      "map",
+      "filter",
+      "reduce",
+      "funcional"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-007",
@@ -246,13 +344,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Manejo de estado de la UI (ej. configuración de usuario)",
-    "modelo_mental": "En JS, los objetos y arrays se pasan por referencia. Si copias un objeto con '=' y lo modificas, estás modificando el original (mutación). El Spread Operator (...) y el Destructuring te permiten extraer y clonar datos de forma superficial (shallow copy) sin ensuciar el estado original. Es la base de la programación predecible.",
+    "modelo_mental": "En JavaScript, los objetos y arrays son **tipos de referencia**. Esto significa que cuando declaras algo como `const user = { name: 'Erickson' }`, no estás guardando el objeto directamente en la variable, sino una **dirección de memoria** que apunta a donde está almacenado el objeto. Es como si tuvieras una nota adhesiva pegada a una caja en un almacén: la nota te dice dónde encontrar la caja, pero no es la caja misma. Cuando haces `const copia = user`, ambas variables apuntan a la misma caja, por lo que cualquier cambio hecho a través de una variable afecta al objeto original. Esto contrasta con los **tipos primitivos** (como números o strings), que se pasan por valor y se copian completamente. El Spread Operator (`...`) y el Destructuring son herramientas que te permiten **extraer** o **clonar** partes de estructuras de datos sin tocar el original, evitando así la **mutación no deseada**. Entender este modelo mental es clave para escribir código **predecible** y **inmutable**, especialmente en frameworks como React donde la inmutabilidad es fundamental para el correcto funcionamiento del ciclo de renderizado.\n\nLa analogía central es pensar en los objetos como **cajas físicas**. Si prestas tu caja a un amigo y él la modifica, tú también verás los cambios porque es la misma caja. Pero si le das una **fotocopia** de la caja (usando spread), tú conservas tu caja original intacta. Esto **importa** porque en aplicaciones reales, mutar estado accidentalmente puede provocar que componentes se rendericen con datos inconsistentes, que APIs fallen por enviar información corrupta, o que funciones puras dejen de comportarse como tales. El patrón general que debes internalizar es: **nunca confíes en una copia superficial si tu objeto contiene anidaciones**; para eso necesitarás técnicas de clonación profunda. Estas herramientas no solo previenen bugs sino que también te fomentan un estilo de programación más limpio y funcional.",
     "codigo_roto": "const user = { name: 'Erickson', theme: 'light' };\n\nfunction toggleTheme(u) {\n  u.theme = u.theme === 'light' ? 'dark' : 'light';\n  return u;\n}\n\nconst updatedUser = toggleTheme(user);\nconsole.log(user.theme); // Imprime 'dark' ¡El original fue mutado!",
-    "diagnostico": "Mutación de estado. Al pasar 'user' a la función y modificar 'u.theme', estás modificando el objeto original porque ambos apuntan a la misma referencia en memoria. En una app compleja, esto causa bugs donde la UI se actualiza en lugares que no esperabas porque el dato base fue corrompido.",
+    "diagnostico": "1. La primera línea del código define un objeto `user` con propiedades `name` y `theme`. Hasta aquí no hay problema, pero es importante recordar que este objeto vive en memoria dinámica y cualquier referencia a él podrá acceder y modificar su contenido.\n\n2. En la función `toggleTheme(u)`, recibes como paráro `u`, el cual es una **referencia** al mismo objeto `user`. No se crea una copia nueva; simplemente estás apuntando a la misma ubicación en memoria. Al ejecutar `u.theme = ...`, estás **mutando directamente** el objeto original, y eso es lo que provoca el efecto secundario no deseado.\n\n3. Al final, al hacer `console.log(user.theme)`, ves que imprime `'dark'` en lugar de `'light'`. Esto sucede porque `user` y `u` eran la misma referencia. Python y Bash no lanzan errores aquí porque no es un error de sintaxis, pero en JavaScript este patrón rompe con el principio de **inmutabilidad**. El patrón general que debes aprender es: **siempre clona el objeto antes de modificarlo dentro de una función**, usando `{ ...objeto }` o `Object.assign({}, objeto)`. Nunca modifiques directamente los parámetros recibidos si no deseas mutar el estado original.",
     "codigo_corregido": "const user = { name: 'Erickson', theme: 'light' };\n\nfunction toggleTheme(u) {\n  const newTheme = u.theme === 'light' ? 'dark' : 'light';\n  return { ...u, theme: newTheme };\n}\n\nconst updatedUser = toggleTheme(user);\nconsole.log(user.theme); // Imprime 'light' (intacto)",
     "codigo_optimizado": "const user = { name: 'Erickson', theme: 'light' };\n\nconst toggleTheme = ({ theme, ...rest }) => ({\n  ...rest,\n  theme: theme === 'light' ? 'dark' : 'light'\n});\n\nconst updatedUser = toggleTheme(user);",
     "disenso_experto": "El spread operator hace una 'copia superficial' (shallow copy). Si el objeto tiene objetos anidados, los anidados siguen compartiendo referencia. Para copias profundas (deep clone), la industria usaba lodash, pero hoy se usa 'structuredClone()'. Saber cuándo basta con spread y cuándo usar structuredClone es marca de seniority.",
-    "pregunta_transferencia": "Tienes 'const config = { api: { url: 'x' }, debug: true };'. Si haces 'const copy = { ...config }; copy.api.url = 'y';', ¿el 'config' original cambia? ¿Por qué?",
+    "pregunta_transferencia": "Tienes `const config = { api: { url: 'x' }, debug: true };`. Si haces `const copy = { ...config };` y luego ejecutas `copy.api.url = 'y';`, sí, el objeto `config` original cambiará. Esto ocurre porque el Spread Operator realiza una **copia superficial**: copia las referencias de las propiedades de primer nivel, pero si alguna propiedad es un objeto anidado (como `api`), ambas instancias apuntan al mismo objeto en memoria.\n\nUna pista para resolverlo: si quieres evitar que `config` se modifique, necesitas realizar una **copia profunda** del objeto antes de alterar cualquier propiedad anidada. Puedes usar `JSON.parse(JSON.stringify(config))` para una solución rápida, o implementar una función recursiva que clone cada nivel del objeto. Piensa en ello como si estuvieras fotocopiando no solo la caja principal, sino también las cajitas pequeñas que están dentro.",
     "quiz": {
       "pregunta": "¿Qué hace el operador Spread (...) en este contexto: 'const newObj = { ...oldObj, status: \"active\" };'?",
       "opciones": [
@@ -274,10 +372,26 @@
     "audio_script": "Imagina que tienes un documento original en la mesa. Si le pasas el documento a un amigo y él saca un bolígrafo y lo tacha, tu original se arruinó. Eso es pasar objetos por referencia en JS. El Spread Operator, los tres puntitos, es como una fotocopiadora. Le pasas el objeto, sacas una copia, le cambias lo que quieras a la copia, y tu original sigue intacto. En aplicaciones modernas, nunca, nunca modifiques el estado original directamente. Copia, modifica la copia, y reemplaza. Tu yo del futuro te lo agradecerá cuando intentes encontrar un bug.",
     "video_prompt": "Video de 60s. Muestra un objeto JS como una caja física. Al asignar con '=', ambas variables apuntan a la misma caja. Si una pinta la caja, la otra ve la pintura. Al usar Spread '...', aparece una segunda caja idéntica. Al pintar la segunda, la primera permanece igual. Overlay: 'Referencia vs Valor. Spread = Inmutabilidad'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Destructuring assignment", "MDN - Spread syntax"],
-      "conceptos_clave": ["destructuring", "spread", "inmutabilidad", "shallow-copy", "referencias"]
+      "libros_fuente": [
+        "MDN - Destructuring assignment",
+        "MDN - Spread syntax"
+      ],
+      "conceptos_clave": [
+        "destructuring",
+        "spread",
+        "inmutabilidad",
+        "shallow-copy",
+        "referencias"
+      ]
     },
-    "tags_rag": ["javascript", "spread", "destructuring", "inmutabilidad", "objetos"]
+    "tags_rag": [
+      "javascript",
+      "spread",
+      "destructuring",
+      "inmutabilidad",
+      "objetos"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-008",
@@ -314,10 +428,25 @@
     "audio_script": "LocalStorage es genial para recordar cosas pequeñas: si el usuario prefiere modo oscuro, su idioma, o el último formulario que llenó. Pero tiene una regla de oro que la IA olvida constantemente: LocalStorage es tonto, solo sabe guardar texto. Si le das un número, un booleano o un objeto, lo convierte a texto a su manera, y cuando lo lees, ya no es lo que era. Tienes que usar JSON.stringify para empacar tu dato en una caja de texto, y JSON.parse para desempacarlo al leerlo. Y siempre, siempre usa try/catch, porque si el teléfono del usuario está lleno, LocalStorage fallará y tumbará tu app si no estás preparado.",
     "video_prompt": "Video de 60s. Muestra un objeto JS complejo intentando entrar por una puerta que dice 'Solo Texto'. El objeto se aplasta y se convierte en el texto '[object Object]'. Luego muestra el mismo objeto pasando por una máquina 'JSON.stringify' que lo mete en una caja de cartón plana, entra por la puerta, y al salir pasa por 'JSON.parse' que lo rearma. Overlay: 'LocalStorage = Solo Strings'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Window.localStorage", "Web.dev - Storage API"],
-      "conceptos_clave": ["localstorage", "json", "persistencia", "try-catch", "pwa"]
+      "libros_fuente": [
+        "MDN - Window.localStorage",
+        "Web.dev - Storage API"
+      ],
+      "conceptos_clave": [
+        "localstorage",
+        "json",
+        "persistencia",
+        "try-catch",
+        "pwa"
+      ]
     },
-    "tags_rag": ["javascript", "localstorage", "json", "persistencia", "pwa"]
+    "tags_rag": [
+      "javascript",
+      "localstorage",
+      "json",
+      "persistencia",
+      "pwa"
+    ]
   },
   {
     "id": "F0.2-009",
@@ -326,13 +455,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Formulario de registro en la landing",
-    "modelo_mental": "Validar un formulario que requiere una llamada a la red (ej. comprobar si el email ya existe) es una carrera contra el tiempo. El evento 'submit' del navegador es síncrono por defecto: si no lo detienes INMEDIATAMENTE con 'preventDefault()', el navegador recargará la página antes de que tu Fetch termine. La IA suele poner el preventDefault dentro del callback asíncrono, lo cual es demasiado tarde.",
+    "modelo_mental": "La clave está en entender que **el evento 'submit' es sincrónico** y actúa como un 'red trigger' que recarga la página inmediatamente si no se detiene. Imagina el navegador como un tren que parte al instante: `preventDefault()` es como parar el tren antes de que arranque, no después de haber salido de la estación. El error más grave es colocar `preventDefault()` dentro del callback asíncrono de `fetch`, porque mientras tanto, el navegador ya ha navegado. Además, **el parámetro `event` no está definido** en la función flecha, lo que genera un ReferenceError. La solución es **usar `event.preventDefault()` AL PRINCIPIO** del handler, antes de cualquier operación asíncrona, y **capturar el evento** como parámetro: `addEventListener('submit', (event) => { event.preventDefault(); ... })`. Esto previene errores de timing y asegura que la validación asíncrona tenga tiempo de completarse sin interrupciones del navegador.",
     "codigo_roto": "document.querySelector('form').addEventListener('submit', () => {\n  const email = document.getElementById('email').value;\n  \n  fetch(`/api/check-email?e=${email}`)\n    .then(res => res.json())\n    .then(data => {\n      if (data.exists) {\n        event.preventDefault(); // BUG: Demasiado tarde\n        alert('El email ya existe');\n      }\n    });\n});",
-    "diagnostico": "El formulario se enviará y recargará la página inmediatamente al hacer clic. El 'event.preventDefault()' está dentro del '.then()', que se ejecuta 500ms después, cuando el navegador ya navegó a otra página o recargó. Además, 'event' no está definido como parámetro en la función principal, causando un ReferenceError si el scope global no lo atrapa.",
+    "diagnostico": "1. El formulario se recarga inmediatamente porque `preventDefault()` está dentro del `.then()`, que se ejecuta después de que el navegador ya haya procesado el evento. El navegador no espera a que termine el fetch: actúa como un 'fire and forget'. 2. El error `event is not defined` ocurre porque la función flecha no recibe el parámetro `event`, y JavaScript no lo busca en el scope global por defecto. La función flecha (`() => {}`) no tiene su propio `this` ni `arguments`, y si `event` no está declarado en el alcance externo, lanza ReferenceError. 3. El patrón general es: **siempre detener el comportamiento por defecto ANTES de operaciones asíncronas**. La secuencia correcta es: recibir evento → `preventDefault()` → iniciar fetch → manejar respuesta → decidir si enviar formulario real con `form.submit()` o mostrar errores.",
     "codigo_corregido": "document.querySelector('form').addEventListener('submit', async (event) => {\n  event.preventDefault(); // DETENER INMEDIATAMENTE\n  \n  const email = document.getElementById('email').value;\n  const submitBtn = event.target.querySelector('button[type=submit]');\n  submitBtn.disabled = true;\n  \n  try {\n    const res = await fetch(`/api/check-email?e=${email}`);\n    const data = await res.json();\n    \n    if (data.exists) {\n      alert('El email ya existe');\n    } else {\n      event.target.submit(); // Enviar manualmente si todo está bien\n    }\n  } catch (err) {\n    alert('Error de red');\n  } finally {\n    submitBtn.disabled = false;\n  }\n});",
     "codigo_optimizado": "const form = document.querySelector('form');\n\nform.addEventListener('submit', async (e) => {\n  e.preventDefault(); // 1. Frenar el navegador\n  \n  const formData = new FormData(form);\n  const submitBtn = form.querySelector('button[type=submit]');\n  \n  // 2. Feedback visual (Loading state)\n  submitBtn.disabled = true;\n  submitBtn.innerText = 'Verificando...';\n  \n  try {\n    const res = await fetch('/api/check-email', {\n      method: 'POST',\n      body: formData\n    });\n    \n    if (!res.ok) throw new Error('Server error');\n    const { exists } = await res.json();\n    \n    if (exists) {\n      showError('email-error', 'Este correo ya está registrado');\n    } else {\n      form.submit(); // 3. Liberar el envío\n    }\n  } catch (error) {\n    showError('form-error', 'No pudimos verificar. Intenta de nuevo.');\n  } finally {\n    submitBtn.disabled = false;\n    submitBtn.innerText = 'Registrarme';\n  }\n});",
     "disenso_experto": "Algunos argumentan que validar en el cliente es innecesario si el backend valida. Falso. La validación de cliente es por UX (evitar recargas innecesarias y dar feedback rápido). La de backend es por Seguridad. Ambas son obligatorias. La IA suele mezclar los tiempos de ejecución de ambas.",
-    "pregunta_transferencia": "Si tu validación asíncrona tarda 3 segundos por una red lenta, y el usuario hace clic en 'Enviar' 5 veces seguidas por desesperación, ¿qué va a pasar con tu servidor y cómo lo previenes en JS?",
+    "pregunta_transferencia": "Imagina que el servidor tarda 3 segundos en responder y el usuario hace clic 5 veces en 'Enviar'. Sin protección, se enviarían 5 peticiones duplicadas, saturando el servidor y causando inconsistencias de datos. Tu reto es **prevenir múltiples envíos simultáneos** usando un flag de 'envío en curso' y deshabilitar el botón. La pista: usa una variable booleana (`let enviando = false`) que actives al inicio del submit y desactives al final, y combínala con `button.disabled = true` para evitar clicks duplicados. También puedes usar `once: true` en el listener o eliminar el listener después del primer click. La pregunta es: ¿cómo sincronizas el estado local con el ciclo completo de la petición asíncrona sin perder la referencia al formulario?",
     "quiz": {
       "pregunta": "¿Por qué 'event.preventDefault()' DEBE estar al principio del listener de 'submit' si hay código asíncrono?",
       "opciones": [
@@ -354,10 +483,26 @@
     "audio_script": "Cuando la IA te genera un formulario que consulta una API, revisa siempre la primera línea de la función submit. Si no dice 'event.preventDefault()', tu app está rota. El navegador es impaciente: cuando tocas enviar, quiere recargar la página YA. Si tu código le dice 'espera, voy a preguntar a la base de datos', pero no lo frenas con preventDefault, el navegador no espera, recarga, y tu consulta a la API muere en el aire. Primero frenas, luego preguntas, luego decides si dejas que el formulario avance o lo detienes.",
     "video_prompt": "Video de 80s. Muestra una línea de tiempo. Evento Submit -> Milisegundo 1: preventDefault (barrera roja). Milisegundo 10: Fetch inicia. Milisegundo 500: Fetch responde. Milisegundo 501: form.submit(). Luego muestra el código roto: Evento Submit -> Milisegundo 1: Navegador recarga (pantalla blanca) -> Fetch se cancela con error de red. Overlay: 'Frena al navegador antes de pensar'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - FormData", "Web.dev - Forms best practices"],
-      "conceptos_clave": ["formularios", "submit", "preventDefault", "async-validation", "ux"]
+      "libros_fuente": [
+        "MDN - FormData",
+        "Web.dev - Forms best practices"
+      ],
+      "conceptos_clave": [
+        "formularios",
+        "submit",
+        "preventDefault",
+        "async-validation",
+        "ux"
+      ]
     },
-    "tags_rag": ["javascript", "formularios", "submit", "preventDefault", "async"]
+    "tags_rag": [
+      "javascript",
+      "formularios",
+      "submit",
+      "preventDefault",
+      "async"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.2-010",
@@ -366,13 +511,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Componentes dinámicos (ej. Modales o Acordeones)",
-    "modelo_mental": "JavaScript tiene un Garbage Collector (recolector de basura) que libera memoria de los objetos que ya no se usan. PERO, si un objeto del DOM tiene un Event Listener atado a una función global o a un closure, el navegador asume que 'lo necesitas' y no lo borra, aunque lo quites de la pantalla. Si creas y destruyes componentes (como modales) sin limpiar sus listeners, tu PWA consumirá RAM hasta que el móvil la cierre por agotamiento.",
+    "modelo_mental": "Imagina que el **Garbage Collector (GC)** de JavaScript es un servicio de limpieza que recorre tu casa (la memoria) tirando lo que ve en la basura. La regla de oro es: **un objeto se puede borrar solo si *nadie* tiene una referencia viva a él**. Cuando haces `window.addEventListener('resize', handler)`, el objeto `window` (que vive para siempre) guarda una referencia fuerte a tu función `handler`. Si esa función es una **arrow function** o un **closure** que captura la variable `modal`, se crea una cadena de referencias: `window` → `handler` → `modal` (nodo DOM).\n\n**Por qué importa:** Aunque llames a `modal.remove()` y el nodo desaparezca de la pantalla (el árbol DOM), el GC *no puede* liberar la memoria de ese `div` ni de sus hijos porque `window` sigue 'agarrado' a él a través del listener. En una **PWA o SPA** donde el usuario abre/cierra modales, sidebars o tooltips decenas de veces, esta **fuga de memoria (memory leak)** acumula 'basura fantasmas' (detached DOM nodes) y listeners zombis que consumen CPU en cada evento `resize` o `scroll`, hasta que el SO mata la pestaña por **OOM (Out Of Memory)**.\n\n**Errores que previene:** Entender este modelo mental te obliga a tratar los listeners como **recetas de suscripción/desuscripción** (patrón *Observer*). Siempre que haces `addEventListener`, debes tener un plan para `removeEventListener` *antes* de que el componente muera. Evita *arrow functions* anónimas inline si necesitas limpiar después; usa **funciones nombradas** o guarda la referencia en una variable/propiedad (`this.resizeHandler = ...`) para poder desconectarla explícitamente en un método `destroy()` o `cleanup()`.",
     "codigo_roto": "function openModal() {\n  const modal = document.createElement('div');\n  modal.className = 'modal';\n  document.body.appendChild(modal);\n  \n  // BUG: Añade un listener a WINDOW cada vez que abres el modal\n  window.addEventListener('resize', () => {\n    adjustModalSize(modal);\n  });\n}\n\nfunction closeModal() {\n  const modal = document.querySelector('.modal');\n  modal.remove(); // Quitas el HTML, pero el listener en window sigue vivo y apunta a la variable 'modal' en memoria\n}",
-    "diagnostico": "Fuga de memoria clásica. Si el usuario abre y cierra el modal 20 veces, habrá 20 listeners de 'resize' activos en el objeto Window, todos intentando ajustar un modal que ya no existe, consumiendo CPU en cada movimiento de pantalla y reteniendo la memoria del nodo DOM. La IA genera esto porque encapsula la lógica de 'setup' pero olvida la lógica de 'teardown' (limpieza).",
+    "diagnostico": "1. **Fuga por referencia anónima (Línea 8):** `window.addEventListener('resize', () => { ... })` crea una **nueva función distinta en cada llamada a `openModal`**. Como es una *arrow function* inline, no tienes un identificador para pasárselo luego a `removeEventListener`. El navegador registra 20 listeners distintos si abres 20 veces.\n2. **Captura de variable en Closure (Línea 9):** El callback `() => adjustModalSize(modal)` forma un **closure** sobre la variable `modal` (el nodo DOM creado en la línea 3). Esto 'engancha' el nodo DOM en memoria mientras el listener exista en `window`.\n3. **Limpieza incompleta en `closeModal` (Línea 16):** `modal.remove()` solo saca el nodo del árbol DOM (`parentNode.removeChild`), **no toca el objeto `window`**. Los 20 listeners siguen vivos en `window.__eventListeners__.resize`, disparándose en cada resize de ventana, ejecutando `adjustModalSize` sobre un nodo `modal` que ya no está en el documento (detached), desperdiciando CPU y reteniendo memoria (el nodo y sus hijos no son recolectables).\n\n**Patrón general a aprender:** **Setup/Teardown Simétrico**. Todo `addEventListener` en un ámbito global/persistente (`window`, `document`, `EventEmitter`, `IntersectionObserver`) **requiere** su `removeEventListener` emparejado en la fase de destrucción. La IA falla aquí porque genera código 'optimista' (solo camino feliz) y omite el ciclo de vida de limpieza.",
     "codigo_corregido": "let resizeHandler = null;\n\nfunction openModal() {\n  const modal = document.createElement('div');\n  modal.className = 'modal';\n  document.body.appendChild(modal);\n  \n  resizeHandler = () => adjustModalSize(modal);\n  window.addEventListener('resize', resizeHandler);\n}\n\nfunction closeModal() {\n  const modal = document.querySelector('.modal');\n  if (modal) modal.remove();\n  \n  if (resizeHandler) {\n    window.removeEventListener('resize', resizeHandler);\n    resizeHandler = null;\n  }\n}",
     "codigo_optimizado": "class Modal {\n  constructor() {\n    this.element = null;\n    this.resizeHandler = this.handleResize.bind(this);\n  }\n\n  open() {\n    this.element = document.createElement('div');\n    this.element.className = 'modal';\n    document.body.appendChild(this.element);\n    window.addEventListener('resize', this.resizeHandler);\n  }\n\n  handleResize() {\n    if (this.element) adjustModalSize(this.element);\n  }\n\n  close() {\n    if (this.element) {\n      this.element.remove();\n      this.element = null;\n    }\n    window.removeEventListener('resize', this.resizeHandler);\n  }\n}",
     "disenso_experto": "En SPAs modernas (React/Vue/Svelte), el framework maneja los listeners y los limpia automáticamente al desmontar el componente. Pero en Vanilla JS (que es lo que usas para tu PWA base y Service Workers), TÚ eres el recolector de basura. Si no haces 'removeEventListener' con la EXACTA misma referencia de función que usaste para añadirlo, el listener se queda para siempre.",
-    "pregunta_transferencia": "¿Por qué este código NO limpia el listener aunque se llame a removeEventListener?\n`window.addEventListener('resize', () => console.log('A'));\nwindow.removeEventListener('resize', () => console.log('A'));`",
+    "pregunta_transferencia": "Analiza el siguiente snippet. El desarrollador *intenta* limpiar usando `removeEventListener` pasando una función que *parece* idéntica a la registrada, pero **la fuga persiste**. ¿Por qué falla la limpieza y cómo modificarías el registro original para que `removeEventListener` funcione correctamente sin cambiar la firma de la llamada de limpieza?\n\njavascript\n// Registro\nwindow.addEventListener('resize', () => console.log('A'));\n\n// ... tiempo después ...\n// Intento de limpieza\nwindow.removeEventListener('resize', () => console.log('A'));\n\n\n**Pista:** Piensa en **identidad de función** (referencia en memoria) vs **igualdad estructural** (mismo código). Las *arrow functions* inline se evalúan como **objetos función distintos** cada vez que se ejecuta la línea. `removeEventListener` compara **referencias estrictas (`===`)**, no el texto del código. Para resolverlo, necesitas **estabilizar la referencia** (guardar la función en una variable/constante *fuera* del flujo de ejecución repetido) para que el registro y la baja apunten al *mismo objeto función* en memoria.",
     "quiz": {
       "pregunta": "¿Qué condición es OBLIGATORIA para que removeEventListener funcione?",
       "opciones": [
@@ -394,9 +539,24 @@
     "audio_script": "Tu PWA va a vivir en el teléfono del usuario. Si tu código tiene fugas de memoria, el teléfono se calentará, la batería se drenará y el sistema operativo cerrará tu app a la fuerza. Una de las fugas más comunes que la IA ignora es agregar Event Listeners a elementos globales como 'window' o 'document' cada vez que abres una vista o un modal, y olvidarte de quitarlos al cerrar. Recuerda: agregar es fácil, quitar requiere la misma referencia exacta de la función. Si usas funciones anónimas, no podrás quitarlas nunca. Nómbralas, guárdalas, y límpialas.",
     "video_prompt": "Video de 70s. Animación de un celular. Cada vez que se abre un modal, se le pega un 'chupete' (listener) que drena batería (línea roja bajando). Al cerrar el modal, el chupete se queda pegado aunque el modal desaparezca. Luego muestra el código correcto con 'removeEventListener' que despega los chupetes. Overlay: 'Setup & Teardown. Siempre limpia tu rastro'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Memory Management", "Web.dev - Memory leaks"],
-      "conceptos_clave": ["memory-leaks", "garbage-collection", "removeEventListener", "performance"]
+      "libros_fuente": [
+        "MDN - Memory Management",
+        "Web.dev - Memory leaks"
+      ],
+      "conceptos_clave": [
+        "memory-leaks",
+        "garbage-collection",
+        "removeEventListener",
+        "performance"
+      ]
     },
-    "tags_rag": ["javascript", "memoria", "memory-leak", "event-listener", "performance"]
+    "tags_rag": [
+      "javascript",
+      "memoria",
+      "memory-leak",
+      "event-listener",
+      "performance"
+    ],
+    "_enriched": true
   }
 ]

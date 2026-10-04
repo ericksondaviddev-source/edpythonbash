@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "La semántica no es estética, es comunicación. Las etiquetas HTML le dicen al navegador, a los motores de búsqueda y a los lectores de pantalla qué ES cada parte del documento, no cómo SE VE.",
+    "modelo_mental": "La semántica HTML no se trata de adornos visuales, sino de la **intención** con la que estructuramos la información. Para comprenderlo, imaginemos un libro: las etiquetas <h1>, <nav>, <main> y <footer> son como el índice, el título de capítulo y el pie de página; definen qué es cada sección, no cómo debe lucir en la página. El diseño gráfico (CSS) sería la cubierta, el papel y la tipografía, pero sin el esqueleto semántico, el lector perdería el hilo de la narrativa. Esta analogía del 'esqueleto vs. piel' refuerza que el HTML sirve de base para que cualquier agente —navegador, motor de búsqueda o tecnología asistiva— entienda la organización del documento. Cuando escribimos un div con clase header en lugar de <header>, estamos sustituyendo un rótulo significativo por un recipiente vacío, lo que rompe la comunicación prevista.\n\nEsto importa porque la web es un ecosistema multimodal. Los motores de búsqueda usan la jerarquía semántica para indexar y rankear contenido; los lectores de pantalla navegan por landmarks para que usuarios con discapacidad visual puedan saltar directamente al menú o al contenido principal; y los navegadores aplican estilos y comportamientos predeterminados basados en el tipo de etiqueta. **Ignorar la semántica** no solo afecta la accesibilidad, sino que degrade el SEO y la usabilidad en dispositivos no visuales. Un documento bien semántico es, por definición, más robusto, mantenible y compatible con estándares futuros.\n\nLos errores más comunes que esta mentalidad previene incluye la temida **divitis** (el uso excesivo de div genéricos para todo), la pérdida de jerarquía de encabezados y la imposibilidad de que tecnologías asistivas distingan el rol de cada bloque. Al intencionalmente elegir <nav> sobre un div con clase menu, <main> en lugar de un contenedor vacío, o <h1>–<h6> para títulos, nos aseguramos de que el código transmita **intención semántica** real. Esto evita que el desarrollo se convierta en un laberinto de clases CSS necesarias solo para dar sentido visual, y en su lugar permite que la estructura del documento hable por sí misma, reduciendo la dependencia de presentacional markup.",
     "codigo_roto": "<div class='header'>\n  <div class='title'>Mi App</div>\n  <div class='menu'>\n    <div class='item'>Inicio</div>\n    <div class='item'>Cursos</div>\n  </div>\n</div>\n<div class='content'>\n  <div class='section'>Bienvenido</div>\n</div>",
-    "diagnostico": "Esto es divitis puro: cada elemento es un <div> genérico. Un lector de pantalla no puede distinguir el título del menú ni la sección del contenido. El SEO pierde toda la jerarquía. El código es ilegible para otros desarrolladores porque no hay información semántica.",
+    "diagnostico": "1. El primer elemento, <div class='header'>, es un contenedor genérico que no transmite ningún rol semántico al navegador. Al carecer de una etiqueta nativa como <header>, el agente usuario no puede identificar automáticamente el inicio del documento, lo que afecta tanto el estilo por defecto como la navegación por landmarks. Análogo a un script de Python que invoca json.loads sobre un texto sin estructura JSON: la operación fallaría o devolvería excepciones de formato inesperado, aquí el navegador fallaría al asignar significado, resultando en una pérdida de intención. El patrón general es: todo contenedor sin etiqueta semántica equivalente introduce ambigüedad en el procesamiento downstream.\n\n2. El segundo bloque, <div class='title'>Mi App</div>, anidado dentro del anterior, tampoco posee significado inherente. Al usar un div en lugar de <h1> u otro encabezado, los lectores de pantalla lo leerán simplemente como 'div' y los motores de búsqueda no asociarán el texto con la jerarquía de títulos. Si intentáramos extraer el título con una expresión regular de Bash sobre este markup, obtendríamos el texto contaminado por las etiquetas de contenedor, requiriendo limpieza post-procesamiento; con <h1>, la extracción es directa y sin ambigüedades. Esto ejemplifica el patrón de error: sustituir etiquetas de significado por contenedores genéricos rompe la pipeline de información, ya sea para humanos, máquinas o tecnologías asistivas.\n\n3. Finalmente, <div class='menu'> que envuelve a <div class='item'>Inicio</div> y <div class='item'>Cursos</div>, pierde la noción de navegación estructurada. Un elemento <nav> con enlaces <a> o botones apropiados permite la saltación y comprensión del menú, mientras que los `div`s anónimos requiere lógica adicional para inferir su propósito. En el contexto de Bash o Python, esto se replica: un parser que espere una lista ordenada de enlaces en un formato semántico bien definido lanzaría errores de clave ausente o tipo de dato inesperado ante esta estructura fluida y genérica. La lección aprendida es siempre preguntar '¿qué es esto?' antes de '¿cómo se ve?', asegurando que la estructura sirva de mapa, no de laberinto.",
     "codigo_corregido": "<header>\n  <h1>Mi App</h1>\n  <nav>\n    <ul>\n      <li><a href='/'>Inicio</a></li>\n      <li><a href='/cursos'>Cursos</a></li>\n    </ul>\n  </nav>\n</header>\n<main>\n  <section>\n    <h2>Bienvenido</h2>\n  </section>\n</main>",
     "codigo_optimizado": "<header>\n  <h1>Mi App de Aprendizaje</h1>\n  <nav aria-label='Navegación principal'>\n    <ul role='list'>\n      <li><a href='/'>Inicio</a></li>\n      <li><a href='/cursos'>Cursos</a></li>\n    </ul>\n  </nav>\n</header>\n<main>\n  <article>\n    <h2>Bienvenido</h2>\n    <p>Aprende Python y Bash creando tu propia app.</p>\n  </article>\n</main>\n<footer>\n  <small>© 2026</small>\n</footer>",
     "disenso_experto": "Algunos desarrolladores argumentan que para apps SPA complejas (React/Vue) la semántica HTML pierde relevancia porque el DOM se genera dinámicamente. La realidad: las SPAs bien hechas usan MÁS semántica, no menos, porque dependen de ARIA y landmarks para accesibilidad. Un principiante nunca debe sacrificar semántica por conveniencia.",
-    "pregunta_transferencia": "Si abres una web y usas Ctrl+U para ver el HTML fuente, ¿qué evidencia concreta te indicaría que el autor domina semántica aunque la página se vea 'bien' visualmente?",
+    "pregunta_transferencia": "Escenario de transferencia: imagina que estás auditorizando el código fuente de una página web moderna que luce impecable en pantalla completa. Los colores, el espaciado y el diseño responsive están perfectamente ejecutados, lo que genera una primera impresión de alta calidad visual. Sin embargo, al inspeccionar el HTML con Ctrl+U, te encuentras con una estructura que, a pesar del buen aspecto, podría estar ocultando deficiencias subyacentes. ¿Cómo determinar si el autor realmente domina la semántica por debajo de la capa estética?\n\nLa pista reside en la organización del documento: busca el uso de etiquetas nativas HTML5 como <header>, <nav>, <main> y <footer>, en lugar de una sucesión de <div> con clases descriptivas pero vacías de significado. Además, verifica la jerarquía de los encabezados (<h1> a <h6>) y la presencia de roles de landmark que permitan la navegación no visual. Una página con dominio semántico será legible y navegable incluso con CSS desactivado o en un navegador de modo texto, porque su estructura tiene sentido intrínseco, no dependiente de presentaciones visuales.",
     "quiz": {
       "pregunta": "¿Cuál es la razón PRINCIPAL por la que <nav> es mejor que <div class='nav'>?",
       "opciones": [
@@ -34,10 +34,27 @@
     "audio_script": "Hola, hoy vamos a hablar de semántica HTML. Imagina que tu página web es un libro. Los divs son como cajas sin etiqueta: puedes meter lo que quieras, pero nadie sabe qué hay dentro sin abrirlas. Las etiquetas semánticas como header, nav, main, article y footer son las etiquetas de esas cajas. Le dicen al navegador, a Google y a los lectores de pantalla exactamente qué contiene cada parte. Esto no es solo buena práctica, es comunicación. Un buen desarrollador no escribe HTML para que se vea bien, escribe HTML para que se entienda bien. El CSS viene después, a decorar. Primero el mensaje, luego la forma.",
     "video_prompt": "Video educativo corto de 60 segundos. Muestra pantalla dividida: a la izquierda código HTML con divitis (muchos divs anidados sin sentido), a la derecha el mismo contenido con semántica correcta (header, nav, main, footer). Animación que resalta en rojo los divs y en verde las etiquetas semánticas. Narración en off explicando la diferencia. Estilo minimalista, fondo oscuro, tipografía clara.",
     "trazabilidad": {
-      "libros_fuente": ["MDN Web Docs - HTML Semantics", "Principios de HTML5 spec"],
-      "conceptos_clave": ["semántica", "landmarks", "accesibilidad", "SEO", "divitis"]
+      "libros_fuente": [
+        "MDN Web Docs - HTML Semantics",
+        "Principios de HTML5 spec"
+      ],
+      "conceptos_clave": [
+        "semántica",
+        "landmarks",
+        "accesibilidad",
+        "SEO",
+        "divitis"
+      ]
     },
-    "tags_rag": ["html", "semantica", "estructura", "accesibilidad", "seo", "divitis"]
+    "tags_rag": [
+      "html",
+      "semantica",
+      "estructura",
+      "accesibilidad",
+      "seo",
+      "divitis"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.1-002",
@@ -74,10 +91,27 @@
     "audio_script": "Piensa en Flexbox como una fila de personas esperando el autobús: están en una línea, puedes ordenarlas, centrarlas, separarlas, pero siempre en una sola fila. Ahora piensa en Grid como una hoja de cálculo: tienes filas y columnas definidas, y cada celda sabe exactamente dónde está. Si tu layout es una línea, usa Flexbox. Si es una cuadrícula, usa Grid. No intentes usar Flexbox para hacer cuadrículas complejas, vas a pelear contra el sistema. Y no uses Grid para centrar un solo botón, es matar moscas a cañonazos.",
     "video_prompt": "Video de 75 segundos mostrando animación comparativa. Lado izquierdo: Flexbox moviendo elementos en una línea (horizontal, luego vertical). Lado derecho: Grid con filas y columnas definidas moviendo elementos en 2D. Mostrar ejemplos reales: navbar con Flexbox, dashboard con Grid. Usar colores distintos para ejes (rojo para X, azul para Y). Texto overlay explicando '1 dimensión' vs '2 dimensiones'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - CSS Grid Layout", "MDN - Flexbox", "CSS-Tricks Complete Guide to Grid"],
-      "conceptos_clave": ["flexbox", "grid", "layout", "1D vs 2D", "responsive"]
+      "libros_fuente": [
+        "MDN - CSS Grid Layout",
+        "MDN - Flexbox",
+        "CSS-Tricks Complete Guide to Grid"
+      ],
+      "conceptos_clave": [
+        "flexbox",
+        "grid",
+        "layout",
+        "1D vs 2D",
+        "responsive"
+      ]
     },
-    "tags_rag": ["css", "flexbox", "grid", "layout", "responsive", "maquetacion"]
+    "tags_rag": [
+      "css",
+      "flexbox",
+      "grid",
+      "layout",
+      "responsive",
+      "maquetacion"
+    ]
   },
   {
     "id": "F0.1-003",
@@ -86,13 +120,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "Mobile-first no es 'hacer el móvil primero por moda'. Es una estrategia de PROGRESIVIDAD: escribes el CSS base para la pantalla más restrictiva (móvil) y luego AGREGAS complejidad con min-width breakpoints para pantallas más grandes. Esto garantiza que el contenido crítico siempre funcione, incluso si el CSS avanzado falla.",
+    "modelo_mental": "**El enfoque mobile-first** es una estrategia de **progresiva mejora**: escribes primero el CSS que funciona en el dispositivo más restrictivo (un móvil), y luego *agregas* reglas más complejas con consultas de medio (`min-width`) para pantallas más grandes. Piensa en ello como construir una casa comenzando desde los cimientos: la planta baja (contenido esencial) es sólida y funcional, y las habitaciones adicionales (diseños avanzados) se añaden solo si la estructura principal ya es sólida. Esto garantiza que el contenido crítico siempre sea accesible, incluso si el CSS avanzado falla o el navegador lo carga parcialmente.\n\nEl motivo por el que importa es que los dispositivos móviles tienen limitaciones de pantalla y ancho de banda, mientras que las pantallas de escritorio tienen más recursos. Al empezar con el caso más difícil, te aseguras de que los elementos esenciales (tipografía, navegación, llamadas a la acción) se vean bien en todos los dispositivos, y solo luego te preocupas por los detalles de diseño que solo son posibles en pantallas más grandes. Este orden previene errores comunes como **diseños rotos en móviles**, **especificidad excesiva** y **duplicación innecesaria de reglas**, ya que cada punto de interrupción agrega comportamiento, nunca anula el esencial.\n\nAl adoptar mobile-first, aprendes a pensar en **contenido primero, presentación después**, lo que también simplifica el mantenimiento: agregar un nuevo punto de interrupción es solo una línea adicional, y no necesitas reescribir reglas anteriores. Es la antítesis del enfoque desktop-first, que asume que el usuario siempre tiene una pantalla grande y luego intenta \"arreglar\" el móvil con un media query de `max-width`, un patrón que con frecuencia lleva a un CSS roto y a una especificidad desordenada.",
     "codigo_roto": "body {\n  font-size: 16px;\n  width: 1200px;\n  margin: 0 auto;\n}\n\n@media (max-width: 768px) {\n  body {\n    width: 100%;\n    font-size: 14px;\n  }\n}",
-    "diagnostico": "Estás usando desktop-first: defines el diseño de 1200px como base y luego 'arreglas' el móvil con max-width. Esto es lo contrario del mobile-first. Consecuencia: en móviles con CSS cargado parcialmente, el layout de 1200px aparece roto hasta que el media query se aplica. Además, estás sobrescribiendo reglas, lo que aumenta la especificidad innecesariamente.",
+    "diagnostico": "1. `body { font-size: 16px; width: 1200px; margin: 0 auto; }`\n   - **`width: 1200px`** fuerza a todo el contenido a ocupar un ancho fijo, lo que en un móvil hace que el diseño se desborde o se deslice horizontalmente. En CSS, esto genera un desbordamiento horizontal y scroll innecesario, porque el contenedor es más ancho que la ventana gráfica.\n   - **`margin: 0 auto`** intenta centrar el bloque, pero con un ancho fijo en un contenedor más pequeño, el margen se ignora y el elemento queda mal alineado. El navegador no puede aplicar correctamente el centrado porque el modelo de caja está roto.\n\n2. `@media (max-width: 768px) { body { width: 100%; font-size: 14px; } }`\n   - La regla de medio usa `max-width`, lo que significa \"aplicar estos estilos solo cuando la pantalla es **como máximo** 768 px\". Este es el orden inverso del mobile-first: defines el diseño de escritorio primero y luego intentas *arreglar* el móvil, en lugar de empezar con el móvil y ampliarlo.\n   - Dentro de la regla de medio, sobrescribes `width` y `font-size`. Esto aumenta la **especificidad** innecesariamente (estás anadiendo reglas en lugar de heredar) y crea un efecto de cascade impredecible; si otra regla más específica entra en conflicto, el mobile override puede ser ignorado.\n\n**Patrón a aprender:** Siempre define primero el diseño base para pantallas pequeñas (móvil), luego usa `min-width` para agregar estilos a medida que la pantalla crece. Mantén los selectores simples y evita sobrescribir la misma propiedad varias veces; en su lugar, define valores diferentes para cada punto de interrupción.",
     "codigo_corregido": "body {\n  font-size: 14px;\n  width: 100%;\n  margin: 0 auto;\n}\n\n@media (min-width: 768px) {\n  body {\n    font-size: 16px;\n    max-width: 1200px;\n  }\n}",
     "codigo_optimizado": "/* Base mobile - siempre funciona */\nbody {\n  font-size: clamp(14px, 2vw + 10px, 16px);\n  width: 100%;\n  padding-inline: 1rem;\n}\n\n/* Progresión tablet */\n@media (min-width: 768px) {\n  body {\n    max-width: 1200px;\n    margin-inline: auto;\n    padding-inline: 2rem;\n  }\n}\n\n/* Progresión desktop */\n@media (min-width: 1200px) {\n  body {\n    padding-inline: 0;\n  }\n}",
     "disenso_experto": "Algunos diseñadores defienden desktop-first porque 'es como ven la mayoría de usuarios'. Esto fue verdad en 2012, pero hoy más del 60% del tráfico web global es móvil. Mobile-first ganó por datos, no por moda. El único caso válido para desktop-first son dashboards internos de empresa que NUNCA se usan en móvil.",
-    "pregunta_transferencia": "Un junior te muestra un CSS que usa exclusivamente min-width breakpoints y dice 'por eso mi web se ve rota en tablets'. ¿Cuál es el error conceptual y cómo se lo explicas?",
+    "pregunta_transferencia": "Imagina que un desarrollador junior te muestra una hoja de estilos que solo contiene consultas de medio con `min-width`: una para 768 px, otra para 1024 px, etc. Afirma que su página se ve bien en escritorio pero está \"rota en tablets\". El error conceptual aquí es que están aplicando un enfoque **desktop-first**: escriben el diseño de escritorio como base y luego intentan *reducir* el diseño para pantallas más pequeñas con reglas de `max-width`. En tablets (que suelen estar entre 768 px y 1024 px), el diseño original de 1024 px nunca se adapta, lo que provoca desbordamiento horizontal, tipografía demasiado grande y elementos superpuestos.\n\nPara guiarlo, pídeles que imaginen el diseño como una escalera: primero debes construir el peldaño más bajo (el móvil), luego agregar los peldaños superiores (pantallas más grandes). Pídeles que reorganicen el CSS comenzando con un bloque base sin medios, optimizado para un ancho de dispositivo de 320 px, y luego añadan reglas de `@media (min-width: 768px)` para mejorar la disposición. Esto les ayudará a ver cómo el orden de las consultas afecta la cascade y por qué usar solo `min-width` sin un punto de partida para móviles crea un diseño roto en dispositivos intermedios.",
     "quiz": {
       "pregunta": "¿Qué significa realmente 'mobile-first' en CSS?",
       "opciones": [
@@ -114,10 +148,27 @@
     "audio_script": "Mobile-first es una de las decisiones más importantes que vas a tomar al hacer CSS. Imagina que escribes tu CSS como una historia que empieza simple y se va complicando. Primero describes cómo se ve en un teléfono pequeño, donde tienes poco espacio y poca atención. Luego dices: 'y si hay más espacio, añade esto'. Así siempre tienes una base sólida que funciona en cualquier pantalla. Si al revés, primero describes el escritorio gigante y luego tratas de meterlo en un teléfono, vas a estar constantemente parchando y rompiendo cosas. Mobile-first es escribir para el peor escenario primero, y mejorar progresivamente.",
     "video_prompt": "Video de 90 segundos mostrando una misma página web renderizándose en 3 tamaños (móvil, tablet, desktop). Animación del código CSS apareciendo: primero reglas base, luego media query min-width:768px, luego min-width:1200px. Mostrar cómo cada breakpoint AGREGA reglas en lugar de sobrescribir. Usar colores para cada breakpoint (azul base, verde tablet, naranja desktop). Texto: 'Mobile-first = agregar, no sobrescribir'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Media Queries", "Luke Wroblewski - Mobile First book concepts"],
-      "conceptos_clave": ["mobile-first", "responsive", "media-queries", "min-width", "breakpoints"]
+      "libros_fuente": [
+        "MDN - Media Queries",
+        "Luke Wroblewski - Mobile First book concepts"
+      ],
+      "conceptos_clave": [
+        "mobile-first",
+        "responsive",
+        "media-queries",
+        "min-width",
+        "breakpoints"
+      ]
     },
-    "tags_rag": ["css", "responsive", "mobile-first", "media-queries", "breakpoints", "rwd"]
+    "tags_rag": [
+      "css",
+      "responsive",
+      "mobile-first",
+      "media-queries",
+      "breakpoints",
+      "rwd"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.1-004",
@@ -126,13 +177,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "Las variables CSS (custom properties) no son solo para colores. Son un sistema de tokens de diseño que vive en el DOM, se hereda, responde a media queries y puede cambiar en runtime con JavaScript. A diferencia de las variables de preprocesadores (Sass/Less), las variables CSS son vivas: el navegador las recalcula cuando cambian.",
+    "modelo_mental": "Las variables CSS funcionan como **tokens de diseño** vivos que habitan en el DOM, no en un preprocesador muerto. Imagina que son **variables de entorno** de tu aplicación: definidas en `:root`, se heredan por cascada como agua que fluye por gravedad, y cualquier cambio en el nodo raíz se propaga instantáneamente a todos los descendientes. A diferencia de Sass o Less, donde las variables se compilan y desaparecen, `custom properties` como `--color-primary` existen en runtime, lo que permite cambiar temas completos con una sola línea de JavaScript sin recargar la página.\n\nEsto importa porque separa el **qué** (el token semántico) del **cómo** (el valor concreto). Cuando usas `background-color: var(--color-primary)` en lugar de `#3b82f6`, estás declarando intención, no apariencia. Previenes errores como la **deriva de diseño** (donde el azul del botón y el azul del borde divergen sutilmente) y eliminas la **deuda técnica visual** que obliga a buscar-reemplazar en decenas de archivos cuando cambia la identidad de marca.\n\nAdemás, las variables CSS responden a `@media queries` y pueden anidarse en selectores específicos, creando **contextos temáticos** locales. Un componente puede sobrescribir `--spacing-unit` solo en su ámbito sin afectar al resto de la aplicación, algo imposible con preprocesadores tradicionales. Este patrón previene el **efecto copia-pega**, donde modificar un padding en un componente requiere tocar veinte archivos distintos.",
     "codigo_roto": ".button {\n  background-color: #3b82f6;\n  color: #ffffff;\n  padding: 0.75rem 1.5rem;\n  border-radius: 0.5rem;\n}\n\n.button-secondary {\n  background-color: #10b981;\n  color: #ffffff;\n  padding: 0.75rem 1.5rem;\n  border-radius: 0.5rem;\n}\n\n.card {\n  background-color: #ffffff;\n  border: 1px solid #e5e7eb;\n  padding: 1rem;\n}",
-    "diagnostico": "Estás repitiendo valores hexadecimales en todo el CSS. Si el cliente decide cambiar el color primario de azul a morado, tienes que buscar y reemplazar en 20 lugares. Además no hay jerarquía de colores: un azul de botón y un azul de borde parecen iguales pero pueden necesitar semántica distinta. Esto es deuda de diseño acumulada desde el día 1.",
+    "diagnostico": "1. **Hardcodeo de valores hexadecimales repetidos**: En `.button` y `.button-secondary` ves `#ffffff` y `0.75rem 1.5rem` duplicados. El navegador no lanza error, pero el motor de renderizado procesa estos valores como literales estáticos. El patrón general es la **violación del DRY**: cada vez que cambias un valor, debes tocar N selectores. Si el cliente pide cambiar el padding de `1.5rem` a `2rem`, debes editar cada bloque manualmente, introduciendo inconsistencias.\n\n2. **Falta de semántica en los colores**: Los valores `#3b82f6` y `#10b981` son nombres arbitrarios sin significado. Cuando necesitas un 'azul más oscuro para hover', no sabes si derivar de `--color-primary` o crear otro hex nuevo. Esto genera **inconsistencia cromática**: el azul del borde (`#e5e7eb`) y el azul del botón parecen familiares pero no comparten origen, rompiendo la escala visual. El patrón a aprender es usar nombres descriptivos: `--color-brand-primary`, `--color-border-subtle`.\n\n3. **Ausencia de arquitectura de tokens**: El código carece de `:root { --color-primary: ... }`. Sin esta capa de abstracción, no puedes implementar temas oscuros/claros ni responder a preferencias del sistema (`prefers-color-scheme`). El error conceptual es tratar CSS como hoja de estilos estática en vez de **sistema de diseño dinámico**.",
     "codigo_corregido": ":root {\n  --color-primary: #3b82f6;\n  --color-success: #10b981;\n  --color-text: #ffffff;\n  --color-surface: #ffffff;\n  --color-border: #e5e7eb;\n  --spacing-md: 0.75rem;\n  --spacing-lg: 1.5rem;\n  --radius-md: 0.5rem;\n}\n\n.button {\n  background-color: var(--color-primary);\n  color: var(--color-text);\n  padding: var(--spacing-md) var(--spacing-lg);\n  border-radius: var(--radius-md);\n}\n\n.button-secondary {\n  background-color: var(--color-success);\n  color: var(--color-text);\n  padding: var(--spacing-md) var(--spacing-lg);\n  border-radius: var(--radius-md);\n}\n\n.card {\n  background-color: var(--color-surface);\n  border: 1px solid var(--color-border);\n  padding: 1rem;\n}",
     "codigo_optimizado": ":root {\n  /* Tokens semánticos, no de presentación */\n  --color-action: #3b82f6;\n  --color-action-hover: #2563eb;\n  --color-success: #10b981;\n  --color-on-action: #ffffff;\n  --color-surface: #ffffff;\n  --color-border: #e5e7eb;\n  \n  /* Escala de espaciado consistente */\n  --space-1: 0.25rem;\n  --space-2: 0.5rem;\n  --space-3: 0.75rem;\n  --space-4: 1rem;\n  --space-6: 1.5rem;\n  \n  --radius-sm: 0.25rem;\n  --radius-md: 0.5rem;\n}\n\n/* Dark mode automático */\n@media (prefers-color-scheme: dark) {\n  :root {\n    --color-surface: #1f2937;\n    --color-border: #374151;\n  }\n}\n\n.button {\n  --bg: var(--color-action);\n  background-color: var(--bg);\n  color: var(--color-on-action);\n  padding: var(--space-3) var(--space-6);\n  border-radius: var(--radius-md);\n  transition: background-color 0.2s;\n}\n\n.button:hover {\n  --bg: var(--color-action-hover);\n}\n\n.button-secondary { --bg: var(--color-success); }",
     "disenso_experto": "Algunos argumentan que las variables CSS añaden complejidad innecesaria para proyectos pequeños. Es cierto si tu proyecto tiene 50 líneas de CSS. Pero si planeas que crezca (como tu PWA), empezar con tokens desde el día 1 evita refactor doloroso. La regla pragmática: si vas a usar un color más de 3 veces, conviértelo en variable.",
-    "pregunta_transferencia": "Si cambias --color-primary en runtime con JavaScript (document.documentElement.style.setProperty), ¿qué elementos de la página se actualizan y cuáles NO? ¿Por qué?",
+    "pregunta_transferencia": "Imagina que estás construyendo un dashboard con modo claro/oscuro. Tienes un componente `<Alert>` que usa `--color-alert-bg` y `--color-alert-border`. Si ejecutas `document.documentElement.style.setProperty('--color-alert-bg', '#1f2937')` al cambiar de tema, ¿qué ocurre con los `<Alert>` anidados dentro de un `<Modal>` que tiene su propio `--color-alert-bg` local definido? ¿Se sobrescribe el valor del modal o se mantiene aislado?\n\nPista: Recuerda que las variables CSS siguen la **cascada y herencia**, pero los componentes pueden crear **contextos de scope** mediante selectores. Piensa en qué elementos heredan directamente de `:root` versus qué elementos tienen variables propias declaradas en su ancestro más cercano. La respuesta depende de dónde esté definida la variable: si el Modal la redefine, su árbol DOM interno usará ese valor local, ignorando el cambio en documentElement, a menos que...",
     "quiz": {
       "pregunta": "¿Cuál es la ventaja PRINCIPAL de las variables CSS sobre las variables de Sass/Less?",
       "opciones": [
@@ -154,10 +205,27 @@
     "audio_script": "Las variables CSS son como los apodos en una conversación. En lugar de repetir 'el señor de la camisa azul que trabaja en marketing' cada vez que hablas de Juan, simplemente dices 'Juan'. En CSS, en lugar de escribir #3b82f6 quince veces, defines --color-primary una vez y lo usas donde lo necesites. Pero hay algo más poderoso: como viven en el DOM, puedes cambiarlas en cualquier momento. Quieres modo oscuro? Cambias unas variables y toda la página se transforma. Quieres que el usuario personalice los colores? Cambias las variables con JavaScript y listo. Esto no lo puedes hacer con Sass, porque Sass se compila una vez y ya.",
     "video_prompt": "Video de 70 segundos. Muestra código CSS con colores hex repetidos. Animación: los colores se transforman en variables con icono de 'tag'. Luego muestra toggle de dark mode: al activarlo, las variables cambian y toda la página se transforma instantáneamente. Overlay: 'Variables CSS = tokens vivos'. Ejemplo final: slider de JavaScript que cambia --hue en tiempo real y toda la paleta de colores rota.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Using CSS custom properties", "Lea Verou - CSS Variables talks"],
-      "conceptos_clave": ["css-variables", "custom-properties", "design-tokens", "dark-mode", "runtime"]
+      "libros_fuente": [
+        "MDN - Using CSS custom properties",
+        "Lea Verou - CSS Variables talks"
+      ],
+      "conceptos_clave": [
+        "css-variables",
+        "custom-properties",
+        "design-tokens",
+        "dark-mode",
+        "runtime"
+      ]
     },
-    "tags_rag": ["css", "variables", "custom-properties", "design-tokens", "dark-mode", "temas"]
+    "tags_rag": [
+      "css",
+      "variables",
+      "custom-properties",
+      "design-tokens",
+      "dark-mode",
+      "temas"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.1-005",
@@ -166,13 +234,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "La primera regla de ARIA es NO USAR ARIA si existe un elemento HTML nativo que haga lo mismo. ARIA es un parche para cuando HTML semántico no alcanza. Usar <button aria-label='Close'> es un error: debiste usar <button aria-label='Close'>X</button> con texto visible o <button class='sr-only'>Close</button>. La accesibilidad no es un feature opcional, es un requisito de calidad.",
+    "modelo_mental": "La primera regla de ARIA es **NO USAR ARIA si existe un elemento HTML nativo que haga lo mismo**. ARIA es un **parche** para cuando HTML semántico no alcanza. Por ejemplo, usar `<button aria-label='Close'>` sin texto visible es un error: debiste usar `<button aria-label='Close'>X</button>` con texto visible o `<button class='sr-only'>Close</button>`. La accesibilidad no es un **feature opcional**, es un **requisito de calidad**. HTML nativo ya incluye soporte para teclado, foco y lectores de pantalla, por lo que usar elementos como `<button>`, `<a>`, o `<input>` reduce el riesgo de errores de usabilidad y mejora la compatibilidad con tecnologías de asistencia. `role='button'` en un `<div>` puede parecer equivalente, pero carece de comportamiento por defecto.\n\nUsar ARIA sin necesidad añade **complejidad innecesaria** y puede generar inconsistencias entre navegadores y lectores de pantalla. Cuando se usa `role='button'`, se debe replicar manualmente el soporte de teclado (Enter y Space), manejar el enfoque visible y asegurar que el elemento sea accesible. Esto es propenso a errores y duplica funcionalidad que ya existe en elementos nativos. La regla clave es: **si un elemento HTML nativo puede hacer el trabajo, úsalo**. ARIA debe reservarse para casos donde no existe un equivalente semántico directo, como tooltips personalizados, diálogos modales o regiones dinámicas.\n\nAdemás, la accesibilidad no es solo un tema de inclusión, sino también de **calidad del código**. Código semántico es más mantenible, fácil de depurar y compatible con más herramientas. Usar elementos nativos con su significado implícito permite que los lectores de pantalla interpreten correctamente la interfaz sin necesidad de indicaciones adicionales. Por eso, antes de añadir cualquier atributo ARIA, se debe preguntar: ¿existe un elemento HTML que ya haga esto?",
     "codigo_roto": "<div onclick='openMenu()' role='button' aria-label='Menu'>\n  <i class='fa fa-bars'></i>\n</div>\n\n<div role='alert' style='display:none;'>\n  Error en el formulario\n</div>",
-    "diagnostico": "Primer error: estás usando un <div> con role='button' cuando existe el <button> nativo, que ya tiene teclado (Enter/Space), foco visible y semántica. El div no es enfocable por teclado por defecto, así que usuarios con discapacidad motriz no pueden activarlo. Segundo error: role='alert' en un elemento con display:none no funciona, porque los lectores de pantalla no leen elementos ocultos por CSS. Debes usar hidden o gestionar la visibilidad con JavaScript.",
+    "diagnostico": "1. **Primer error: uso de `<div>` con `role='button'` en lugar de `<button>` nativo.** El código `<div onclick='openMenu()' role='button' aria-label='Menu'>` falla porque un `<div>` no es **enfocable por teclado por defecto**, no responde a las teclas Enter o Space, y no tiene un rol semántico implícito. Python/Bash no lanza este error directamente, pero **los lectores de pantalla y navegadores** lo interpretan como un elemento genérico sin interacción. El patrón general es: **nunca uses `<div>` o `<span>` para simular interactividad**; usa siempre elementos nativos como `<button>`, `<a>`, o `<input>`. La solución es reemplazar el `<div>` con `<button type='button' onclick='openMenu()' aria-label='Menu'>`.\n\n2. **Segundo error: `role='alert'` en un elemento con `display:none`.** El código `<div role='alert' style='display:none;'>Error en el formulario</div>` no funciona porque los **lectores de pantalla ignoran elementos ocultos con CSS**. El atributo `role='alert'` indica que el contenido es importante y debe anunciarse inmediatamente, pero si el elemento está oculto visualmente con `display:none`, **no se anunciará en ningún momento**. Python/Bash no genera este error, pero el **comportamiento esperado falla** en términos de accesibilidad. El patrón general es: **para mensajes dinámicos, usa JavaScript para mostrar el elemento y añade `role='alert'` solo cuando esté visible**, o usa `hidden` para controlar la visibilidad de forma semántica.\n\n3. **Tercer error: falta de soporte de teclado y foco visible.** Aunque el `<div>` tiene `role='button'`, **no tiene soporte de teclado** (Enter/Space) ni estilos de enfoque visibles. Esto significa que usuarios que navegan con teclado no pueden activar el menú. El patrón general es: **siempre que uses un rol interactivo personalizado, debes replicar el comportamiento de teclado y el enfoque visible manualmente**. La solución es usar `<button>` nativo, que ya incluye este soporte sin necesidad de código adicional.",
     "codigo_corregido": "<button type='button' aria-label='Abrir menú' aria-expanded='false'>\n  <i class='fa fa-bars' aria-hidden='true'></i>\n</button>\n\n<div role='alert' hidden>\n  Error en el formulario\n</div>",
     "codigo_optimizado": "<button \n  type='button'\n  class='menu-toggle'\n  aria-label='Abrir menú de navegación'\n  aria-expanded='false'\n  aria-controls='main-menu'\n>\n  <svg aria-hidden='true' width='24' height='24'>\n    <use href='#icon-menu'></use>\n  </svg>\n  <span class='sr-only'>Menú</span>\n</button>\n\n<nav id='main-menu' hidden>\n  <!-- Contenido del menú -->\n</nav>\n\n<div role='alert' class='toast' hidden>\n  <p>Error en el formulario</p>\n  <button type='button' aria-label='Cerrar alerta'>×</button>\n</div>\n\n<style>\n.sr-only {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  white-space: nowrap;\n  border: 0;\n}\n</style>",
     "disenso_experto": "Hay dos posturas: (1) 'Accesibilidad es responsabilidad de todos desde el día 1' y (2) 'La accesibilidad perfecta es cara, mejor hacer MVP y mejorar después'. La postura 1 es la correcta éticamente y legalmente (Europa y USA tienen leyes estrictas). Pero incluso pragmáticamente, el 80% de la accesibilidad se logra con HTML semántico y buen teclado. No necesitas ser experto, solo no sabotear.",
-    "pregunta_transferencia": "Un diseñador te entrega un mockup con un botón que es solo un ícono de corazón (sin texto) para marcar favoritos. ¿Cuál es la solución accesible correcta: aria-label, title, texto oculto con CSS, o texto visible? ¿Por qué?",
+    "pregunta_transferencia": "Un diseñador te entrega un mockup con un botón que es solo un **ícono de corazón (sin texto)** para marcar favoritos. Estás considerando varias opciones: `aria-label`, `title`, texto oculto con CSS (`sr-only`), o texto visible. ¿Cuál es la solución accesible correcta y por qué? Piensa en cómo los **lectores de pantalla** anunciarían cada opción, y considera la usabilidad para personas con discapacidad visual, motriz y cognitiva.\n\n**Pista:** La mejor solución combina un elemento `<button>` nativo con un texto visible alternativo que describa la acción. Si el diseño no permite texto visible, entonces `aria-label` es aceptable, pero **nunca uses `title` como único medio de accesibilidad**, ya que no es accesible para usuarios de lectores de pantalla en muchos casos. Reflexiona sobre el principio de **robustez y claridad semántica**.",
     "quiz": {
       "pregunta": "¿Cuál es la PRIMERA regla de ARIA?",
       "opciones": [
@@ -194,10 +262,27 @@
     "audio_script": "La accesibilidad no es un extra para 'usuarios especiales', es para el 20% de la población que tiene alguna discapacidad temporal o permanente. Piensa en esto: si te rompes el brazo derecho y tienes que usar tu app con una mano, ¿puedes usarla? Si estás en un ambiente ruidoso y no puedes escuchar los videos, ¿tienes subtítulos? Si el sol te da en la pantalla, ¿hay suficiente contraste? La buena noticia es que la mayoría de la accesibilidad se logra con HTML semántico bien escrito. Botones reales, no divs. Etiquetas reales, no decorativas. Texto en los enlaces, no 'haz clic aquí'. ARIA es solo para cuando HTML no alcanza, y debes usarlo con respeto, no como parche para código perezoso.",
     "video_prompt": "Video de 90 segundos. Muestra tres escenas: (1) usuario con lector de pantalla navegando una web con divs (confuso, no entiende), (2) el mismo usuario en web semántica (fluido), (3) usuario con movilidad reducida usando teclado en web con botones reales vs divs (imposible en el segundo). Overlay con tips: 'Usa <button>, no <div role=button>', 'Imágenes con alt descriptivo', 'Foco visible'. Estilo documental, tono empático.",
     "trazabilidad": {
-      "libros_fuente": ["W3C WAI-ARIA Authoring Practices", "MDN - Accessibility"],
-      "conceptos_clave": ["accesibilidad", "aria", "a11y", "semantic-html", "keyboard-nav"]
+      "libros_fuente": [
+        "W3C WAI-ARIA Authoring Practices",
+        "MDN - Accessibility"
+      ],
+      "conceptos_clave": [
+        "accesibilidad",
+        "aria",
+        "a11y",
+        "semantic-html",
+        "keyboard-nav"
+      ]
     },
-    "tags_rag": ["html", "accesibilidad", "a11y", "aria", "semantica", "keyboard"]
+    "tags_rag": [
+      "html",
+      "accesibilidad",
+      "a11y",
+      "aria",
+      "semantica",
+      "keyboard"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.1-006",
@@ -206,13 +291,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "La validación HTML5 es la PRIMERA línea de defensa. Se ejecuta antes que JavaScript, funciona sin JS habilitado, y es más rápida. Nunca confíes SOLO en ella para seguridad (el backend debe revalidar), pero tampoco la ignores por pereza. Un formulario bien validado en HTML reduce el 70% del código JS necesario.",
+    "modelo_mental": "Imagina que tu formulario es una casa: HTML5 es la **puerta principal con cerrojo**, JavaScript es el **vigilante que revisa identidades**, y el backend es la **bóveda blindada**. La validación HTML5 actúa como esa primera barrera física: intercepta errores obvios antes de que los datos viajen, funciona incluso si el usuario desactiva JS, y ofrece **feedback instantáneo** sin recargar la página. Usar `type=\"email\"` en lugar de `type=\"text\"` no es decorativo: activa el teclado numérico con `@` en móviles y rechaza formatos inválidos automáticamente. Ignorar esta capa significa construir un sistema donde el vigilante (JS) debe hacer el trabajo del cerrojo, generando código redundante y una experiencia lenta en dispositivos móviles.\n\nEl error más grave es confiar exclusivamente en HTML5 para **seguridad**. Aunque `required` o `pattern` bloquean entradas tontas, un atacante puede enviar peticiones directas omitiendo el formulario. HTML5 previene errores de **UX** (teclados incorrectos, falta de autocompletado) y reduce hasta un 70% el JS necesario para validaciones básicas como formato de correo o longitud de contraseña. Sin embargo, nunca debe ser tu única defensa: piensa en él como el filtro de café, no como la taza final.",
     "codigo_roto": "<form>\n  <input type='text' name='email' placeholder='Email'>\n  <input type='text' name='password' placeholder='Password'>\n  <input type='text' name='age' placeholder='Age'>\n  <button>Submit</button>\n</form>",
-    "diagnostico": "Todo es type='text'. El navegador no sabe qué estás pidiendo. Consecuencias: en móvil no aparece teclado específico (no hay @ para email, no oculta password, no muestra números para edad). No hay validación automática. No hay autocompletado. Además, el botón no tiene type='submit' explícito, lo que en algunos contextos causa comportamientos raros.",
+    "diagnostico": "1. Línea `<input type='text' name='email'>`: El navegador interpreta esto como texto plano, no como correo. En móvil muestra teclado alfabético completo en lugar del teclado con `@` y `.`, y no activa la validación de formato `user@dominio.com`. El patrón general es que **el tipo de input define la interfaz y la validación**: usar `text` para todo elimina las capacidades nativas del navegador.\n\n2. Línea `<input type='text' name='password'>`: Al no ser `type=\"password\"`, el navegador no oculta caracteres (mostrando texto plano) y no activa autocompletado de contraseñas guardadas. Esto expone credenciales en pantallas compartidas y rompe la experiencia de relleno automático. El error es tratar campos sensibles como datos genéricos.\n\n3. Línea `<input type='text' name='age'>`: Debería ser `type=\"number\"` o `type=\"tel\"` para mostrar teclado numérico en móviles. Además, falta `min`/`max` o `pattern` para restringir rangos válidos (ej: `min=\"18\"`). El navegador no puede adivinar restricciones lógicas si solo recibe texto.\n\n4. Línea `<button>Submit</button>`: Sin `type=\"submit\"`, algunos navegadores o contextos (dentro de divs, etc.) no activan el envío del formulario al presionar Enter. El comportamiento por defecto de botón es `type=\"submit\"` solo dentro de `<form>`, pero es explícito y seguro declararlo. Además, falta `required` en campos obligatorios, dejando envíos vacíos.",
     "codigo_corregido": "<form>\n  <label for='email'>Email</label>\n  <input \n    type='email' \n    id='email' \n    name='email' \n    required\n    autocomplete='email'\n  >\n  \n  <label for='password'>Password</label>\n  <input \n    type='password' \n    id='password' \n    name='password' \n    required\n    minlength='8'\n    autocomplete='current-password'\n  >\n  \n  <label for='age'>Edad</label>\n  <input \n    type='number' \n    id='age' \n    name='age' \n    min='13'\n    max='120'\n    autocomplete='off'\n  >\n  \n  <button type='submit'>Enviar</button>\n</form>",
     "codigo_optimizado": "<form novalidate id='signup-form'>\n  <fieldset>\n    <legend>Crear cuenta</legend>\n    \n    <div class='field'>\n      <label for='email'>Email</label>\n      <input \n        type='email' \n        id='email' \n        name='email' \n        required\n        autocomplete='email'\n        aria-describedby='email-hint'\n        pattern='[^@\\s]+@[^@\\s]+\\.[^@\\s]+'\n      >\n      <small id='email-hint'>Usaremos este email para enviarte notificaciones</small>\n    </div>\n    \n    <div class='field'>\n      <label for='password'>Contraseña</label>\n      <input \n        type='password' \n        id='password' \n        name='password' \n        required\n        minlength='8'\n        autocomplete='new-password'\n        aria-describedby='password-rules'\n      >\n      <small id='password-rules'>Mínimo 8 caracteres</small>\n    </div>\n  </fieldset>\n  \n  <button type='submit'>Crear cuenta</button>\n</form>\n\n<style>\ninput:invalid:not(:placeholder-shown) {\n  border-color: #ef4444;\n}\ninput:valid:not(:placeholder-shown) {\n  border-color: #10b981;\n}\n</style>",
     "disenso_experto": "Algunos desarrolladores prefieren hacer toda la validación en JS porque 'les da más control del UX'. Esto es cierto para validación compleja (async, business rules), pero para validación básica (email, required, minlength) HTML5 es superior: es instantánea, nativa y no depende de librerías. La regla pragmática: validación de formato en HTML5, validación de negocio en JS, validación de seguridad en backend.",
-    "pregunta_transferencia": "Tu formulario tiene un campo 'username' que debe ser único en la base de datos. ¿Dónde haces esta validación: en HTML5, en JS del cliente, en el backend, o en los tres? ¿Por qué?",
+    "pregunta_transferencia": "Escenario: Implementas un registro donde el campo `username` debe ser único en la base de datos. Ya tienes HTML5 con `required` y JS que verifica longitud mínima. El usuario envía \"admin\" y recibe error 5 segundos después. ¿Dónde ubicas la verificación de unicidad y por qué no puedes confiar solo en las capas anteriores? Considera que el usuario puede manipular el DOM, desactivar JS, o enviar peticiones directas a tu API con herramientas como Postman.\n\nPista: Piensa en la **concurrencia**: dos usuarios pueden intentar registrar el mismo nombre simultáneamente mientras tu validación del cliente aún no ha consultado la base de datos. La unicidad es una propiedad del **estado global del servidor**, no del entorno local del navegador. Debes diseñar una estrategia donde el backend actúe como árbitro final, usando restricciones de unicidad en la BD y manejo elegante de errores 409 Conflict, pero ¿cómo mejoras la experiencia sin comprometer la seguridad?",
     "quiz": {
       "pregunta": "¿Por qué es importante el atributo 'autocomplete' en un input?",
       "opciones": [
@@ -234,10 +319,27 @@
     "audio_script": "Los formularios son donde más dinero se pierde en una app. Cada campo mal hecho es un usuario que abandona. La buena noticia: HTML5 te da el 80% de lo que necesitas gratis. Type='email' valida emails. Type='tel' muestra teclado numérico en móvil. Required impide enviar vacío. Minlength obliga a una longitud mínima. Autocomplete ayuda al usuario a no teclear todo de nuevo. Y lo mejor: todo esto funciona aunque el usuario tenga JavaScript deshabilitado, que es más común de lo que crees. No reinventes la rueda: usa los tipos nativos de input y deja que el navegador haga su trabajo.",
     "video_prompt": "Video de 75 segundos mostrando lado a lado dos formularios en móvil: uno con type='text' para todo (teclado alfabético siempre), otro con tipos correctos (teclado específico para email, teléfono, número). Mostrar validación HTML5 en acción: input rojo cuando inválido, verde cuando válido. Demostrar autocompletado funcionando. Texto: 'HTML5 = UX gratis'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - HTML forms", "Web.dev - Forms best practices"],
-      "conceptos_clave": ["formularios", "html5", "validacion", "autocomplete", "input-types"]
+      "libros_fuente": [
+        "MDN - HTML forms",
+        "Web.dev - Forms best practices"
+      ],
+      "conceptos_clave": [
+        "formularios",
+        "html5",
+        "validacion",
+        "autocomplete",
+        "input-types"
+      ]
     },
-    "tags_rag": ["html", "formularios", "validacion", "html5", "input-types", "ux"]
+    "tags_rag": [
+      "html",
+      "formularios",
+      "validacion",
+      "html5",
+      "input-types",
+      "ux"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.1-007",
@@ -246,13 +348,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "Cuando pides a una IA que te haga una página 'rápido y funcional', tiende a generar divitis masivo porque es lo más seguro: nunca falla, nunca tiene conflictos de estilo, siempre 'funciona'. Pero esto crea código que ningún desarrollador profesional escribiría. Aprender a detectar divitis es la primera habilidad de auditoría de código que debes desarrollar.",
+    "modelo_mental": "Imagina que construyes una casa usando solo cajas de cartón genéricas para todo: para la puerta, para la ventana, para la cocina. Funciona para esconder cosas, pero nadie sabe dónde entrar, dónde cocinar o cómo salir. En HTML, esto es la **divitis**: usar `<div>` para todo porque es el elemento más genérico y \"seguro\". Cuando usas `código` semántico como `<nav>`, `<button>`, `<h1>`, no solo organizas visualmente, sino que defines **significado**. Un lector de pantalla anuncia \"navegación\" al encontrar `<nav>`, pero dice \"div\" genérico si usas `<div class=\"nav\">`. Esto afecta **accesibilidad** y **SEO**. Antes de escribir un `<div>`, pregunta: ¿Este elemento tiene una semántica nativa en HTML5? Si es contenedor genérico sin significado, usa div. Si es navegación, usa nav. Si es botón interactivo, usa button. Si es contenido independiente, usa article. Esto previene **código frágil** que se rompe al cambiar estilos y **mala experiencia de usuario** para dispositivos de asistencia.",
     "codigo_roto": "<div class='container'>\n  <div class='header'>\n    <div class='header-content'>\n      <div class='logo'>Mi App</div>\n      <div class='nav'>\n        <div class='nav-item'>Inicio</div>\n        <div class='nav-item'>Cursos</div>\n        <div class='nav-item'>Sobre</div>\n      </div>\n    </div>\n  </div>\n  <div class='main'>\n    <div class='hero'>\n      <div class='hero-title'>Aprende a programar</div>\n      <div class='hero-subtitle'>La mejor plataforma</div>\n      <div class='hero-button'>Empezar</div>\n    </div>\n    <div class='features'>\n      <div class='feature'>\n        <div class='feature-icon'>⭐</div>\n        <div class='feature-title'>Fácil</div>\n        <div class='feature-desc'>Muy fácil de usar</div>\n      </div>\n    </div>\n  </div>\n</div>",
-    "diagnostico": "Este código fue claramente generado por IA sin supervisión. Cada elemento es un div. Los 'textos' son divs en lugar de h1/h2/p. El 'botón' es un div sin comportamiento de botón. La 'navegación' no tiene enlaces. Un desarrollador humano con 6 meses de experiencia no escribiría esto, pero una IA perezosa sí, porque técnicamente 'funciona' si le agregas CSS. El problema: es ilegible, inaccesible, pésimo para SEO, y cualquier cambio estructural es una pesadilla.",
+    "diagnostico": "1. Análisis línea por línea: `<div class='container'>` carece de semántica de página; debería ser `<body>` o `<main>`. `<div class='header'>` debe ser `<header>`. `<div class='logo'>` debería ser `<h1>` o `<a href='/'>`. `<div class='nav'>` debe ser `<nav>`. `<div class='nav-item'>` debe ser `<a href='#'>` dentro de `<nav>`. `<div class='main'>` debe ser `<main>`. `<div class='hero-title'>` debe ser `<h1>`. `<div class='hero-subtitle'>` debe ser `<h2>` o `<p>`. `<div class='hero-button'>` debe ser `<button>` o `<a class='button'>`. `<div class='feature-title'>` debe ser `<h3>`. `<div class='feature-desc'>` debe ser `<p>`. 2. Por qué el navegador lo acepta pero es incorrecto: HTML es permisivo, el navegador \"renderiza\" cualquier div, pero los motores de búsqueda y lectores de pantalla no pueden interpretar la estructura. Es como escribir un libro usando solo la palabra \"cosa\" repetida: técnicamente se puede leer, pero no se entiende la jerarquía. 3. Patrón general a aprender: La regla es \"elemento más semántico posible\". Si necesitas un contenedor puramente visual sin significado, usa div. Si necesitas un botón, no uses div con onclick; usa `<button>`. Si necesitas un enlace, no uses div; usa `<a href>`. Esto previene la divitis crónica y genera código robusto.",
     "codigo_corregido": "<div class='container'>\n  <header class='header'>\n    <div class='header-content'>\n      <h1 class='logo'>Mi App</h1>\n      <nav class='nav'>\n        <a href='/'>Inicio</a>\n        <a href='/cursos'>Cursos</a>\n        <a href='/sobre'>Sobre</a>\n      </nav>\n    </div>\n  </header>\n  <main class='main'>\n    <section class='hero'>\n      <h2 class='hero-title'>Aprende a programar</h2>\n      <p class='hero-subtitle'>La mejor plataforma</p>\n      <a href='/signup' class='hero-button'>Empezar</a>\n    </section>\n    <section class='features'>\n      <article class='feature'>\n        <span class='feature-icon' aria-hidden='true'>⭐</span>\n        <h3 class='feature-title'>Fácil</h3>\n        <p class='feature-desc'>Muy fácil de usar</p>\n      </article>\n    </section>\n  </main>\n</div>",
     "codigo_optimizado": "<header class='site-header'>\n  <div class='header-inner'>\n    <a href='/' class='logo' aria-label='Mi App - Inicio'>Mi App</a>\n    <nav aria-label='Navegación principal'>\n      <ul class='nav-list'>\n        <li><a href='/'>Inicio</a></li>\n        <li><a href='/cursos'>Cursos</a></li>\n        <li><a href='/sobre'>Sobre</a></li>\n      </ul>\n    </nav>\n  </div>\n</header>\n\n<main>\n  <section class='hero' aria-labelledby='hero-title'>\n    <h2 id='hero-title'>Aprende a programar</h2>\n    <p>La mejor plataforma para convertirte en desarrollador.</p>\n    <a href='/signup' class='cta-button'>Empezar ahora</a>\n  </section>\n  \n  <section class='features' aria-labelledby='features-title'>\n    <h2 id='features-title' class='sr-only'>Características</h2>\n    <article class='feature'>\n      <span aria-hidden='true'>⭐</span>\n      <h3>Fácil de usar</h3>\n      <p>Diseñado para principiantes absolutos.</p>\n    </article>\n  </section>\n</main>",
     "disenso_experto": "Hay desarrolladores que dicen 'mientras funcione, no importa cómo esté escrito'. Esto es técnicamente cierto para prototipos de fin de semana. Para productos reales, el código legible es mantenible, y el mantenible es rentable. Un código con divitis cuesta 3-5x más de mantener a largo plazo. Cuando evalúes código de IA, tu primera pregunta debe ser: '¿Esto lo escribiría un humano competente?' Si la respuesta es no, pídele a la IA que lo rehaga con mejores indicaciones.",
-    "pregunta_transferencia": "Ves este código de IA: <div onclick='navigate()'>Haz clic</div>. Sin mirar nada más, enumera al menos 5 problemas que tiene este fragmento y cómo los resolverías.",
+    "pregunta_transferencia": "Escenario detallado: Recibes este fragmento de un \"asistente de código rápido\": `<div onclick=\"navigate()\">Haz clic</div>`. Parece funcional, pero oculta problemas graves. El elemento no es enfocable con Tab, no tiene estado hover visible por defecto, no es anunciado como botón por screen readers, y el atributo `onclick` mezcla comportamiento con estructura. Además, no hay indicación visual de que es clickeable (cursor pointer, color de enlace) ni soporte para teclado (Enter/Space). Pista para resolverlo: No cambies el div por otro div, piensa en la **intención del elemento**: ¿Es una acción (button) o es navegación (a)? Si es una acción, usa `<button onclick=\"navigate()\">Haz clic</button>` y añade estilos CSS para cursor:pointer y focus visible. Si es navegación a otra página, usa `<a href=\"/destino\" onclick=\"navigate()\">Haz clic</a>`. Recuerda que la accesibilidad requiere que cualquier elemento interactivo sea operable con teclado (Enter/Space) y anunciable por tecnologías asistivas.",
     "quiz": {
       "pregunta": "¿Cuál es el indicador MÁS CLARO de que un HTML fue generado por IA sin supervisión profesional?",
       "opciones": [
@@ -274,10 +376,27 @@
     "audio_script": "Cuando la IA te genera HTML, lo primero que debes hacer es buscar los divs. Si ves que el 80% de los elementos son divs con clases genéricas, estás frente a código perezoso. La IA no sabe que un texto visible debería ser un párrafo o un heading, no un div. No sabe que un botón debe ser un elemento button con tipo y comportamiento de teclado. No sabe que una imagen debe ser una etiqueta img con atributo alt. Tu trabajo como desarrollador no es aceptar lo que la IA te da, es auditarlo y mejorarlo. Piensa en la IA como un junior muy rápido pero sin criterio: produce mucho código, pero necesitas revisarlo todo.",
     "video_prompt": "Video de 90 segundos estilo 'debug session'. Muestra pantalla con código IA lleno de divs. Cursor va resaltando cada div y aparece tooltip con el problema: 'esto debería ser h1', 'esto debería ser button', etc. Luego animación de refactor: los divs se transforman en etiquetas semánticas correctas. Overlay final: 'Regla #1: Si es texto visible, no es un div'. Estilo hacker, fondo oscuro, colores neón.",
     "trazabilidad": {
-      "libros_fuente": ["Práctica profesional de revisión de código", "Principios de HTML semántico"],
-      "conceptos_clave": ["divitis", "codigo-ia", "auditoria", "html-semantico", "code-review"]
+      "libros_fuente": [
+        "Práctica profesional de revisión de código",
+        "Principios de HTML semántico"
+      ],
+      "conceptos_clave": [
+        "divitis",
+        "codigo-ia",
+        "auditoria",
+        "html-semantico",
+        "code-review"
+      ]
     },
-    "tags_rag": ["html", "divitis", "codigo-ia", "auditoria", "code-review", "semantica"]
+    "tags_rag": [
+      "html",
+      "divitis",
+      "codigo-ia",
+      "auditoria",
+      "code-review",
+      "semantica"
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.1-008",
@@ -286,13 +405,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "Cuando un desarrollador (o una IA) usa !important, está admitiendo que perdió el control del CSS. Es un parche desesperado para sobrescribir reglas sin entender la cascada ni la especificidad. El código con muchos !important es código que nadie entiende, donde cada cambio es una guerra. La cascada de CSS es una herramienta poderosa: úsala a tu favor, no contra ella.",
+    "modelo_mental": "Piensa en la **cascada** de CSS como un sistema de normas de tráfico: cada regla tiene una prioridad natural según su **especificidad** y su orden en el archivo. Cuando una IA o un desarrollador añade `!important`, es como gritar por encima de todos para imponer una decisión sin explicar por qué; funciona a corto plazo, pero deja de ser un sistema y pasa a ser una lista de gritos. El problema no es el `!important` en sí, sino usarlo como parche para no entender qué selector gana y por qué.\nPor eso importa: el CSS no es solo una hoja de estilos, es un mecanismo de composición. Si dominas la **especificidad**, el orden de fuente y las capas, puedes predecir qué regla aplica a un elemento y diseñar componentes que se puedan mantener. Este mental model previene errores típicos como guerras de `!important`, cambios impredecibles al reordenar selectores, estilos que se rompen al mover un botón de un contenedor a otro, y deuda técnica que hace que cada nueva regla sea un riesgo.",
     "codigo_roto": ".button {\n  background-color: blue !important;\n  color: white !important;\n  padding: 10px !important;\n}\n\n.button-primary {\n  background-color: red !important;\n}\n\n#main .button {\n  background-color: green !important;\n}\n\nbody header .container .button {\n  background-color: purple !important;\n}",
-    "diagnostico": "Esto es un desastre de especificidad. Tienes 4 reglas peleando por el mismo botón, todas con !important. El resultado: el último en el CSS gana, pero solo porque son todas !important. Si alguien quita un !important, el botón cambia de color de forma impredecible. Esto es deuda técnica pura. Un equipo profesional rechazaría este código en revisión. La IA lo genera porque no entiende la cascada, solo busca 'que funcione'.",
+    "diagnostico": "1. Líneas 1-2: `.button` y `.button-primary` usan `!important` en propiedades básicas. En `.button`, `background-color`, `color` y `padding` quedan forzados, así que cualquier regla futura normal no podrá ajustar ese botón. En `.button-primary`, `background-color` con `!important` crea un conflicto directo si el elemento tiene ambas clases: no se está definiendo un variante limpio, sino una regla que depende del orden de fuente. Python/Bash no lanza este error como sintaxis; un linter CSS o una revisión lo marca porque detecta `!important` excesivo y especificidad frágil. El patrón a aprender: usa `!important` solo como último recurso, por ejemplo para overrides de accesibilidad o estilos de usuario, no para componer componentes.\n2. Línea 3: `#main .button` combina un ID y una clase, lo que le da mucha **especificidad** y lo acopla al DOM. Con `!important`, puede aplastar a `.button` y `.button-primary` siempre que el botón esté dentro de `#main`, pero si el botón se mueve fuera de ese contenedor, el estilo desaparece. Python/Bash no lo interpreta como CSS; el navegador sí, y un linter lo avisa porque los IDs en selectores de estilo son difíciles de reutilizar y rompen la portabilidad. El patrón: si necesitas un estado o contexto, modela esa variación con clases semánticas o capas, no con IDs que dependen de la estructura.\n3. Línea 4: `body header .container .button` es un selector largo que mezcla tipos y clases, y también usa `!important`. Aunque no tenga ID, su especificidad es mayor que la de una clase simple, pero menor que `#main .button`; por eso el resultado final depende de dónde esté el botón y de qué reglas coincidan. El error no es solo la longitud, sino que se está compensando una falta de arquitectura: en vez de definir un componente `.button` y variantes claras, se apilan selectores cada vez más específicos. Un linter desde Python/Bash lo detectaría como deuda técnica porque cada nueva regla aumenta el riesgo de conflictos y hace imposible predecir el estilo sin ejecutar el navegador.",
     "codigo_corregido": "/* Base: estilos compartidos */\n.button {\n  padding: 10px;\n  border-radius: 4px;\n  border: none;\n  cursor: pointer;\n}\n\n/* Variantes por clase, sin !important */\n.button-primary {\n  background-color: blue;\n  color: white;\n}\n\n.button-secondary {\n  background-color: red;\n  color: white;\n}\n\n/* Si necesitas sobrescribir en un contexto específico, usa selectores más específicos */\n.hero .button-primary {\n  background-color: green;\n}",
     "codigo_optimizado": "/* Design tokens con variables CSS */\n:root {\n  --btn-bg-primary: #3b82f6;\n  --btn-bg-secondary: #ef4444;\n  --btn-text: white;\n  --btn-padding: 0.75rem 1.5rem;\n  --btn-radius: 0.5rem;\n}\n\n/* Una sola clase base */\n.btn {\n  padding: var(--btn-padding);\n  border-radius: var(--btn-radius);\n  border: none;\n  cursor: pointer;\n  color: var(--btn-text);\n  font-weight: 500;\n  transition: filter 0.2s;\n}\n\n/* Variantes usando composición, no herencia */\n.btn--primary { background-color: var(--btn-bg-primary); }\n.btn--secondary { background-color: var(--btn-bg-secondary); }\n.btn:hover { filter: brightness(0.9); }\n\n/* Si necesitas override contextual, usa variables locales */\n.hero .btn--primary {\n  --btn-bg-primary: #10b981;\n}",
     "disenso_experto": "Algunos argumentan que !important es válido para utility classes tipo Tailwind. Esto es cierto en ese paradigma específico, porque las utilities están diseñadas para ser finales. Pero en CSS tradicional, !important es casi siempre una señal de mal diseño. La regla pragmática: si necesitas !important más de 3 veces en un proyecto, tu arquitectura CSS está mal. Rehacer el CSS es más barato que mantener un código con !important a largo plazo.",
-    "pregunta_transferencia": "Calcula mentalmente la especificidad de estos 4 selectores y ordena de menor a mayor: (1) .button (2) #main .button (3) body header .button (4) div.button",
+    "pregunta_transferencia": "Imagina que heredas un proyecto donde un botón aparece en el encabezado, dentro de `#main` y con las clases `button` y `button-primary`. Antes de tocar el CSS, tu equipo necesita saber qué regla ganará en tres casos: sin `!important`, con todos los `!important`, y si se cambia el orden de los selectores en el archivo. Los selectores a evaluar son: `.button`, `#main .button`, `body header .button` y `div.button`.\nPista para resolverlo: convierte cada selector en una tupla de especificidad `(IDs, clases/atributos/pseudoclases, elementos)` y compárala primero por el valor más alto; solo si hay empate, el orden de fuente decide. Recuerda que `!important` no hace que gane automáticamente al último selector, sino que invierte la prioridad normal entre reglas autorizadas, pero la especificidad sigue contando. Con esa idea, podrás predecir el color final sin depender de probar en el navegador.",
     "quiz": {
       "pregunta": "¿Cuál es la señal MÁS CLARA de que un CSS fue escrito sin entender la cascada?",
       "opciones": [
@@ -314,9 +433,27 @@
     "audio_script": "Imagina que estás en una reunión y todos gritan para ser escuchados. Eso es CSS con !important. Cada regla grita '¡escúchame a mí!'. La cascada de CSS es como una conversación ordenada: hay reglas de quién habla primero. Los IDs hablan con más autoridad que las clases, y las clases más que los elementos. Si entiendes estas reglas, no necesitas gritar. Si no las entiendes, terminas usando !important como un megáfono. Y cuando todos usan megáfono, nadie se escucha. La próxima vez que veas !important en tu CSS o en código generado por IA, detente y pregúntate: ¿por qué esta regla necesita gritar? Casi siempre la respuesta es: porque no entendí la cascada.",
     "video_prompt": "Video de 80 segundos. Muestra una reunión con 4 personas gritando (analogía de !important). Luego muestra una reunión ordenada con turnos (analogía de cascada CSS bien usada). Transición a código: lado izquierdo CSS con muchos !important (caos), lado derecho CSS limpio con especificidad correcta (orden). Animación calculando especificidad: ID = 100, clase = 10, elemento = 1. Overlay: '!important = rendirse. Cascada = maestría'.",
     "trazabilidad": {
-      "libros_fuente": ["MDN - Specificity", "CSS Tricks - Specificity calculator", "Harry Roberts - CSS Guidelines"],
-      "conceptos_clave": ["especificidad", "cascada", "important", "css-architecture", "deuda-tecnica"]
+      "libros_fuente": [
+        "MDN - Specificity",
+        "CSS Tricks - Specificity calculator",
+        "Harry Roberts - CSS Guidelines"
+      ],
+      "conceptos_clave": [
+        "especificidad",
+        "cascada",
+        "important",
+        "css-architecture",
+        "deuda-tecnica"
+      ]
     },
-    "tags_rag": ["css", "especificidad", "cascada", "important", "arquitectura-css", "deuda-tecnica"]
+    "tags_rag": [
+      "css",
+      "especificidad",
+      "cascada",
+      "important",
+      "arquitectura-css",
+      "deuda-tecnica"
+    ],
+    "_enriched": true
   }
 ]
