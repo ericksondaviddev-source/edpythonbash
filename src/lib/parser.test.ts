@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseLessonsFromJSON, groupLessonsByModule, getLessonById, searchLessons } from './parser'
+import type { Lesson } from '../types/lesson'
 
 const mockFiles: Record<string, any[]> = {
   'test1.json': [

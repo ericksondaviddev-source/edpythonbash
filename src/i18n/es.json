@@ -50,7 +50,12 @@
     "audio": "Audio",
     "video": "Video",
     "markComplete": "Marcar como completada",
-    "completed": "Completada"
+    "completed": "Completada",
+    "lessonPosition": "Lección {{current}} de {{total}}",
+    "previousLesson": "Anterior",
+    "nextLesson": "Siguiente",
+    "goToNextLesson": "Ir a la siguiente lección →",
+    "courseCompleted": "¡Has completado el curso! 🎉"
   },
   "quiz": {
     "title": "Quiz",

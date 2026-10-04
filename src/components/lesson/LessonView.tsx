@@ -14,9 +14,21 @@ interface LessonViewProps {
   lesson: Lesson
   onBack: () => void
   onComplete: () => void
+  onNavigate: (lessonId: string) => void
+  position: { index: number; total: number }
+  prevLesson: Lesson | null
+  nextLesson: Lesson | null
 }
 
-export default function LessonView({ lesson, onBack, onComplete }: LessonViewProps) {
+export default function LessonView({
+  lesson,
+  onBack,
+  onComplete,
+  onNavigate,
+  position,
+  prevLesson,
+  nextLesson
+}: LessonViewProps) {
   const { t } = useTranslation()
   const { completedLessons } = useProgressStore()
   const { lang } = useLanguageStore()
@@ -39,6 +51,9 @@ export default function LessonView({ lesson, onBack, onComplete }: LessonViewPro
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">{lesson.competencia}</h1>
           <p className="text-sm text-[var(--text-secondary)]">{lesson.modulo}</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            {t('lessonPosition', { current: position.index + 1, total: position.total })}
+          </p>
         </div>
         {isCompleted && (
           <span className="px-3 py-1 bg-[var(--success)] bg-opacity-20 text-[var(--success)] rounded-full text-sm font-medium">
@@ -168,14 +183,37 @@ export default function LessonView({ lesson, onBack, onComplete }: LessonViewPro
             <p className="text-[var(--text-secondary)] leading-relaxed">{lesson.pregunta_transferencia}</p>
           </section>
 
-          {!isCompleted && (
-            <button
-              onClick={onComplete}
-              className="w-full py-3 bg-[var(--success)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
-            >
-              {t('lesson.markComplete')}
-            </button>
-          )}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            {prevLesson && (
+              <button
+                onClick={() => onNavigate(prevLesson.id)}
+                className="flex-1 py-3 rounded-lg bg-[var(--bg-secondary)] text-[var(--text-primary)] font-medium hover:bg-[var(--bg-tertiary)] transition-colors"
+              >
+                ← {t('previousLesson')}
+              </button>
+            )}
+            {isCompleted ? (
+              nextLesson ? (
+                <button
+                  onClick={() => onNavigate(nextLesson.id)}
+                  className="flex-1 py-3 bg-[var(--accent)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                  {t('goToNextLesson')}
+                </button>
+              ) : (
+                <span className="flex-1 py-3 text-center font-medium text-[var(--success)]">
+                  {t('courseCompleted')}
+                </span>
+              )
+            ) : (
+              <button
+                onClick={onComplete}
+                className="flex-1 py-3 bg-[var(--success)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                {t('markComplete')}
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -23,6 +23,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-i18next": "^17.0.15",
+    "react-router-dom": "^7.18.4",
     "reactflow": "^11.11.4",
     "zustand": "^5.0.15"
   },

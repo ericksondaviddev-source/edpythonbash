@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Module, Lesson } from '../../types'
 import { useTranslation } from 'react-i18next'
 import { useProgressStore } from '../../store/useProgressStore'
@@ -15,6 +15,13 @@ export default function Sidebar({ modules, onLessonSelect, currentLessonId }: Si
   const { completedLessons } = useProgressStore()
   const [expandedModule, setExpandedModule] = useState<string | null>(modules[0]?.id || null)
 
+  useEffect(() => {
+    if (currentLessonId) {
+      const mod = modules.find(m => m.lecciones.some(l => l.id === currentLessonId))
+      if (mod) setExpandedModule(mod.id)
+    }
+  }, [currentLessonId, modules])
+
   return (
     <aside className="w-72 bg-[var(--bg-secondary)] border-r border-[var(--border)] min-h-[calc(100vh-64px)] overflow-y-auto">
       <div className="p-4">
@@ -26,6 +33,7 @@ export default function Sidebar({ modules, onLessonSelect, currentLessonId }: Si
             <div key={module.id} className="rounded-lg overflow-hidden">
               <button
                 onClick={() => setExpandedModule(expandedModule === module.id ? null : module.id)}
+                aria-expanded={expandedModule === module.id}
                 className="w-full px-4 py-3 text-left bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white transition-colors rounded-lg font-medium text-[var(--text-primary)]"
               >
                 <div className="flex items-center justify-between">

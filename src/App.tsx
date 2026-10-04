@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { HashRouter, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useThemeStore } from './store/useThemeStore'
 import { useLanguageStore } from './store/useLanguageStore'
 import { useProgressStore } from './store/useProgressStore'
-import { parseLessonsFromJSON, groupLessonsByModule } from './lib/parser'
-import type { Lesson, Module } from './types'
+import { parseLessonsFromJSON, groupLessonsByModule, flattenOrderedLessons } from './lib/parser'
+import type { Lesson } from './types'
 import Header from './components/layout/Header'
 import Sidebar from './components/layout/Sidebar'
 import Footer from './components/layout/Footer'
@@ -21,18 +22,22 @@ for (const [path, content] of Object.entries(lessonFiles)) {
   validFiles[path] = content
 }
 
-function App() {
+function AppShell() {
+  const navigate = useNavigate()
+  const { lessonId } = useParams()
+  const location = useLocation()
   const { theme } = useThemeStore()
   const { lang } = useLanguageStore()
   const { completeLesson } = useProgressStore()
   const [isLoading, setIsLoading] = useState(true)
   const [lessons] = useState<Lesson[]>(() => parseLessonsFromJSON(validFiles))
-  const [modules] = useState<Module[]>(() => groupLessonsByModule(lessons))
-  const [currentView, setCurrentView] = useState<'dashboard' | 'lesson'>('dashboard')
-  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null)
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAPIKeyModalOpen, setIsAPIKeyModalOpen] = useState(false)
+
+  const modules = useMemo(() => groupLessonsByModule(lessons), [lessons])
+  const orderedLessons = useMemo(() => flattenOrderedLessons(modules), [modules])
+  const currentLesson = lessonId ? lessons.find(l => l.id === lessonId) ?? null : null
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -47,22 +52,24 @@ function App() {
     return () => clearTimeout(timer)
   }, [])
 
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
+
   const handleLessonSelect = (lesson: Lesson) => {
-    setCurrentLesson(lesson)
-    setCurrentView('lesson')
+    navigate(`/leccion/${lesson.id}`)
     setIsSidebarOpen(false)
   }
 
-  const handleBack = () => {
-    setCurrentView('dashboard')
-    setCurrentLesson(null)
-  }
+  const handleBack = () => navigate('/')
 
   const handleCompleteLesson = () => {
     if (currentLesson) {
       completeLesson(currentLesson.id)
     }
   }
+
+  const currentIndex = orderedLessons.findIndex(l => l.id === currentLesson?.id)
 
   if (isLoading) {
     return <LoadingScreen />
@@ -77,7 +84,7 @@ function App() {
 
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black bg-opacity-50 md:hidden"
+          className="fixed inset-0 z-50 bg-black/50 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         >
           <div
@@ -111,26 +118,71 @@ function App() {
           />
         </div>
         <main className="flex-1 p-4 md:p-6">
-          {currentView === 'dashboard' && (
-            <Dashboard
-              modules={modules}
-              lessons={lessons}
-              onLessonSelect={handleLessonSelect}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Dashboard
+                  modules={modules}
+                  lessons={lessons}
+                  onLessonSelect={handleLessonSelect}
+                />
+              }
             />
-          )}
-          {currentView === 'lesson' && currentLesson && (
-            <LessonView
-              lesson={currentLesson}
-              onBack={handleBack}
-              onComplete={handleCompleteLesson}
+            <Route
+              path="/modulo/:moduloId"
+              element={
+                <Dashboard
+                  modules={modules}
+                  lessons={lessons}
+                  onLessonSelect={handleLessonSelect}
+                />
+              }
             />
-          )}
+            <Route
+              path="/leccion/:lessonId"
+              element={
+                currentLesson ? (
+                  <LessonView
+                    key={lessonId}
+                    lesson={currentLesson}
+                    onBack={handleBack}
+                    onComplete={handleCompleteLesson}
+                    onNavigate={(id) => navigate(`/leccion/${id}`)}
+                    position={{ index: currentIndex, total: orderedLessons.length }}
+                    prevLesson={currentIndex > 0 ? orderedLessons[currentIndex - 1] : null}
+                    nextLesson={
+                      currentIndex >= 0 && currentIndex < orderedLessons.length - 1
+                        ? orderedLessons[currentIndex + 1]
+                        : null
+                    }
+                  />
+                ) : (
+                  <Dashboard
+                    modules={modules}
+                    lessons={lessons}
+                    onLessonSelect={handleLessonSelect}
+                  />
+                )
+              }
+            />
+            <Route
+              path="*"
+              element={
+                <Dashboard
+                  modules={modules}
+                  lessons={lessons}
+                  onLessonSelect={handleLessonSelect}
+                />
+              }
+            />
+          </Routes>
         </main>
       </div>
 
       <Footer />
 
-      {currentView === 'lesson' && (
+      {currentLesson && (
         <Button
           onClick={() => setIsAIPanelOpen(true)}
           className="fixed bottom-20 right-6 z-40"
@@ -151,6 +203,14 @@ function App() {
         onClose={() => setIsAPIKeyModalOpen(false)}
       />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <HashRouter>
+      <AppShell />
+    </HashRouter>
   )
 }
 
