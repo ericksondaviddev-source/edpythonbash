@@ -75,6 +75,7 @@
     "goToNextLesson": "Go to next lesson →",
     "courseCompleted": "You completed the course! 🎉",
     "quizGatingHint": "Pass the quiz with at least 70% to mark this lesson as completed",
+    "colabNotebook": "Colab Notebook",
     "quizBest": "Best: {{score}}/{{total}}"
   },
   "quiz": {
@@ -194,6 +195,41 @@
     "light": "Light mode",
     "dark": "Dark mode",
     "toggle": "Toggle theme"
+  },
+  "header": {
+    "openMenu": "Open menu",
+    "settings": "Settings"
+  },
+  "ai": {
+    "title": "AI Tutor",
+    "greeting": "Hi! I'm your Python and Bash tutor. I'm here to help you with the lesson \"{{lesson}}\". How can I help?",
+    "typing": "Typing...",
+    "suggestions": "Suggestions:",
+    "inputPlaceholder": "Ask something...",
+    "send": "Send",
+    "suggestionsList": [
+      "What is the main concept of this lesson?",
+      "Why does the broken code fail?",
+      "What does the optimized code improve?",
+      "Explain the fixed code step by step",
+      "What common mistakes should I avoid?"
+    ],
+    "systemPrompt": "You are a Python and Bash tutor. Answer based on the lesson content. Be clear and concise.",
+    "ctxLesson": "Lesson",
+    "ctxModule": "Module",
+    "ctxContent": "Content",
+    "ctxBrokenCode": "Broken code",
+    "ctxFixedCode": "Fixed code",
+    "ctxUserQuestion": "User question"
+  },
+  "aiReview": {
+    "title": "AI Review",
+    "flow": "Flow: create → read → fix → optimize",
+    "review": "Review with AI",
+    "reviewing": "Reviewing...",
+    "needsCode": "Add blocks first so the code can be reviewed.",
+    "systemPrompt": "You are an expert Python and Bash tutor. The student built code with visual blocks. Follow the pedagogical flow: (1) CREATE: validate that the built code is syntactically correct. (2) READ: explain what the code does step by step. (3) FIX: point out concrete errors or improvements with the corrected code. (4) OPTIMIZE: show the optimized version following best practices. Answer in English, clear format with numbered sections 1-4. Be concise.",
+    "userPrompt": "Review this {{language}} code I built with blocks:\n\n```{{langCode}}\n{{code}}\n```"
   },
   "language": {
     "title": "Language",

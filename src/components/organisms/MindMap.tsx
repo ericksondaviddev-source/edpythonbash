@@ -20,13 +20,14 @@ interface MindMapProps {
   onLessonSelect: (lessonId: string) => void
   currentLessonId?: string
 }
-
 interface LessonNodeData {
   label: string
   isCompleted: boolean
   isCurrent: boolean
   onClick: () => void
 }
+
+const PHASE_COLORS = ['#3776AB', '#FFD43B', '#4EAA25', '#F7D117']
 
 function LessonNode({ data }: { data: LessonNodeData }) {
   return (
@@ -54,8 +55,7 @@ interface ModuleNodeData {
 }
 
 function ModuleNode({ data }: { data: ModuleNodeData }) {
-  const colors = ['#3776AB', '#FFD43B', '#4EAA25', '#F7D117']
-  const color = colors[data.fase] || '#F7D117'
+  const color = PHASE_COLORS[data.fase] || '#F7D117'
 
   return (
     <div
@@ -219,12 +219,18 @@ export default function MindMap({ modules, onLessonSelect, currentLessonId }: Mi
         <Background color="var(--border)" gap={16} />
         <Controls />
         <MiniMap
+          position="top-left"
+          pannable
+          zoomable
+          style={{ background: 'var(--bg-tertiary)', borderRadius: 12 }}
+          maskColor="color-mix(in srgb, var(--bg-secondary) 75%, transparent)"
           nodeColor={(node) => {
             if (node.type === 'lesson') {
               const data = node.data as LessonNodeData
               return data.isCompleted ? '#2ECC71' : '#F7D117'
             }
-            return '#3776AB'
+            const data = node.data as { fase?: number }
+            return PHASE_COLORS[data.fase ?? 3] || '#F7D117'
           }}
         />
       </ReactFlow>

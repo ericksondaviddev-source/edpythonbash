@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { Lesson } from '../../types'
 import { useAI } from '../../hooks/useAI'
+import { useTranslation } from 'react-i18next'
 import { Button, Icon } from '../atoms'
 
 interface AIPanelProps {
@@ -14,19 +15,13 @@ interface Message {
   content: string
 }
 
-const SUGGESTED_QUESTIONS = [
-  '¿Cuál es el concepto principal de esta lección?',
-  '¿Por qué falla el código roto?',
-  '¿Qué mejora el código optimizado?',
-  'Explícame el código corregido paso a paso',
-  '¿Qué errores comunes debo evitar?'
-]
-
 export default function AIPanel({ lesson, isOpen, onClose }: AIPanelProps) {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const { chat, isLoading, error } = useAI()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const suggestedQuestions = t('ai.suggestionsList', { returnObjects: true }) as string[]
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -36,10 +31,10 @@ export default function AIPanel({ lesson, isOpen, onClose }: AIPanelProps) {
     if (isOpen && lesson) {
       setMessages([{
         role: 'assistant',
-        content: `¡Hola! Soy tu tutor de Python y Bash. Estoy aquí para ayudarte con la lección "${lesson.competencia}". ¿En qué puedo ayudarte?`
+        content: t('ai.greeting', { lesson: lesson.competencia })
       }])
     }
-  }, [isOpen, lesson])
+  }, [isOpen, lesson, t])
 
   const handleSend = async (text?: string) => {
     const messageText = text || input
@@ -49,16 +44,16 @@ export default function AIPanel({ lesson, isOpen, onClose }: AIPanelProps) {
     setMessages(prev => [...prev, userMessage])
     setInput('')
 
-    const context = `Lección: ${lesson.competencia}
-Módulo: ${lesson.modulo}
-Contenido: ${lesson.modelo_mental}
-Código roto: ${lesson.codigo_roto}
-Código corregido: ${lesson.codigo_corregido}
+    const context = `${t('ai.ctxLesson')}: ${lesson.competencia}
+${t('ai.ctxModule')}: ${lesson.modulo}
+${t('ai.ctxContent')}: ${lesson.modelo_mental}
+${t('ai.ctxBrokenCode')}: ${lesson.codigo_roto}
+${t('ai.ctxFixedCode')}: ${lesson.codigo_corregido}
 
-Pregunta del usuario: ${messageText}`
+${t('ai.ctxUserQuestion')}: ${messageText}`
 
     const response = await chat([
-      { role: 'system', content: 'Eres un tutor de Python y Bash. Responde basándote en el contenido de la lección. Sé claro y conciso.' },
+      { role: 'system', content: t('ai.systemPrompt') },
       { role: 'user', content: context }
     ])
 
@@ -72,7 +67,7 @@ Pregunta del usuario: ${messageText}`
   return (
     <div className="fixed inset-x-0 bottom-0 h-[75vh] w-full rounded-t-2xl md:rounded-none md:inset-x-auto md:inset-y-0 md:right-0 md:h-full md:w-96 bg-[var(--bg-secondary)] border-t md:border-t-0 md:border-l border-[var(--border)] shadow-xl z-50 flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-        <h3 className="font-semibold text-[var(--text-primary)]">Tutor IA</h3>
+        <h3 className="font-semibold text-[var(--text-primary)]">{t('ai.title')}</h3>
         <button
           onClick={onClose}
           className="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
@@ -101,7 +96,7 @@ Pregunta del usuario: ${messageText}`
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-[var(--bg-tertiary)] p-3 rounded-lg">
-              <p className="text-sm text-[var(--text-secondary)]">Escribiendo...</p>
+              <p className="text-sm text-[var(--text-secondary)]">{t('ai.typing')}</p>
             </div>
           </div>
         )}
@@ -117,9 +112,9 @@ Pregunta del usuario: ${messageText}`
 
       {lesson && (
         <div className="p-4 border-t border-[var(--border)]">
-          <p className="text-xs text-[var(--text-secondary)] mb-2">Sugerencias:</p>
+          <p className="text-xs text-[var(--text-secondary)] mb-2">{t('ai.suggestions')}</p>
           <div className="flex flex-wrap gap-2 mb-3">
-            {SUGGESTED_QUESTIONS.map((q, i) => (
+            {suggestedQuestions.map((q, i) => (
               <button
                 key={i}
                 onClick={() => handleSend(q)}
@@ -135,11 +130,11 @@ Pregunta del usuario: ${messageText}`
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Pregunta algo..."
+              placeholder={t('ai.inputPlaceholder')}
               className="flex-1 px-3 py-2 bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
             <Button onClick={() => handleSend()} disabled={isLoading}>
-              Enviar
+              {t('ai.send')}
             </Button>
           </div>
         </div>

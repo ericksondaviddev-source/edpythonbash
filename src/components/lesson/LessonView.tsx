@@ -188,7 +188,7 @@ export default function LessonView({
           {lesson.colab && lesson.colab.celdas?.length > 0 && (
             <section className="p-6 rounded-xl glass shadow-lg">
               <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
-                Notebook Colab
+                {t('lesson.colabNotebook')}
               </h2>
               {lesson.colab.objetivo && (
                 <p className="text-sm text-[var(--text-secondary)] mb-4">{lesson.colab.objetivo}</p>

@@ -75,6 +75,7 @@
     "goToNextLesson": "Ir a la siguiente lección →",
     "courseCompleted": "¡Has completado el curso! 🎉",
     "quizGatingHint": "Completa el quiz con al menos 70% de aciertos para marcar esta lección como completada",
+    "colabNotebook": "Notebook Colab",
     "quizBest": "Mejor: {{score}}/{{total}}"
   },
   "quiz": {
@@ -194,6 +195,41 @@
     "light": "Modo claro",
     "dark": "Modo oscuro",
     "toggle": "Cambiar tema"
+  },
+  "header": {
+    "openMenu": "Abrir menú",
+    "settings": "Configuración"
+  },
+  "ai": {
+    "title": "Tutor IA",
+    "greeting": "¡Hola! Soy tu tutor de Python y Bash. Estoy aquí para ayudarte con la lección \"{{lesson}}\". ¿En qué puedo ayudarte?",
+    "typing": "Escribiendo...",
+    "suggestions": "Sugerencias:",
+    "inputPlaceholder": "Pregunta algo...",
+    "send": "Enviar",
+    "suggestionsList": [
+      "¿Cuál es el concepto principal de esta lección?",
+      "¿Por qué falla el código roto?",
+      "¿Qué mejora el código optimizado?",
+      "Explícame el código corregido paso a paso",
+      "¿Qué errores comunes debo evitar?"
+    ],
+    "systemPrompt": "Eres un tutor de Python y Bash. Responde basándote en el contenido de la lección. Sé claro y conciso.",
+    "ctxLesson": "Lección",
+    "ctxModule": "Módulo",
+    "ctxContent": "Contenido",
+    "ctxBrokenCode": "Código roto",
+    "ctxFixedCode": "Código corregido",
+    "ctxUserQuestion": "Pregunta del usuario"
+  },
+  "aiReview": {
+    "title": "Revisión IA",
+    "flow": "Flujo: crear → leer → corregir → optimizar",
+    "review": "Revisar con IA",
+    "reviewing": "Revisando...",
+    "needsCode": "Agrega bloques primero para poder revisar el código.",
+    "systemPrompt": "Eres un tutor experto de Python y Bash. El estudiante construyó código con bloques visuales. Sigue el flujo pedagógico: (1) CREAR: valida que el código construido sea sintácticamente correcto. (2) LEER: explica qué hace el código paso a paso. (3) CORREGIR: señala errores o mejoras concretas con el código corregido. (4) OPTIMIZAR: muestra la versión optimizada siguiendo mejores prácticas. Responde en español, formato claro con secciones numeradas 1-4. Sé conciso.",
+    "userPrompt": "Revisa este código {{language}} que construí con bloques:\n\n```{{langCode}}\n{{code}}\n```"
   },
   "language": {
     "title": "Idioma",

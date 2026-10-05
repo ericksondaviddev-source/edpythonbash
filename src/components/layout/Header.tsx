@@ -23,7 +23,7 @@ export default function Header({ onOpenSettings, onOpenMenu, trail = [] }: Heade
             <button
               onClick={onOpenMenu}
               className="p-2 rounded-lg bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] transition-colors md:hidden"
-              aria-label="Abrir menú"
+              aria-label={t('header.openMenu')}
             >
               <Icon name="menu" size={20} />
             </button>
@@ -55,7 +55,7 @@ export default function Header({ onOpenSettings, onOpenMenu, trail = [] }: Heade
           <button
             onClick={onOpenSettings}
             className="p-2 rounded-lg bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] transition-colors"
-            aria-label="Configuración"
+            aria-label={t('header.settings')}
           >
             <Icon name="settings" size={20} />
           </button>

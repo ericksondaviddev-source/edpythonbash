@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { Simulator } from '../../types'
 import { Button } from '../atoms'
 import { getBashSession, resetBashSession } from '../../services/sessionStore'
 import { getPyodideRunner } from '../../services/pyodide'
@@ -12,7 +13,7 @@ interface HistoryEntry {
 
 interface TerminalPanelProps {
   lessonId: string
-  engine: 'pyodide' | 'bash_sim'
+  engine: Simulator['engine']
   setupCode?: string
   externalCode: string
   onConsumeExternal?: () => void
