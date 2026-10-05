@@ -5,8 +5,7 @@ export interface Quiz {
   explicacion: string
 }
 
-export interface QuizIA {
-  pregunta: string
+export interface QuizIA {  pregunta: string
   opciones: string[]
   correcta: string
   explicacion: string
@@ -28,6 +27,12 @@ export interface Simulator {
   solucion: string
 }
 
+/** Un paso del tutor: fragmento de código que se teclea + narración que lo explica. */
+export interface TutorStep {
+  code: string
+  narration: string
+}
+
 export interface Lesson {
   id: string
   modulo: string
@@ -44,6 +49,7 @@ export interface Lesson {
   pregunta_transferencia: string
   quiz: Quiz
   quiz_ia?: QuizIA[]
+  tutor_steps?: TutorStep[]
   _enriched?: boolean
   simulador?: Simulator
   colab?: Colab

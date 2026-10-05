@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Lesson, Quiz } from '../../types'
 import { useTranslation } from 'react-i18next'
 import CodeBlock from './CodeBlock'
 import QuizEngine from '../quiz/QuizEngine'
 import SimulatorPanel from '../simulator/SimulatorPanel'
 import AudioPlayer from '../audio/AudioPlayer'
-import CodeTypingVideo from '../video/CodeTypingVideo'
+import TutorTab from '../video/TutorTab'
+import { buildTutorSteps } from '../../lib/tutorScript'
 import { useProgressStore } from '../../store/useProgressStore'
 import { useLanguageStore } from '../../store/useLanguageStore'
 import Markdown from '../molecules/Markdown'
@@ -33,9 +34,14 @@ export default function LessonView({
   const { t } = useTranslation()
   const { completedLessons, quizBest, recordQuizScore } = useProgressStore()
   const { lang } = useLanguageStore()
-  const [activeTab, setActiveTab] = useState<'content' | 'quiz' | 'simulator'>('content')
+  const [activeTab, setActiveTab] = useState<'content' | 'tutor' | 'quiz' | 'simulator'>('content')
   const [showAudio, setShowAudio] = useState(false)
-  const [showVideo, setShowVideo] = useState(false)
+  const tutorSteps = useMemo(
+    () =>
+      lesson.tutor_steps ??
+      buildTutorSteps({ codigo_corregido: lesson.codigo_corregido, audio_script: lesson.audio_script }),
+    [lesson]
+  )
   const isCompleted = completedLessons.includes(lesson.id)
   const best = quizBest[lesson.id]
   const lessonLanguage: 'python' | 'bash' | 'html' =
@@ -76,6 +82,16 @@ export default function LessonView({
           }`}
         >
           {t('lesson.title')}
+        </button>
+        <button
+          onClick={() => setActiveTab('tutor')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            activeTab === 'tutor'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+          }`}
+        >
+          {t('tutor.title')}
         </button>
         <button
           onClick={() => setActiveTab('quiz')}
@@ -155,29 +171,6 @@ export default function LessonView({
             title={t('lesson.optimizedCode')}
           />
 
-          <div className="border border-[var(--border)] rounded-xl overflow-hidden">
-            <button
-              onClick={() => setShowVideo(!showVideo)}
-              className="w-full px-4 py-3 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] transition-colors flex items-center justify-between"
-            >
-              <span className="font-medium text-[var(--text-primary)]">{t('lesson.video')}</span>
-              <span className="text-[var(--text-secondary)]">{showVideo ? t('common.hide') : t('common.show')}</span>
-            </button>
-            {showVideo && (
-              <div className="p-4 border-t border-[var(--border)]">
-                <CodeTypingVideo
-                  code={lesson.codigo_corregido}
-                  speed={30}
-                  ascii3d={{
-                    enabled: true,
-                    type: 'intro',
-                    duration: 3000
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
           <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.expertDebate')}
@@ -248,6 +241,10 @@ export default function LessonView({
             )}
           </div>
         </div>
+      )}
+
+      {activeTab === 'tutor' && (
+        <TutorTab steps={tutorSteps} title={lesson.competencia} fileBase={lesson.id} lang={lang} />
       )}
 
       {activeTab === 'quiz' && (
