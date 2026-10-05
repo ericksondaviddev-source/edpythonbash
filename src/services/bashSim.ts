@@ -386,6 +386,11 @@ class BashSim {
     }
     return { stdout: '', stderr: '', exitCode: 0 }
   }
+
+  /** Nombres de comandos implementados (para autocompletado con Tab). */
+  getCommandNames(): string[] {
+    return ['echo', 'ls', 'pwd', 'cd', 'cat', 'mkdir', 'rm', 'cp', 'mv', 'grep', 'wc', 'find', 'export']
+  }
 }
 
 export default BashSim
