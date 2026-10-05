@@ -17,10 +17,21 @@ export default defineConfig({
         name: 'ED-python/bash',
         short_name: 'ED-pybash',
         description: 'Aprende Python y Bash de forma interactiva - by ED-Dev',
-        theme_color: '#FF6B35',
-        background_color: '#0D1117',
+        theme_color: '#F7D117',
+        background_color: '#0B1F17',
         display: 'standalone',
         icons: [
+          {
+            src: 'icon-192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
+          },
           {
             src: 'favicon.svg',
             sizes: 'any',

@@ -1,10 +1,25 @@
 <svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="200" height="60" rx="8" fill="#1E1E2E"/>
-  <text x="16" y="28" font-family="monospace" font-size="14" fill="#3776AB">ED</text>
-  <text x="44" y="28" font-family="monospace" font-size="14" fill="#FFD43B">-python</text>
-  <text x="116" y="28" font-family="monospace" font-size="14" fill="#4EAA25">/bash</text>
-  <text x="16" y="48" font-family="monospace" font-size="10" fill="#8B949E">by ED-Dev</text>
-  <rect x="150" y="12" width="36" height="36" rx="4" fill="#FF6B35"/>
-  <path d="M158 22L164 28L158 34" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M168 34H178" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <rect width="200" height="60" rx="10" fill="#0B1F17"/>
+  <g transform="translate(30,30)">
+    <g fill="#F7D117">
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2"/>
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2" transform="rotate(45)"/>
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2" transform="rotate(90)"/>
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2" transform="rotate(135)"/>
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2" transform="rotate(180)"/>
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2" transform="rotate(225)"/>
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2" transform="rotate(270)"/>
+      <rect x="-1.6" y="-20" width="3.2" height="6" rx="1.2" transform="rotate(315)"/>
+    </g>
+    <circle r="11.5" fill="#F7D117" stroke="#0033AB" stroke-width="2.5"/>
+    <path d="M-6.5 -1.5L-2 3L-6.5 7.5" stroke="#1A1A2E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M-0.5 7.5H6.5" stroke="#1A1A2E" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+  <text x="54" y="29" font-family="monospace" font-size="15" font-weight="bold" fill="#F7D117">ED</text>
+  <text x="76" y="29" font-family="monospace" font-size="15" fill="#EAF3EC">-python</text>
+  <text x="140" y="29" font-family="monospace" font-size="15" fill="#4EAA25">/bash</text>
+  <text x="54" y="46" font-family="monospace" font-size="9" fill="#9DB3A8">by ED-Dev</text>
+  <rect x="150" y="39" width="14" height="3.5" fill="#F7D117"/>
+  <rect x="164" y="39" width="14" height="3.5" fill="#0033AB"/>
+  <rect x="178" y="39" width="14" height="3.5" fill="#CF142B"/>
 </svg>
