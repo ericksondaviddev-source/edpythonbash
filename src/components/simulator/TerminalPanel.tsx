@@ -233,6 +233,7 @@ export default function TerminalPanel({ lessonId, engine, setupCode, externalCod
             <span className="text-[var(--warning)]">&gt;</span>
             <input
               aria-label={t('terminal.inputPlaceholder')}
+              name="terminal-stdin"
               value={inputLine}
               onChange={ev => setInputLine(ev.target.value)}
               onKeyDown={ev => {
@@ -250,6 +251,7 @@ export default function TerminalPanel({ lessonId, engine, setupCode, externalCod
             <input
               ref={inputRef}
               aria-label={t('terminal.inputLabel')}
+              name="terminal-input"
               value={line}
               onChange={ev => setLine(ev.target.value)}
               onKeyDown={handleKeyDown}
