@@ -1,87 +1,85 @@
 # ED-python/bash Learning App
 
-PWA (Progressive Web App) para aprender Python y Bash de forma interactiva, por ED-Dev.
+![CI](https://github.com/ericksondaviddev-source/edpythonbash/actions/workflows/ci/badge.svg)
+
+PWA para aprender Python y Bash de forma interactiva, por ED-Dev. Diseño solarpunk con acentos tricolor, portada bento y videos de instrucción generados por la propia app.
+
+![Portada bento](docs/shots/dashboard.png)
 
 ## Características
 
 - **174 lecciones** en 19 módulos (F0-F3), con contenido enriquecido por IA
-- **Secuencia real**: orden de módulos por fase/número, navegación prev/next, "Lección X de Y"
-- **Router con URLs**: deep-links a cualquier lección (`#/leccion/M1.1-001`)
-- **Código roto → corregido → optimizado**: Aprende debugging real, con resaltado de sintaxis
+- **Portada bento**: hero con progreso tricolor, continuar, stats, videos y mapa mental
+- **Videos de instrucción**: 3 guías generadas por la app, con voz y descargas WebM/HTML
+- **Tutor IA con tu propia clave**: cada usuario usa su key gratuita de OpenRouter (se guarda solo en su navegador)
+- **Código roto → corregido → optimizado**: debugging real con resaltado de sintaxis
 - **Quizzes con gating**: aprobar con ≥70% para completar la lección
-- **Retos guiados en el simulador**: verificación automática con asserts (`test_code`, stdout, excepciones, forbidden) + XP
-- **Notebook Colab**: celdas markdown/código por lección
-- **Markdown renderizado** en todas las explicaciones
-- **Video generativo**: Efecto "code typing" con ASCII 3D
-- **Audio TTS**: Escucha las lecciones
-- **Bilingüe**: Español e inglés
-- **Temas**: Light solar / Dark solar
-- **PWA**: Funciona offline, instalable
-- **Progreso local**: localStorage (Zustand persist), XP, rachas
+- **Simulador**: Python (Pyodide/WASM) y Bash reales, retos con asserts + XP
+- **Video generativo**: efecto "code typing" con ASCII 3D + TTS
+- **Bilingüe**: español e inglés · **Temas**: light solar / dark bosque
+- **PWA offline**: instalable, progreso local (IndexedDB/localStorage), XP y rachas
 
-## Stack
+## Tu propia API key (tutor IA)
 
-- React 19 + Vite 8
-- Tailwind CSS 4 + CSS variables
-- Zustand (estado)
-- react-router-dom 7 (HashRouter)
-- react-markdown + Prism (contenido)
-- Pyodide (Python en WASM, singleton cacheado)
-- i18next (i18n)
-- Canvas API (video + ASCII 3D)
-- Vitest + Playwright (tests)
+1. Crea una key gratuita en [openrouter.ai/keys](https://openrouter.ai/keys)
+2. En la app, abre **Configuración** (engranaje) → pega tu key → Guardar
+3. Listo: el tutor IA de cada lección usa tus modelos gratuitos
+
+La key nunca sale de tu navegador (solo viaja a OpenRouter en tus propias llamadas).
 
 ## Inicio rápido
 
 ```bash
-# Instalar dependencias
 npm install
-
-# Desarrollo (puerto 5174 si 5173 está ocupado)
-npm run dev -- --port 5174
-
-# Build
-npm run build
-
-# Tests
-npm run test          # Unit tests
-npm run test:e2e      # E2E tests
-
-# Preview (producción, usado por python-bash.bat)
-npm run preview -- --port 4173
+npm run dev -- --port 5174   # desarrollo
+npm run build                # build producción (dist/)
+npm run test                 # unit tests (Vitest)
+npm run test:e2e             # E2E (Playwright)
+npm run lint                 # lint
 ```
 
-### Enriquecimiento IA (opcional, offline batch)
+### Enriquecimiento IA (batch local, opcional)
 
 ```bash
-# Requiere key de OpenRouter
 $env:OPENROUTER_API_KEY = "sk-or-..."
-node scripts/enrich-lessons.mjs --limit 5   # probar con 5
-node scripts/enrich-lessons.mjs             # todas las lecciones pendientes
+node scripts/enrich-all.mjs --limit 2   # probar con 2
+node scripts/enrich-all.mjs             # todas las pendientes
 ```
 
-El script es idempotente (marca `_enriched: true` y salta las ya hechas).
+Idempotente (salta lecciones con `_enriched: true` y `quiz_ia` completo).
+Límites gratis de OpenRouter: 50 requests/día; el loop programado
+(`ED-PythonBash-EnrichLessons` cada 30 min) avanza solo.
+
+## Deploy (Vercel)
+
+```bash
+vercel --prod
+```
+
+Build: `npm run build` → `dist/`. No necesita rewrites (HashRouter).
+Cada usuario desplegado usa su propia API key (ver arriba): el repo no
+incluye ninguna clave.
+
+## Stack
+
+React 19 + Vite 8 · Tailwind 4 + CSS variables · Zustand · react-router-dom 7
+(HashRouter) · react-markdown + Prism · Pyodide (WASM) · i18next · Canvas API
+(video + ASCII 3D) · Vitest + Playwright · vite-plugin-pwa (Workbox)
 
 ## Estructura
 
 ```
 src/
-  components/     # atoms/ molecules/ organisms/ + lesson/ quiz/ simulator/ video/ audio/
-  pages/          # Dashboard
-  store/          # Estado global (Zustand: progress, theme, language)
-  i18n/           # Traducciones (ES/EN)
-  lib/            # parser.ts (orden de secuencia)
-  data/modulos/   # 28 archivos JSON con lecciones
-  types/          # Tipos TypeScript
-  services/       # pyodide (singleton + verify), bashSim, questionGenerator
-  scripts/        # enrich-lessons.mjs (batch IA)
+  components/     # atoms/ molecules/ organisms/ + lesson/ quiz/ simulator/ video/ audio/ dashboard/
+  pages/          # Dashboard (bento)
+  store/          # Zustand: progress, theme, language
+  i18n/           # ES/EN
+  lib/            # parser, pyodide, bashSim, videoEngine, tutorScript/Export/Recorder, instructionVideos
+  data/modulos/   # 31 archivos JSON con lecciones
+  types/          # lesson.ts (Lesson, TutorStep, Module...)
+  services/       # pyodide singleton, bashSim, questionGenerator
+scripts/          # enrich-all.mjs + enrich-loop.ps1 (batch IA)
 ```
-
-## Agregar lecciones
-
-1. Crea un archivo JSON en `src/data/modulos/`
-2. Sigue el schema existente (ver `src/types/lesson.ts`)
-3. El parser lo incluye automáticamente (ordenado por id dentro del módulo)
 
 ## Licencia
 
