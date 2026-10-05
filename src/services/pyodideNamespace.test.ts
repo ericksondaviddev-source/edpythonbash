@@ -5,9 +5,9 @@ function makeFakePyodide() {
   return {
     _ns: [] as Record<string, unknown>[],
     _calls: 0,
-    setStdout(_: unknown) {},
-    setStderr(_: unknown) {},
-    setStdin(_: unknown) {},
+    setStdout() {},
+    setStderr() {},
+    setStdin() {},
     async runPythonAsync(code: string, ns?: unknown) {
       if (code === '__make_ns__') {
         const d: Record<string, unknown> = {}
@@ -23,7 +23,7 @@ function makeFakePyodide() {
       }
       return 'done'
     },
-    globals: { get: (_: string) => () => ({}) }
+    globals: { get: () => () => ({}) }
   }
 }
 
