@@ -38,7 +38,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     >
       <div
         ref={modalRef}
-        className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        className="glass rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl"
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-[var(--text-primary)]">{title}</h2>

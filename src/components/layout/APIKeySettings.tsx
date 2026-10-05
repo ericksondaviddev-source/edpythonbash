@@ -45,7 +45,7 @@ export default function APIKeySettings({ isOpen, onClose }: APIKeySettingsProps)
               href="https://openrouter.ai/keys"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[var(--accent)] hover:underline"
+              className="text-[var(--accent-2)] hover:underline"
             >
               openrouter.ai/keys
             </a>

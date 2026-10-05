@@ -11,7 +11,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={ref}
-        className={`bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-6 ${className}`}
+        className={`glass rounded-xl p-6 shadow-lg ${className}`}
         {...props}
       >
         {title && (
