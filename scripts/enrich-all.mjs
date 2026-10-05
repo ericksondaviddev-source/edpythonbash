@@ -7,13 +7,15 @@ const MODULOS_DIR = path.join(__dirname, '..', 'src', 'data', 'modulos')
 
 const MODELS = ['openrouter/free', 'google/gemma-4-31b-it:free', 'qwen/qwen3.8-27b:free']
 const API_KEY = process.env.OPENROUTER_API_KEY
-const REQUEST_DELAY_MS = 12000
+const REQUEST_DELAY_MS = 6000
 const RETRY_429_WAIT_MS = 30000
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
+async function main() {
 if (!API_KEY) {
   console.error('ERROR: set OPENROUTER_API_KEY env var')
-  process.exit(1)
+  process.exitCode = 1
+  return
 }
 
 const args = process.argv.slice(2)
@@ -30,7 +32,7 @@ try {
     const born = Number(fs.readFileSync(LOCK_FILE, 'utf8')) || 0
     if (Date.now() - born < STALE_MS) {
       console.log('Otra pasada en curso (lock activo). Saliendo.')
-      process.exit(0)
+      return
     }
     console.warn('Lock obsoleto (>3h), se continúa.')
   }
@@ -45,7 +47,8 @@ process.on('SIGTERM', () => process.exit(143))
 async function checkQuota() {
   try {
     const res = await fetch('https://openrouter.ai/api/v1/auth/key', {
-      headers: { Authorization: `Bearer ${API_KEY}` }
+      headers: { Authorization: `Bearer ${API_KEY}` },
+      signal: AbortSignal.timeout(60000)
     })
     if (!res.ok) {
       console.warn(`No se pudo comprobar la cuota (HTTP ${res.status}), se continúa con cautela.`)
@@ -57,7 +60,8 @@ async function checkQuota() {
       console.log(`Cuota diaria gratuita: ${free.used}/${free.limit} usadas, ${free.remaining} restantes.`)
       if (free.remaining <= 0) {
         console.error('Cuota diaria agotada. Saliendo sin gastar requests (código 42).')
-        process.exit(42)
+        process.exitCode = 42
+        return false
       }
     }
     return true
@@ -132,6 +136,7 @@ async function callOpenRouter(prompt) {
             Authorization: `Bearer ${API_KEY}`,
             'Content-Type': 'application/json'
           },
+          signal: AbortSignal.timeout(300000),
           body: JSON.stringify({
             model,
             messages: [{ role: 'user', content: prompt }],
@@ -224,7 +229,7 @@ const files = fs
   .filter(f => !f.includes('profiling') && !f.includes('EXTENSI'))
   .filter(f => (FILE_FILTER ? f === FILE_FILTER : true))
 
-await checkQuota()
+if ((await checkQuota()) === false) return
 
 let enriched = 0, quized = 0, failed = 0, skipped = 0, batches = 0
 let consecNull = 0 // resultados nulos seguidos (cuota agotada o red caída)
@@ -336,8 +341,12 @@ console.log(`\n=== Resumen: ${enriched} enriquecidas, ${quized} con quiz_ia, ${f
 if (quotaAbort) {
   if (lastFailKind === 'network') {
     console.error('ABORTADO: red caída (fetch failed), NO es cuota. Reintentará en la próxima pasada. Código 43.')
-    process.exit(43)
+    process.exitCode = 43
+  } else {
+    console.error('ABORTADO: posible cuota agotada. Código 42.')
+    process.exitCode = 42
   }
-  console.error('ABORTADO: posible cuota agotada. Código 42.')
-  process.exit(42)
 }
+} // cierra main()
+
+await main()
