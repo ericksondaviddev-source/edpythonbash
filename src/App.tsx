@@ -72,11 +72,27 @@ function AppShell() {
 
   const currentIndex = orderedLessons.findIndex(l => l.id === currentLesson?.id)
 
+  const moduloId = location.pathname.startsWith('/modulo/')
+    ? decodeURIComponent(location.pathname.split('/')[2])
+    : null
+  const currentModule = currentLesson
+    ? modules.find(m => m.lecciones.some(l => l.id === currentLesson.id)) ?? null
+    : null
+  const trailModule = currentModule ?? (moduloId ? modules.find(m => m.id === moduloId) ?? null : null)
+  const trail: { label: string; to?: string }[] = [{ label: t('nav.home'), to: '/' }]
+  if (trailModule) {
+    trail.push({ label: trailModule.nombre, to: `/modulo/${encodeURIComponent(trailModule.id)}` })
+  }
+  if (currentLesson) {
+    trail.push({ label: currentLesson.competencia })
+  }
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] pb-16">
       <Header
         onOpenSettings={() => setIsAPIKeyModalOpen(true)}
         onOpenMenu={() => setIsSidebarOpen(true)}
+        trail={trail}
       />
 
       {isSidebarOpen && (

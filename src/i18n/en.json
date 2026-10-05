@@ -29,7 +29,8 @@
     "modules": "Modules",
     "search": "Search lessons...",
     "progress": "Progress",
-    "settings": "Settings"
+    "settings": "Settings",
+    "home": "Home"
   },
   "dashboard": {
     "title": "Learning Dashboard",
@@ -64,7 +65,8 @@
     "nextLesson": "Next",
     "goToNextLesson": "Go to next lesson →",
     "courseCompleted": "You completed the course! 🎉",
-    "quizGatingHint": "Pass the quiz with at least 70% to mark this lesson as completed"
+    "quizGatingHint": "Pass the quiz with at least 70% to mark this lesson as completed",
+    "quizBest": "Best: {{score}}/{{total}}"
   },
   "quiz": {
     "title": "Quiz",

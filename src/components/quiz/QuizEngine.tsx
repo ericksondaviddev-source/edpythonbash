@@ -8,7 +8,7 @@ import { generateQuestionsFromLesson, generateCodeQuestions } from '../../servic
 interface QuizEngineProps {
   quiz: Quiz
   lesson: Lesson
-  onComplete: (correct: boolean) => void
+  onComplete: (passed: boolean, score: number, total: number) => void
 }
 
 export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps) {
@@ -30,16 +30,44 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
         explicacion: quiz.explicacion,
         tipo: 'concepto' as const
       },
+      ...(lesson.quiz_ia ?? []).map(q => ({ ...q })),
       ...generated,
       ...codeQuestions
     ]
-    let seed = 0
-    for (const ch of lesson.id) seed = (seed * 31 + ch.charCodeAt(0)) % 2147483647
-    const rand = () => {
-      seed = (seed * 16807) % 2147483647
-      return seed / 2147483647
+    const hashSeed = (s: string) => {
+      let seed = 0
+      for (const ch of s) seed = (seed * 31 + ch.charCodeAt(0)) % 2147483647
+      return seed || 1
     }
-    return all.sort(() => rand() - 0.5).slice(0, 8)
+    const mulberry = (seed: number) => () => {
+      seed = (seed + 0x6d2b79f5) | 0
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+    // barajar opciones de cada pregunta (remapeando la correcta) con seed determinista
+    const withShuffledOptions = all.map(q => {
+      const rand = mulberry(hashSeed(lesson.id + '|' + q.pregunta))
+      const idx = q.opciones.map((_, i) => i)
+      for (let i = idx.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1))
+        ;[idx[i], idx[j]] = [idx[j], idx[i]]
+      }
+      const origCorrect = q.correcta.charCodeAt(0) - 65
+      return {
+        ...q,
+        opciones: idx.map(i => q.opciones[i]),
+        correcta: String.fromCharCode(65 + idx.indexOf(origCorrect))
+      }
+    })
+    // barajar orden de preguntas (Fisher-Yates con seed de la lección)
+    const orderRand = mulberry(hashSeed(lesson.id))
+    const ordered = [...withShuffledOptions]
+    for (let i = ordered.length - 1; i > 0; i--) {
+      const j = Math.floor(orderRand() * (i + 1))
+      ;[ordered[i], ordered[j]] = [ordered[j], ordered[i]]
+    }
+    return ordered.slice(0, 8)
   }, [quiz, lesson])
 
   const currentQuestion = allQuestions[currentQuestionIndex]
@@ -63,7 +91,7 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
       setShowExplanation(false)
     } else {
       setIsComplete(true)
-      onComplete(passed)
+      onComplete(passed, score, allQuestions.length)
     }
   }
 
@@ -89,7 +117,7 @@ export default function QuizEngine({ quiz, lesson, onComplete }: QuizEngineProps
             <Button variant="secondary" onClick={handleRetry} className="flex-1">
               {t('quiz.retry')}
             </Button>
-            <Button onClick={() => onComplete(passed)} className="flex-1">
+            <Button onClick={() => onComplete(passed, score, allQuestions.length)} className="flex-1">
               {t('quiz.finish')}
             </Button>
           </div>

@@ -95,4 +95,79 @@ describe('BashSim', () => {
     const result = sim.run('')
     expect(result.exitCode).toBe(0)
   })
+
+  it('should pipe stdout into grep', () => {
+    const sim = new BashSim()
+    sim.filesystem.set('/home/user/log.txt', 'line1\nline2 ERROR\nline3')
+    const result = sim.run('cat /home/user/log.txt | grep ERROR')
+    expect(result.stdout).toBe('line2 ERROR')
+    expect(result.exitCode).toBe(0)
+  })
+
+  it('should chain pipes (cat | grep | wc)', () => {
+    const sim = new BashSim()
+    sim.filesystem.set('/home/user/f.txt', 'a\nb\nc')
+    const result = sim.run('cat /home/user/f.txt | grep b | wc')
+    expect(result.stdout).toBe('1 1 1')
+    expect(result.exitCode).toBe(0)
+  })
+
+  it('should redirect stdout to a file with >', () => {
+    const sim = new BashSim()
+    const result = sim.run('echo hello > /home/user/out.txt')
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toBe('')
+    expect(sim.filesystem.get('/home/user/out.txt')).toBe('hello')
+  })
+
+  it('should append stdout to a file with >>', () => {
+    const sim = new BashSim()
+    sim.run('echo one > /home/user/out.txt')
+    sim.run('echo two >> /home/user/out.txt')
+    expect(sim.filesystem.get('/home/user/out.txt')).toBe('onetwo')
+  })
+
+  it('should read stdin from a file with <', () => {
+    const sim = new BashSim()
+    sim.filesystem.set('/home/user/in.txt', 'hello input')
+    const result = sim.run('cat < /home/user/in.txt')
+    expect(result.stdout).toBe('hello input')
+    expect(result.exitCode).toBe(0)
+  })
+
+  it('should combine input redirect, pipe and output redirect', () => {
+    const sim = new BashSim()
+    sim.filesystem.set('/home/user/in.txt', 'keep\nDROP\nkeep2')
+    const result = sim.run('grep keep < /home/user/in.txt | wc > /home/user/out.txt')
+    expect(result.exitCode).toBe(0)
+    expect(sim.filesystem.get('/home/user/out.txt')).toBe('2 2 10')
+  })
+
+  it('should run sequential commands with ;', () => {
+    const sim = new BashSim()
+    const result = sim.run('echo one; echo two')
+    expect(result.stdout).toBe('one\ntwo')
+    expect(result.exitCode).toBe(0)
+  })
+
+  it('should short-circuit && on failure', () => {
+    const sim = new BashSim()
+    const result = sim.run('cat /nope.txt && echo never')
+    expect(result.exitCode).toBe(1)
+    expect(result.stdout).not.toContain('never')
+  })
+
+  it('should continue && on success', () => {
+    const sim = new BashSim()
+    const result = sim.run('echo a && echo b')
+    expect(result.stdout).toBe('a\nb')
+    expect(result.exitCode).toBe(0)
+  })
+
+  it('should respect quotes when splitting operators', () => {
+    const sim = new BashSim()
+    const result = sim.run('echo "a|b;c"')
+    expect(result.stdout).toBe('a|b;c')
+    expect(result.exitCode).toBe(0)
+  })
 })

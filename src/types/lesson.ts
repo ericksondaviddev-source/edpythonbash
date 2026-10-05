@@ -5,6 +5,14 @@ export interface Quiz {
   explicacion: string
 }
 
+export interface QuizIA {
+  pregunta: string
+  opciones: string[]
+  correcta: string
+  explicacion: string
+  tipo: 'concepto' | 'codigo' | 'debugging'
+}
+
 export interface Simulator {
   tipo: 'fix_bug' | 'fill_blank' | 'drag_drop' | 'performance_test'
   engine: 'pyodide' | 'bash_sim' | 'subprocess_sim' | 'profiling_sim' | 'bs4_fixture'
@@ -35,6 +43,8 @@ export interface Lesson {
   disenso_experto: string
   pregunta_transferencia: string
   quiz: Quiz
+  quiz_ia?: QuizIA[]
+  _enriched?: boolean
   simulador?: Simulator
   colab?: Colab
   audio_script: string

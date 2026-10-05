@@ -5,3 +5,7 @@ dist
 
 scripts/.api-key.tmp
 scripts/enrich-log.txt
+
+dev5174.log
+scripts/.debug-last-batch.txt
+scripts/.enrich-all.lock

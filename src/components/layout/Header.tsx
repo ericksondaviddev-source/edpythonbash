@@ -2,13 +2,15 @@ import { useThemeStore } from '../../store/useThemeStore'
 import { useLanguageStore } from '../../store/useLanguageStore'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '../atoms'
+import Breadcrumb, { type Crumb } from '../molecules/Breadcrumb'
 
 interface HeaderProps {
   onOpenSettings: () => void
   onOpenMenu?: () => void
+  trail?: Crumb[]
 }
 
-export default function Header({ onOpenSettings, onOpenMenu }: HeaderProps) {
+export default function Header({ onOpenSettings, onOpenMenu, trail = [] }: HeaderProps) {
   const { theme, toggleTheme } = useThemeStore()
   const { lang, toggleLanguage } = useLanguageStore()
   const { t } = useTranslation()
@@ -59,6 +61,7 @@ export default function Header({ onOpenSettings, onOpenMenu }: HeaderProps) {
           </button>
         </div>
       </div>
+      <Breadcrumb trail={trail} />
     </header>
   )
 }

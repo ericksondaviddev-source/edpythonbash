@@ -7,11 +7,13 @@ interface ProgressState {
   level: number
   streak: number
   lastVisit: string
+  quizBest: Record<string, { score: number; total: number }>
 
   completeLesson: (id: string) => void
   addXP: (amount: number) => void
   resetProgress: () => void
   touchVisit: () => void
+  recordQuizScore: (id: string, score: number, total: number) => void
 }
 
 export const useProgressStore = create<ProgressState>()(
@@ -22,6 +24,15 @@ export const useProgressStore = create<ProgressState>()(
       level: 1,
       streak: 0,
       lastVisit: new Date().toISOString(),
+      quizBest: {},
+
+      recordQuizScore: (id, score, total) =>
+        set((state) => {
+          const prev = state.quizBest[id]
+          const prevRatio = prev ? prev.score / Math.max(prev.total, 1) : -1
+          if (score / Math.max(total, 1) <= prevRatio) return state
+          return { ...state, quizBest: { ...state.quizBest, [id]: { score, total } } }
+        }),
 
       touchVisit: () =>
         set((state) => {
@@ -61,7 +72,8 @@ export const useProgressStore = create<ProgressState>()(
           xp: 0,
           level: 1,
           streak: 0,
-          lastVisit: new Date().toISOString()
+          lastVisit: new Date().toISOString(),
+          quizBest: {}
         })
     }),
     {

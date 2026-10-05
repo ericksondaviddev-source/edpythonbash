@@ -31,12 +31,13 @@ export default function LessonView({
   nextLesson
 }: LessonViewProps) {
   const { t } = useTranslation()
-  const { completedLessons } = useProgressStore()
+  const { completedLessons, quizBest, recordQuizScore } = useProgressStore()
   const { lang } = useLanguageStore()
   const [activeTab, setActiveTab] = useState<'content' | 'quiz' | 'simulator'>('content')
   const [showAudio, setShowAudio] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const isCompleted = completedLessons.includes(lesson.id)
+  const best = quizBest[lesson.id]
   const lessonLanguage: 'python' | 'bash' | 'html' =
     lesson.id.startsWith('M3.7') ? 'bash' : lesson.id.startsWith('F0.1') ? 'html' : 'python'
 
@@ -85,6 +86,11 @@ export default function LessonView({
           }`}
         >
           {t('lesson.quiz')}
+          {best && (
+            <span className="ml-2 text-xs opacity-80">
+              {t('lesson.quizBest', { score: best.score, total: best.total })}
+            </span>
+          )}
         </button>
         {lesson.simulador && (
           <button
@@ -248,8 +254,9 @@ export default function LessonView({
         <QuizEngine
           quiz={lesson.quiz}
           lesson={lesson}
-          onComplete={(correct) => {
-            if (correct && !isCompleted) {
+          onComplete={(passed, score, total) => {
+            recordQuizScore(lesson.id, score, total)
+            if (passed && !isCompleted) {
               onComplete()
             }
           }}

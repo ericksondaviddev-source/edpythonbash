@@ -29,7 +29,8 @@
     "modules": "Módulos",
     "search": "Buscar lecciones...",
     "progress": "Progreso",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "home": "Inicio"
   },
   "dashboard": {
     "title": "Panel de Aprendizaje",
@@ -64,7 +65,8 @@
     "nextLesson": "Siguiente",
     "goToNextLesson": "Ir a la siguiente lección →",
     "courseCompleted": "¡Has completado el curso! 🎉",
-    "quizGatingHint": "Completa el quiz con al menos 70% de aciertos para marcar esta lección como completada"
+    "quizGatingHint": "Completa el quiz con al menos 70% de aciertos para marcar esta lección como completada",
+    "quizBest": "Mejor: {{score}}/{{total}}"
   },
   "quiz": {
     "title": "Quiz",
