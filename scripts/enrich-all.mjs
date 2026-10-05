@@ -116,7 +116,13 @@ PROHIBIDO escribir razonamientos, explicaciones, comentarios o cualquier texto f
 
 let quotaAbort = false
 
+/** Última causa de fallo de callOpenRouter: 'network' (fetch lanzó),
+ *  'http' (HTTP no recuperable) o 'empty' (respuesta vacía). Sirve para
+ *  distinguir "red caída" de "cuota agotada" en el mensaje final. */
+let lastFailKind = null
+
 async function callOpenRouter(prompt) {
+  let kind = null
   for (const model of MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -143,22 +149,27 @@ async function callOpenRouter(prompt) {
           break
         }
         if (!res.ok) {
+          kind = 'http'
           console.warn(`  [${model}] HTTP ${res.status}, probando siguiente modelo...`)
           break
         }
         const data = await res.json()
         const text = data.choices?.[0]?.message?.content
         if (!text) {
+          kind = 'empty'
           console.warn(`  [${model}] respuesta vacía, probando siguiente modelo...`)
           break
         }
+        lastFailKind = null
         return { model, text }
       } catch (err) {
+        kind = 'network'
         console.warn(`  [${model}] ${err.message}, probando siguiente modelo...`)
         break
       }
     }
   }
+  lastFailKind = kind
   return null
 }
 
@@ -217,6 +228,7 @@ await checkQuota()
 
 let enriched = 0, quized = 0, failed = 0, skipped = 0, batches = 0
 let consecNull = 0 // resultados nulos seguidos (cuota agotada o red caída)
+let netRetried = false // reintento de red ya usado para el batch actual
 
 for (const file of files) {
   const filePath = path.join(MODULOS_DIR, file)
@@ -247,6 +259,15 @@ for (const file of files) {
     await sleep(REQUEST_DELAY_MS)
 
     let result = await callOpenRouter(buildPrompt(batch))
+    if (!result && lastFailKind === 'network' && !netRetried) {
+      // Fallo de red transitorio: esperar 60s y reintentar el MISMO batch
+      // una vez, sin contar consecNull (no es cuota).
+      console.warn('  red caída (fetch failed): esperando 60s y reintentando el batch...')
+      await sleep(60000)
+      i -= size
+      netRetried = true
+      continue
+    }
     if (!result) {
       // todos los modelos fallaron (cuota o red): 1 fallo aislado se reintenta
       // en la próxima hora; 2 seguidos abortan la pasada
@@ -281,7 +302,8 @@ for (const file of files) {
           if (consecNull >= 2) { quotaAbort = true }
           break
         }
-        consecNull = 0
+    consecNull = 0
+    netRetried = false
         const p = parseJSONLoose(single.text)
         const one = p?.lecciones?.find(x => x && x.id === w.lesson.id)
         if (one) items.push(one)
@@ -312,6 +334,10 @@ for (const file of files) {
 
 console.log(`\n=== Resumen: ${enriched} enriquecidas, ${quized} con quiz_ia, ${failed} fallidas, ${skipped} ya listas (${batches} batches) ===`)
 if (quotaAbort) {
+  if (lastFailKind === 'network') {
+    console.error('ABORTADO: red caída (fetch failed), NO es cuota. Reintentará en la próxima pasada. Código 43.')
+    process.exit(43)
+  }
   console.error('ABORTADO: posible cuota agotada. Código 42.')
   process.exit(42)
 }
