@@ -150,7 +150,7 @@ export default function BlockEditor({ language, onCodeChange }: BlockEditorProps
             onClick={() => setTab('all')}
             className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
               tab === 'all'
-                ? 'bg-[var(--accent)] text-white'
+                ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
             }`}
           >
@@ -164,7 +164,7 @@ export default function BlockEditor({ language, onCodeChange }: BlockEditorProps
               onClick={() => setTab(cat)}
               className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                 tab === cat
-                  ? 'bg-[var(--accent)] text-white'
+                  ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
               }`}
             >

@@ -34,9 +34,9 @@ function LessonNode({ data }: { data: LessonNodeData }) {
       onClick={data.onClick}
       className={`px-4 py-2 rounded-lg border-2 cursor-pointer transition-all min-w-[150px] text-center ${
         data.isCompleted
-          ? 'bg-[var(--success)] border-[var(--success)] text-white'
+          ? 'bg-[var(--success)] border-[var(--success)] text-[var(--accent-ink)]'
           : data.isCurrent
-          ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
+          ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-ink)]'
           : 'bg-[var(--bg-secondary)] border-[var(--border)] text-[var(--text-primary)] hover:border-[var(--accent)]'
       }`}
     >
@@ -54,8 +54,8 @@ interface ModuleNodeData {
 }
 
 function ModuleNode({ data }: { data: ModuleNodeData }) {
-  const colors = ['#3776AB', '#FFD43B', '#4EAA25', '#FF6B35']
-  const color = colors[data.fase] || '#FF6B35'
+  const colors = ['#3776AB', '#FFD43B', '#4EAA25', '#F7D117']
+  const color = colors[data.fase] || '#F7D117'
 
   return (
     <div
@@ -141,7 +141,7 @@ export default function MindMap({ modules, onLessonSelect, currentLessonId }: Mi
           source: faseId,
           target: moduleId,
           animated: true,
-          style: { stroke: '#FF6B35', strokeWidth: 2 },
+          style: { stroke: 'var(--accent-2)', strokeWidth: 2 },
         })
 
         if (isExpanded) {
@@ -222,7 +222,7 @@ export default function MindMap({ modules, onLessonSelect, currentLessonId }: Mi
           nodeColor={(node) => {
             if (node.type === 'lesson') {
               const data = node.data as LessonNodeData
-              return data.isCompleted ? '#2ECC71' : '#FF6B35'
+              return data.isCompleted ? '#2ECC71' : '#F7D117'
             }
             return '#3776AB'
           }}

@@ -88,21 +88,21 @@ export default function CodeBlock({
             {animate && isTyping && (
               <button
                 onClick={handleSkip}
-                className="no-min-touch text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white transition-colors"
+                className="no-min-touch text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] transition-colors"
               >
                 {t('common.skip')}
               </button>
             )}
             <button
               onClick={handleCopy}
-              className="no-min-touch text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white transition-colors"
+              className="no-min-touch text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] transition-colors"
             >
               {copied ? t('common.copied') : t('common.copy')}
             </button>
             {runnable && onRun && (
               <button
                 onClick={onRun}
-                className="text-xs px-2 py-1 rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+                className="text-xs px-2 py-1 rounded bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] transition-colors"
               >
                 {t('common.run')}
               </button>

@@ -1,7 +1,7 @@
 export const tokens = {
   colors: {
-    accent: '#FF6B35',
-    accentHover: '#E55A2B',
+    accent: '#F7D117',
+    accentHover: '#E5C211',
     success: '#2ECC71',
     error: '#E74C3C',
     warning: '#F39C12',

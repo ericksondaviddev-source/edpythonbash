@@ -90,7 +90,7 @@ Pregunta del usuario: ${messageText}`
             <div
               className={`max-w-[80%] p-3 rounded-lg ${
                 msg.role === 'user'
-                  ? 'bg-[var(--accent)] text-white'
+                  ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
                   : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]'
               }`}
             >
@@ -123,7 +123,7 @@ Pregunta del usuario: ${messageText}`
               <button
                 key={i}
                 onClick={() => handleSend(q)}
-                className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-white transition-colors"
+                className="text-xs px-2 py-1 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] transition-colors"
               >
                 {q}
               </button>

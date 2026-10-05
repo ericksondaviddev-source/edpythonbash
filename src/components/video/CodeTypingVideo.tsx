@@ -175,7 +175,7 @@ export default function CodeTypingVideo({
                 onClick={() => handleChapterChange(index)}
                 className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                   currentChapter === index
-                    ? 'bg-[var(--accent)] text-white'
+                    ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
                     : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
                 }`}
               >

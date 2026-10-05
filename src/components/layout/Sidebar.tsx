@@ -34,7 +34,7 @@ export default function Sidebar({ modules, onLessonSelect, currentLessonId }: Si
               <button
                 onClick={() => setExpandedModule(expandedModule === module.id ? null : module.id)}
                 aria-expanded={expandedModule === module.id}
-                className="w-full px-4 py-3 text-left bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-white transition-colors rounded-lg font-medium text-[var(--text-primary)]"
+                className="w-full px-4 py-3 text-left bg-[var(--bg-tertiary)] hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] transition-colors rounded-lg font-medium text-[var(--text-primary)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm">{module.nombre}</span>
@@ -52,7 +52,7 @@ export default function Sidebar({ modules, onLessonSelect, currentLessonId }: Si
                         onClick={() => onLessonSelect(lesson)}
                         className={`w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center gap-2 ${
                           isCurrent
-                            ? 'bg-[var(--accent)] text-white'
+                            ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
                             : 'text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
                         }`}
                       >

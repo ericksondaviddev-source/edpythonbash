@@ -77,7 +77,7 @@ export default function LessonView({
           onClick={() => setActiveTab('content')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
             activeTab === 'content'
-              ? 'bg-[var(--accent)] text-white'
+              ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
               : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
           }`}
         >
@@ -87,7 +87,7 @@ export default function LessonView({
           onClick={() => setActiveTab('tutor')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
             activeTab === 'tutor'
-              ? 'bg-[var(--accent)] text-white'
+              ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
               : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
           }`}
         >
@@ -97,7 +97,7 @@ export default function LessonView({
           onClick={() => setActiveTab('quiz')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
             activeTab === 'quiz'
-              ? 'bg-[var(--accent)] text-white'
+              ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
               : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
           }`}
         >
@@ -113,7 +113,7 @@ export default function LessonView({
             onClick={() => setActiveTab('simulator')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'simulator'
-                ? 'bg-[var(--accent)] text-white'
+                ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
                 : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
             }`}
           >
@@ -124,7 +124,7 @@ export default function LessonView({
 
       {activeTab === 'content' && (
         <div className="space-y-6">
-          <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+          <section className="p-6 rounded-xl glass shadow-lg">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.mentalModel')}
             </h2>
@@ -152,7 +152,7 @@ export default function LessonView({
             title={t('lesson.brokenCode')}
           />
 
-          <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+          <section className="p-6 rounded-xl glass shadow-lg">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.diagnosis')}
             </h2>
@@ -171,14 +171,14 @@ export default function LessonView({
             title={t('lesson.optimizedCode')}
           />
 
-          <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+          <section className="p-6 rounded-xl glass shadow-lg">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.expertDebate')}
             </h2>
             <Markdown content={lesson.disenso_experto} />
           </section>
 
-          <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+          <section className="p-6 rounded-xl glass shadow-lg">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               {t('lesson.transferQuestion')}
             </h2>
@@ -186,7 +186,7 @@ export default function LessonView({
           </section>
 
           {lesson.colab && lesson.colab.celdas?.length > 0 && (
-            <section className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+            <section className="p-6 rounded-xl glass shadow-lg">
               <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
                 Notebook Colab
               </h2>
@@ -225,7 +225,7 @@ export default function LessonView({
               nextLesson ? (
                 <button
                   onClick={() => onNavigate(nextLesson.id)}
-                  className="flex-1 py-3 bg-[var(--accent)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                  className="flex-1 py-3 bg-[var(--accent)] text-[var(--accent-ink)] rounded-lg font-medium hover:opacity-90 transition-opacity"
                 >
                   {t('lesson.goToNextLesson')}
                 </button>

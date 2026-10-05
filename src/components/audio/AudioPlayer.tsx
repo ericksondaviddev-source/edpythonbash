@@ -120,7 +120,7 @@ export default function AudioPlayer({ script, lang }: AudioPlayerProps) {
             onClick={() => playChapter(index)}
             className={`w-full px-4 py-2 text-left rounded-lg transition-colors ${
               currentChapter === index
-                ? 'bg-[var(--accent)] text-white'
+                ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
                 : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--border)]'
             }`}
           >
@@ -140,7 +140,7 @@ export default function AudioPlayer({ script, lang }: AudioPlayerProps) {
         <button
           onClick={() => playChapter(currentChapter)}
           disabled={isLoading}
-          className="p-3 rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
+          className="p-3 rounded-full bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
         >
           {isPlaying ? (
             <Icon name="pause" size={20} />
