@@ -111,6 +111,7 @@
     "challengePassed": "¡Reto superado!",
     "fallbackHint": "Este simulador no ejecuta código todavía. Compara tu solución con la solución modelo y verifica manualmente cada criterio.",
     "notImplemented": "Simulador no implementado para este engine. Usa la solución modelo como referencia.",
+    "noOutput": "(sin salida: el código se ejecutó sin imprimir nada)",
     "showBlocks": "Editor de Bloques",
     "hideBlocks": "Ocultar Bloques",
     "failedTwiceHint": "💡 Pista: {{hint}}"
@@ -160,6 +161,7 @@
     "runInTerminal": "Ejecutar en terminal",
     "resetSession": "Reiniciar sesión",
     "sessionReset": "Sesión reiniciada. Estado limpio.",
+    "welcome": "Terminal lista. Escribe un comando o pulsa «Ejecutar en terminal» para correr el código del editor.",
     "waitingInput": "⏳ Esperando entrada… escribe abajo y pulsa Enter",
     "inputPlaceholder": "Escribe la entrada y pulsa Enter…",
     "clearHint": "Ctrl+L limpia · ↑/↓ historial · Tab autocompleta"

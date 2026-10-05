@@ -21,6 +21,7 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
   const { addXP, completeLesson } = useProgressStore()
   const [code, setCode] = useState(() => simulator.codigo_inicial ?? simulator.solucion ?? '')
   const [output, setOutput] = useState('')
+  const [hasRun, setHasRun] = useState(false)
   const [showSolution, setShowSolution] = useState(false)
   const [isRunning, setIsRunning] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -36,11 +37,12 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
       simulator.asserts_exception?.length ||
       simulator.asserts_forbidden?.length
   )
-  const canExecute = simulator.engine === 'pyodide' || simulator.engine === 'bash_sim'
+  const isRunnable = simulator.engine === 'pyodide' || simulator.engine === 'bash_sim'
 
   const handleRun = async () => {
     setIsRunning(true)
     setOutput('')
+    setHasRun(true)
 
     try {
       if (simulator.engine === 'pyodide') {
@@ -97,6 +99,7 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
   const handleReset = () => {
     setCode(simulator.codigo_inicial ?? '')
     setOutput('')
+    setHasRun(false)
     setVerifyResults(null)
   }
 
@@ -113,12 +116,10 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
-        {canExecute && (
-          <Button onClick={handleRun} disabled={isRunning}>
-            {isRunning ? t('common.loading') : t('common.run')}
-          </Button>
-        )}
-        {canExecute && hasTests && simulator.engine === 'pyodide' && (
+        <Button onClick={handleRun} disabled={isRunning}>
+          {isRunning ? t('common.loading') : t('common.run')}
+        </Button>
+        {isRunnable && hasTests && simulator.engine === 'pyodide' && (
           <Button onClick={handleVerify} disabled={isVerifying} className="bg-[var(--success)] hover:opacity-90">
             {isVerifying ? t('common.loading') : t('simulator.verify')}
           </Button>
@@ -155,18 +156,18 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
         />
       </div>
 
-      {output && (
+      {hasRun && (
         <div className="mb-4">
           <p className="text-sm font-medium text-[var(--text-primary)] mb-2">
             {t('simulator.output')}
           </p>
           <pre className="p-4 bg-[var(--code-bg)] text-[var(--code-text)] rounded-lg font-mono text-sm overflow-x-auto whitespace-pre-wrap">
-            {output}
+            {output || t('simulator.noOutput')}
           </pre>
         </div>
       )}
 
-      {canExecute && (simulator.engine === 'pyodide' || simulator.engine === 'bash_sim') && (
+      {isRunnable && (
         <TerminalPanel
           lessonId={lessonId ?? simulator.engine}
           engine={simulator.engine}
@@ -226,7 +227,7 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
         </div>
       )}
 
-      {!canExecute && !hasTests && (
+      {!isRunnable && !hasTests && (
         <div className="mb-4 p-4 rounded-lg bg-[var(--warning)]/10">
           <p className="text-sm text-[var(--text-secondary)] mb-2">
             {t('simulator.fallbackHint')}

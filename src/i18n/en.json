@@ -111,6 +111,7 @@
     "challengePassed": "Challenge passed!",
     "fallbackHint": "This simulator cannot run code yet. Compare your solution with the model solution and manually verify each criterion.",
     "notImplemented": "Simulator not implemented for this engine. Use the model solution as reference.",
+    "noOutput": "(no output: the code ran without printing anything)",
     "showBlocks": "Block Editor",
     "hideBlocks": "Hide Blocks",
     "failedTwiceHint": "💡 Hint: {{hint}}"
@@ -160,6 +161,7 @@
     "runInTerminal": "Run in terminal",
     "resetSession": "Reset session",
     "sessionReset": "Session reset. Clean state.",
+    "welcome": "Terminal ready. Type a command or press \u00abRun in terminal\u00bb to execute the editor code.",
     "waitingInput": "⏳ Waiting for input… type below and press Enter",
     "inputPlaceholder": "Type input and press Enter…",
     "clearHint": "Ctrl+L clears · ↑/↓ history · Tab completes"

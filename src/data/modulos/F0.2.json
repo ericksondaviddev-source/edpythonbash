@@ -27,9 +27,10 @@
     "simulador": {
       "tipo": "trace_execution",
       "instruccion": "Predice la salida exacta en consola de este código.",
-      "estado_inicial": "let a = 1;\nif (true) {\n  let a = 2;\n  var b = 3;\n}\nconsole.log(a, b);",
       "solucion": "1 3. La 'let a' dentro del if está en un scope distinto y no afecta a la 'let a' externa. 'var b' ignora el bloque if y se filtra al scope global.",
-      "validacion": "Debe indicar que imprime 1 y luego 3, y explicar que var se filtra fuera del bloque if."
+      "validacion": "Debe indicar que imprime 1 y luego 3, y explicar que var se filtra fuera del bloque if.",
+      "codigo_inicial": "let a = 1;\nif (true) {\n  let a = 2;\n  var b = 3;\n}\nconsole.log(a, b);",
+      "engine": "none"
     },
     "audio_script": "Hablemos de por qué 'var' es peligroso. Imagina que 'var' es un niño que no respeta las habitaciones: si lo metes en la cocina (un bloque if o for), se escapa al pasillo (la función entera) y ensucia todo. 'let' y 'const' son adultos que se quedan en la habitación donde los pusiste. Si la IA te genera un bucle con 'var' y un setTimeout, vas a ver el mismo número repetido y no entenderás por qué. Cambia a 'let' y la magia del scope de bloque solucionará el problema instantáneamente.",
     "video_prompt": "Video de 60s. Animación de un bucle for. Con 'var', se muestra una sola caja de memoria compartida que cambia de 0 a 1, a 2, a 3. Los 3 setTimeout apuntan a la misma caja (que al final dice 3). Con 'let', se muestran 3 cajas de memoria separadas (0, 1, 2) y cada setTimeout apunta a su propia caja. Estilo pizarra blanca técnica.",
@@ -135,9 +136,10 @@
     "simulador": {
       "tipo": "fix_bug",
       "instruccion": "El siguiente código intenta deshabilitar un botón al hacer clic, pero falla. Corrígelo usando event.currentTarget.",
-      "estado_inicial": "document.querySelectorAll('.btn').forEach(btn => {\n  btn.addEventListener('click', () => {\n    this.disabled = true;\n  });\n});",
       "solucion": "document.querySelectorAll('.btn').forEach(btn => {\n  btn.addEventListener('click', (event) => {\n    event.currentTarget.disabled = true;\n  });\n});",
-      "validacion": "Debe reemplazar 'this' por 'event.currentTarget' o 'event.target' y agregar el parámetro 'event' o 'e' a la arrow function."
+      "validacion": "Debe reemplazar 'this' por 'event.currentTarget' o 'event.target' y agregar el parámetro 'event' o 'e' a la arrow function.",
+      "codigo_inicial": "document.querySelectorAll('.btn').forEach(btn => {\n  btn.addEventListener('click', () => {\n    this.disabled = true;\n  });\n});",
+      "engine": "none"
     },
     "audio_script": "La arrow function, la flechita, es genial. Pero tiene un secreto: no sabe quién es ella misma. Cuando usas 'this' dentro de una flecha, ella mira a su alrededor y adopta el 'this' de su padre. Si la pones en un evento del DOM, el padre no es el botón, es la ventana del navegador. Por eso tu código falla. Si necesitas que 'this' sea el botón que el usuario acaba de tocar, usa la palabra 'function' tradicional, o mejor aún, usa el parámetro 'event' y llama a 'event.currentTarget'. Es más explícito y la IA lo entiende mejor si se lo pides.",
     "video_prompt": "Video de 60s. Muestra un botón en pantalla. Al hacer clic, el código usa 'this' con arrow function y aparece un signo de interrogación rojo sobre el botón (apunta a Window). Luego cambia a función tradicional o event.currentTarget y aparece un check verde (apunta al Botón). Overlay: 'Arrow functions heredan el this. Funciones tradicionales crean su propio this'.",
@@ -240,9 +242,10 @@
     "simulador": {
       "tipo": "fill_blank",
       "instruccion": "Completa el código para cachear el elemento y usar requestAnimationFrame.",
-      "estado_inicial": "const nav = /* ??? */;\nlet ticking = false;\nwindow.addEventListener('scroll', () => {\n  if (!ticking) {\n    /* ??? */(updateNav);\n    ticking = true;\n  }\n});",
       "solucion": "const nav = document.querySelector('.nav');\nlet ticking = false;\nwindow.addEventListener('scroll', () => {\n  if (!ticking) {\n    window.requestAnimationFrame(updateNav);\n    ticking = true;\n  }\n});",
-      "validacion": "Debe usar querySelector para cachear y window.requestAnimationFrame para el callback."
+      "validacion": "Debe usar querySelector para cachear y window.requestAnimationFrame para el callback.",
+      "codigo_inicial": "const nav = /* ??? */;\nlet ticking = false;\nwindow.addEventListener('scroll', () => {\n  if (!ticking) {\n    /* ??? */(updateNav);\n    ticking = true;\n  }\n});",
+      "engine": "none"
     },
     "audio_script": "Imagina que le pides a un bibliotecario que busque un libro cada vez que parpadeas. Eso es hacer querySelector dentro de un evento scroll. El bibliotecario (el navegador) se va a agotar y la biblioteca (tu app) se va a congelar. La solución es simple: busca el libro una vez, déjalo en tu escritorio (una variable const) y úsalo todas las veces que quieras. Y si el evento es scroll o resize, usa requestAnimationFrame para sincronizar tus cambios con el refresco de la pantalla del móvil. Tu PWA se sentirá nativa.",
     "video_prompt": "Video de 70s. Lado izquierdo: código haciendo querySelector en cada scroll. Se muestra un gráfico de CPU del móvil al 100% y la pantalla tartamudeando (jank). Lado derecho: variable cacheada y requestAnimationFrame. CPU relajada, scroll a 60fps fluido. Overlay: 'Cachea tus nodos. Usa rAF.'",
@@ -335,9 +338,10 @@
     "simulador": {
       "tipo": "fix_bug",
       "instruccion": "Este código intenta delegar un clic en botones de 'Eliminar', pero falla si el usuario hace clic en el icono SVG dentro del botón. Arréglalo.",
-      "estado_inicial": "document.body.addEventListener('click', (e) => {\n  if (e.target.matches('.delete-btn')) {\n    deleteItem(e.target.dataset.id);\n  }\n});",
       "solucion": "document.body.addEventListener('click', (e) => {\n  const btn = e.target.closest('.delete-btn');\n  if (btn) {\n    deleteItem(btn.dataset.id);\n  }\n});",
-      "validacion": "Debe reemplazar matches() por closest() para asegurar que si el clic fue en un hijo (el icono), el código encuentre al padre (el botón)."
+      "validacion": "Debe reemplazar matches() por closest() para asegurar que si el clic fue en un hijo (el icono), el código encuentre al padre (el botón).",
+      "codigo_inicial": "document.body.addEventListener('click', (e) => {\n  if (e.target.matches('.delete-btn')) {\n    deleteItem(e.target.dataset.id);\n  }\n});",
+      "engine": "none"
     },
     "audio_script": "La delegación de eventos es como tener un portero en la entrada de un edificio en lugar de un guardia en cada puerta de cada oficina. Cuando alguien entra (hace clic), el portero (el listener en el padre) mira su identificación (event.target) y decide qué hacer. Si usas querySelectorAll y le pones un guardia a cada oficina, cuando construyas una oficina nueva (contenido dinámico), no tendrá guardia. Usa delegación. Es más barato, más limpio y funciona con contenido que traes de una API después de que la página cargó.",
     "video_prompt": "Video de 60s. Animación de un árbol DOM. Un clic en un nodo hoja (span) genera una onda que sube (bubbling) hasta el nodo raíz (ul). El nodo raíz intercepta la onda y ejecuta la lógica. Comparación de memoria: 100 listeners (barras rojas) vs 1 listener (barra verde).",
@@ -440,9 +444,10 @@
     "simulador": {
       "tipo": "fix_bug",
       "instruccion": "Este código intenta mostrar datos en pantalla pero la consola dice 'Cannot read properties of undefined'. Arréglalo.",
-      "estado_inicial": "const userData = fetchUser();\ndocument.getElementById('name').innerText = userData.name;",
       "solucion": "(async () => {\n  const userData = await fetchUser();\n  document.getElementById('name').innerText = userData.name;\n})();",
-      "validacion": "Debe envolver la ejecución en una función async IIFE o usar .then() para esperar a que la promesa se resuelva antes de tocar el DOM."
+      "validacion": "Debe envolver la ejecución en una función async IIFE o usar .then() para esperar a que la promesa se resuelva antes de tocar el DOM.",
+      "codigo_inicial": "const userData = fetchUser();\ndocument.getElementById('name').innerText = userData.name;",
+      "engine": "none"
     },
     "audio_script": "JavaScript es como un cajero en un banco. Si el cajero se queda quieto esperando a que el sistema apruebe un préstamo, la fila se detiene y todos se enojan. Eso es código síncrono bloqueante. Las promesas le dicen al cajero: 'toma este ticket, sigue atendiendo a los demás, y cuando el sistema apruebe, te aviso'. Async/await es la forma moderna de escribir esos tickets para que el código se lea de arriba a abajo, pero sin detener la fila. Si olvidas el 'await', es como si el cajero intentara entregar el dinero antes de que el sistema lo aprobara.",
     "video_prompt": "Video de 75s. Analogía del restaurante: El mesero (JS thread) toma la orden (fetch) y la lleva a la cocina. No se queda en la cocina mirando cómo se cocina (bloqueo). Vuelve a tomar más órdenes. Cuando la comida está, la campana suena (Promise resolved) y el mesero la sirve (await).",
@@ -546,9 +551,10 @@
     "simulador": {
       "tipo": "drag_drop",
       "instruccion": "Arrastra el método correcto para lograr el objetivo.",
-      "estado_inicial": "OBJETIVO: Sumar todos los precios de un carrito de compras. ARRAY: [{p: 10}, {p: 20}]. METODOS: map, filter, reduce.",
       "solucion": "reduce",
-      "validacion": "Debe seleccionar reduce. Ejemplo: cart.reduce((sum, item) => sum + item.p, 0)."
+      "validacion": "Debe seleccionar reduce. Ejemplo: cart.reduce((sum, item) => sum + item.p, 0).",
+      "codigo_inicial": "OBJETIVO: Sumar todos los precios de un carrito de compras. ARRAY: [{p: 10}, {p: 20}]. METODOS: map, filter, reduce.",
+      "engine": "none"
     },
     "audio_script": "Deja de usar bucles 'for' para todo. Cuando usas 'for', el que lee tu código tiene que simular la computadora en su cabeza para saber qué está pasando. Cuando usas 'filter', el código dice literalmente 'filtra esto'. Cuando usas 'map', dice 'transforma esto en aquello'. Es como hablar en oraciones completas en lugar de deletrear cada letra. Además, te obligan a no mutar variables, lo cual previene el 80% de los bugs lógicos en JavaScript.",
     "video_prompt": "Video de 60s. Animación de una cinta transportadora (el array). Pasa por una estación de rayos X (filter) que desecha los malos. Luego pasa por una estación de pintura (map) que les cambia el color. El resultado es una caja nueva. Overlay: 'Declarativo > Imperativo'.",
@@ -653,9 +659,10 @@
     "simulador": {
       "tipo": "fill_blank",
       "instruccion": "Usa destructuring para extraer solo 'id' y 'title' del objeto, y spread para guardar el resto en 'meta'.",
-      "estado_inicial": "const course = { id: 1, title: 'JS', author: 'Ana', year: 2024 };\nconst /* ??? */ = course;",
       "solucion": "const { id, title, ...meta } = course;",
-      "validacion": "Debe usar la sintaxis exacta de destructuring con rest operator (...meta)."
+      "validacion": "Debe usar la sintaxis exacta de destructuring con rest operator (...meta).",
+      "codigo_inicial": "const course = { id: 1, title: 'JS', author: 'Ana', year: 2024 };\nconst /* ??? */ = course;",
+      "engine": "none"
     },
     "audio_script": "Imagina que tienes un documento original en la mesa. Si le pasas el documento a un amigo y él saca un bolígrafo y lo tacha, tu original se arruinó. Eso es pasar objetos por referencia en JS. El Spread Operator, los tres puntitos, es como una fotocopiadora. Le pasas el objeto, sacas una copia, le cambias lo que quieras a la copia, y tu original sigue intacto. En aplicaciones modernas, nunca, nunca modifiques el estado original directamente. Copia, modifica la copia, y reemplaza. Tu yo del futuro te lo agradecerá cuando intentes encontrar un bug.",
     "video_prompt": "Video de 60s. Muestra un objeto JS como una caja física. Al asignar con '=', ambas variables apuntan a la misma caja. Si una pinta la caja, la otra ve la pintura. Al usar Spread '...', aparece una segunda caja idéntica. Al pintar la segunda, la primera permanece igual. Overlay: 'Referencia vs Valor. Spread = Inmutabilidad'.",
@@ -759,9 +766,10 @@
     "simulador": {
       "tipo": "fix_bug",
       "instruccion": "El usuario reporta que su Dark Mode no se guarda al recargar. Encuentra el error en este código.",
-      "estado_inicial": "function saveTheme(isDark) {\n  localStorage.setItem('darkMode', isDark);\n}\nfunction loadTheme() {\n  return localStorage.getItem('darkMode');\n}",
       "solucion": "function saveTheme(isDark) {\n  localStorage.setItem('darkMode', JSON.stringify(isDark)); // Opcional para booleanos, pero buena práctica\n}\nfunction loadTheme() {\n  const val = localStorage.getItem('darkMode');\n  return val === null ? false : JSON.parse(val);\n}",
-      "validacion": "El error real suele estar en que al leer un booleano guardado como string 'true'/'false', JS lo evalúa como string (truthy). Debe parsearlo o comparar estrictamente. Aceptar soluciones que envuelvan en try/catch y manejen el null inicial."
+      "validacion": "El error real suele estar en que al leer un booleano guardado como string 'true'/'false', JS lo evalúa como string (truthy). Debe parsearlo o comparar estrictamente. Aceptar soluciones que envuelvan en try/catch y manejen el null inicial.",
+      "codigo_inicial": "function saveTheme(isDark) {\n  localStorage.setItem('darkMode', isDark);\n}\nfunction loadTheme() {\n  return localStorage.getItem('darkMode');\n}",
+      "engine": "none"
     },
     "audio_script": "LocalStorage es genial para recordar cosas pequeñas: si el usuario prefiere modo oscuro, su idioma, o el último formulario que llenó. Pero tiene una regla de oro que la IA olvida constantemente: LocalStorage es tonto, solo sabe guardar texto. Si le das un número, un booleano o un objeto, lo convierte a texto a su manera, y cuando lo lees, ya no es lo que era. Tienes que usar JSON.stringify para empacar tu dato en una caja de texto, y JSON.parse para desempacarlo al leerlo. Y siempre, siempre usa try/catch, porque si el teléfono del usuario está lleno, LocalStorage fallará y tumbará tu app si no estás preparado.",
     "video_prompt": "Video de 60s. Muestra un objeto JS complejo intentando entrar por una puerta que dice 'Solo Texto'. El objeto se aplasta y se convierte en el texto '[object Object]'. Luego muestra el mismo objeto pasando por una máquina 'JSON.stringify' que lo mete en una caja de cartón plana, entra por la puerta, y al salir pasa por 'JSON.parse' que lo rearma. Overlay: 'LocalStorage = Solo Strings'.",
@@ -865,9 +873,10 @@
     "simulador": {
       "tipo": "trace_execution",
       "instruccion": "Ordena cronológicamente (1 al 4) lo que sucede en el código roto al hacer clic en Enviar.",
-      "estado_inicial": "A) Se muestra la alerta 'El email ya existe'\nB) El navegador inicia la recarga de página\nC) Se dispara el evento submit\nD) La petición fetch es enviada al servidor",
       "solucion": "C -> B -> D -> A (Aunque A y D pueden no completarse nunca porque B destruye el contexto al recargar).",
-      "validacion": "Debe identificar que B (recarga) ocurre casi inmediatamente después de C, interrumpiendo el flujo normal."
+      "validacion": "Debe identificar que B (recarga) ocurre casi inmediatamente después de C, interrumpiendo el flujo normal.",
+      "codigo_inicial": "A) Se muestra la alerta 'El email ya existe'\nB) El navegador inicia la recarga de página\nC) Se dispara el evento submit\nD) La petición fetch es enviada al servidor",
+      "engine": "none"
     },
     "audio_script": "Cuando la IA te genera un formulario que consulta una API, revisa siempre la primera línea de la función submit. Si no dice 'event.preventDefault()', tu app está rota. El navegador es impaciente: cuando tocas enviar, quiere recargar la página YA. Si tu código le dice 'espera, voy a preguntar a la base de datos', pero no lo frenas con preventDefault, el navegador no espera, recarga, y tu consulta a la API muere en el aire. Primero frenas, luego preguntas, luego decides si dejas que el formulario avance o lo detienes.",
     "video_prompt": "Video de 80s. Muestra una línea de tiempo. Evento Submit -> Milisegundo 1: preventDefault (barrera roja). Milisegundo 10: Fetch inicia. Milisegundo 500: Fetch responde. Milisegundo 501: form.submit(). Luego muestra el código roto: Evento Submit -> Milisegundo 1: Navegador recarga (pantalla blanca) -> Fetch se cancela con error de red. Overlay: 'Frena al navegador antes de pensar'.",
@@ -971,9 +980,10 @@
     "simulador": {
       "tipo": "fix_bug",
       "instruccion": "Refactoriza este código para que el listener de 'click' pueda ser removido correctamente al cerrar.",
-      "estado_inicial": "function setup() {\n  document.getElementById('btn').addEventListener('click', () => {\n    console.log('Clicked');\n  });\n}\nfunction teardown() {\n  document.getElementById('btn').removeEventListener('click', () => {\n    console.log('Clicked');\n  });\n}",
       "solucion": "const handleClick = () => console.log('Clicked');\nfunction setup() {\n  document.getElementById('btn').addEventListener('click', handleClick);\n}\nfunction teardown() {\n  document.getElementById('btn').removeEventListener('click', handleClick);\n}",
-      "validacion": "Debe extraer la arrow function a una variable con nombre (handleClick) y usar esa variable en ambos métodos."
+      "validacion": "Debe extraer la arrow function a una variable con nombre (handleClick) y usar esa variable en ambos métodos.",
+      "codigo_inicial": "function setup() {\n  document.getElementById('btn').addEventListener('click', () => {\n    console.log('Clicked');\n  });\n}\nfunction teardown() {\n  document.getElementById('btn').removeEventListener('click', () => {\n    console.log('Clicked');\n  });\n}",
+      "engine": "none"
     },
     "audio_script": "Tu PWA va a vivir en el teléfono del usuario. Si tu código tiene fugas de memoria, el teléfono se calentará, la batería se drenará y el sistema operativo cerrará tu app a la fuerza. Una de las fugas más comunes que la IA ignora es agregar Event Listeners a elementos globales como 'window' o 'document' cada vez que abres una vista o un modal, y olvidarte de quitarlos al cerrar. Recuerda: agregar es fácil, quitar requiere la misma referencia exacta de la función. Si usas funciones anónimas, no podrás quitarlas nunca. Nómbralas, guárdalas, y límpialas.",
     "video_prompt": "Video de 70s. Animación de un celular. Cada vez que se abre un modal, se le pega un 'chupete' (listener) que drena batería (línea roja bajando). Al cerrar el modal, el chupete se queda pegado aunque el modal desaparezca. Luego muestra el código correcto con 'removeEventListener' que despega los chupetes. Overlay: 'Setup & Teardown. Siempre limpia tu rastro'.",

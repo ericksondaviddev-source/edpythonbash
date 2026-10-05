@@ -27,7 +27,9 @@ function bashPrompt(cwd: string): string {
 
 export default function TerminalPanel({ lessonId, engine, setupCode, externalCode, onConsumeExternal }: TerminalPanelProps) {
   const { t } = useTranslation()
-  const [entries, setEntries] = useState<HistoryEntry[]>([])
+  const [entries, setEntries] = useState<HistoryEntry[]>([
+    { kind: 'sys', text: t('terminal.welcome') }
+  ])
   const [history, setHistory] = useState<string[]>([])
   const [histIdx, setHistIdx] = useState(-1)
   const [line, setLine] = useState('')

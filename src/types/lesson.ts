@@ -14,7 +14,18 @@ export interface QuizIA {  pregunta: string
 
 export interface Simulator {
   tipo: 'fix_bug' | 'fill_blank' | 'drag_drop' | 'performance_test'
-  engine: 'pyodide' | 'bash_sim' | 'subprocess_sim' | 'profiling_sim' | 'bs4_fixture'
+  engine:
+    | 'pyodide'
+    | 'bash_sim'
+    | 'subprocess_sim'
+    | 'profiling_sim'
+    | 'bs4_fixture'
+    | 'concurrency_sim'
+    | 'pytest_sim'
+    | 'string_match'
+    | 'tomllib_validate'
+    | 'json_match'
+    | 'none'
   instruccion: string
   setup_code?: string
   codigo_inicial: string
