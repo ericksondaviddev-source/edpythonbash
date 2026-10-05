@@ -1,8 +1,6 @@
-/** Un paso del tutor: fragmento de código que se teclea + narración que lo explica. */
-export interface TutorStep {
-  code: string
-  narration: string
-}
+import type { TutorStep } from '../types/lesson'
+
+export type { TutorStep }
 
 /** Campos mínimos de Lesson que necesita la derivación offline. */
 export interface TutorScriptInput {
@@ -42,13 +40,30 @@ function splitCodeChunks(code: string): string[] {
   return chunks.map(c => c.join('\n'))
 }
 
-function splitNarrations(script: string): string[] {
+function splitNarrations(script: string, minParts: number): string[] {
   const trimmed = script.trim()
   if (!trimmed) return []
-  return trimmed
+  let parts = trimmed
     .split(/\n\s*\n/)
     .map(p => p.replace(/\s+/g, ' ').trim())
     .filter(p => p.length > 0)
+  // Si hay menos párrafos que pasos y algún párrafo tiene varias frases,
+  // se subdivide el más largo por frases hasta cubrir los pasos.
+  while (parts.length < minParts) {
+    const idx = parts.findIndex(p => splitSentences(p).length >= 2)
+    if (idx < 0) break
+    const sentences = splitSentences(parts[idx])
+    const mid = Math.ceil(sentences.length / 2)
+    parts = [...parts.slice(0, idx), sentences.slice(0, mid).join(' '), sentences.slice(mid).join(' '), ...parts.slice(idx + 1)]
+  }
+  return parts
+}
+
+function splitSentences(paragraph: string): string[] {
+  return paragraph
+    .split(/(?<=\.)\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
 }
 
 /**
@@ -60,7 +75,7 @@ function splitNarrations(script: string): string[] {
 export function buildTutorSteps(input: TutorScriptInput): TutorStep[] {
   const chunks = splitCodeChunks(input.codigo_corregido || '')
   if (chunks.length === 0) return []
-  const narrations = splitNarrations(input.audio_script || '')
+  const narrations = splitNarrations(input.audio_script || '', chunks.length)
   return chunks.map((code, i) => ({
     code,
     narration:

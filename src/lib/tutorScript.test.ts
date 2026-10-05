@@ -33,6 +33,17 @@ describe('buildTutorSteps (offline derivation)', () => {
     expect(steps[0].code).toBe('x = 1\nprint(x)')
   })
 
+  it('un solo párrafo largo se reparte por frases entre los pasos', () => {
+    const code = 'x = 1\n\ny = 2'
+    const steps = buildTutorSteps({
+      codigo_corregido: code,
+      audio_script: 'Primera idea completa. Segunda idea completa. Tercera idea completa.',
+    })
+    expect(steps).toHaveLength(2)
+    expect(steps[0].narration).not.toBe(steps[1].narration)
+    expect(steps[0].narration).toContain('Primera idea')
+  })
+
   it('una sola línea genera un solo paso', () => {
     const steps = buildTutorSteps({ codigo_corregido: 'print("hola")', audio_script: 'Saluda.' })
     expect(steps).toHaveLength(1)
