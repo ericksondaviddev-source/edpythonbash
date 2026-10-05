@@ -3,21 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Button, Icon } from '../atoms'
 import { useAudio } from '../../hooks/useAudio'
 import type { TutorStep } from '../../lib/tutorScript'
+import { narrationMs } from '../../lib/tutorScript'
 
 interface TutorVideoProps {
   steps: TutorStep[]
   title?: string
   speed?: number
   voiceLang?: 'es' | 'en'
-}
-
-/** Pausa tras cada narración: base + por palabra (voz ~150ppm en español). */
-export const NARRATION_BASE_MS = 1500
-export const NARRATION_PER_WORD_MS = 350
-
-export function narrationMs(narration: string): number {
-  const words = narration.trim() === '' ? 0 : narration.trim().split(/\s+/).length
-  return NARRATION_BASE_MS + words * NARRATION_PER_WORD_MS
 }
 
 export default function TutorVideo({ steps, title, speed = 30, voiceLang = 'es' }: TutorVideoProps) {

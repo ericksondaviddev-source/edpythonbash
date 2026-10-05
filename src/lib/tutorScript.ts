@@ -12,6 +12,15 @@ export interface TutorScriptInput {
 
 const MAX_LINES_PER_STEP = 6
 
+/** Pausa tras cada narración: base + por palabra (voz ~150ppm en español). */
+export const NARRATION_BASE_MS = 1500
+export const NARRATION_PER_WORD_MS = 350
+
+export function narrationMs(narration: string): number {
+  const words = narration.trim() === '' ? 0 : narration.trim().split(/\s+/).length
+  return NARRATION_BASE_MS + words * NARRATION_PER_WORD_MS
+}
+
 function splitCodeChunks(code: string): string[] {
   const chunks: string[][] = []
   let current: string[] = []
