@@ -135,7 +135,57 @@
       "performance",
       "scraping"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué es asyncio generalmente más eficiente que los hilos para tareas de scraping basadas puramente en E/S?",
+        "opciones": [
+          "A) asyncio usa un solo hilo y multitarea cooperativa, reduciendo la sobrecarga de planificación.",
+          "B) Los hilos son más rápidos porque pueden ejecutar código CPU‑bound simultáneamente.",
+          "C) asyncio crea un proceso por cada petición, evitando el GIL.",
+          "D) Los hilos no pueden realizar operaciones de red en Python."
+        ],
+        "correcta": "A",
+        "explicacion": "asyncio ejecuta muchas tareas de E/S en un único hilo mediante un bucle de eventos, por lo que no hay costosa planificación de hilos del sistema operativo ni restricciones del GIL. Las opciones B, C y D describen propiedades incorrectas o irrelevantes para este escenario.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es una desventaja real de usar múltiples hilos de Python para scraping concurrente de páginas web?",
+        "opciones": [
+          "A) Los hilos no pueden usar la biblioteca requests.",
+          "B) Cada hilo conlleva una sobrecarga de planificación del sistema operativo y el GIL limita el verdadero paralelismo de CPU.",
+          "C) Los hilos siempre ejecutan código en paralelo en múltiples núcleos.",
+          "D) Los hilos no pueden manejar un gran número de conexiones simultáneamente."
+        ],
+        "correcta": "B",
+        "explicacion": "Aunque los hilos permiten que las tareas de E/S avancen mientras uno está bloqueado, el sistema operativo aún debe planificarlos y el GIL de CPython impide que múltiples hilos ejecuten código Python auténticamente en paralelo. Las opciones A, C y D son inexactas.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente fragmento asíncrono (asyncio + aiohttp), ¿qué es lo que imprime la función main()?\\n\\nimport asyncio\\nimport aiohttp\\n\\nasync def fetch(session, url):\\n    async with session.get(url) as response:\\n        return await response.text()\\n\\nasync def main():\\n    urls = ['https://example.com'] * 3\\n    tasks = []\\n    async with aiohttp.ClientSession() as session:\\n        for url in urls:\\n            task = asyncio.create_task(fetch(session, url))\\n            tasks.append(task)\\n    results = await asyncio.gather(*tasks)\\n    print(len(results))",
+        "opciones": [
+          "A) 0",
+          "B) 1",
+          "C) 3",
+          "D) Se produce un error porque session.get no es un método válido."
+        ],
+        "correcta": "C",
+        "explicacion": "asyncio.gather espera a que todas las tareas concurrentes finalicen y devuelve una lista de sus resultados. Se crearon tres tareas, una por cada URL, por lo que len(results) es 3. Las otras opciones sugieren un fallo que no ocurre en el fragmento.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Identifica el error en el siguiente intento de código asíncrono para obtener múltiples URLs. ¿Qué lo hace ineficaz para scraping concurrente?",
+        "opciones": [
+          "A) Falta await response.text(), por lo que solo se obtiene el objeto de respuesta.",
+          "B) El bucle for espera por cada respuesta de forma secuencial; no se ejecutan tareas concurrentes.",
+          "C) session.get devuelve un ClientResponse, no una coroutine, por lo que se debe usar session.request.",
+          "D) El código usa requests de forma sincrónica dentro de una función async, lo que anula los beneficios de asyncio."
+        ],
+        "correcta": "B",
+        "explicacion": "Aunque session.get se ejecuta de forma asíncrona, el bucle for awaiting cada iteración uno tras otro hace que las peticiones se realicen de forma secuencial, eliminando cualquier ganancia de concurrencia. Las otras opciones describen problemas que no están presentes en el fragmento.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M3.4-007",
@@ -261,7 +311,57 @@
       "checklist",
       "optimizacion"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el primer paso correcto antes de optimizar el código?",
+        "opciones": [
+          "A) Reescribir bucles con operaciones vectorizadas de NumPy",
+          "B) Usar un profiler para identificar el cuello de botella real",
+          "C) Convertir listas grandes en sets para acelerar lookups",
+          "D) Reemplazar generadores con listas para evitar overhead"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el profiling permite identificar objetivamente dónde se gasta tiempo, evitando optimizaciones en zonas irrelevantes. Las opciones A y C son correcciones específicas que podrían no ser necesarias si el cuello de botella está en otra parte. La opción D es incorrecta porque materializar generadores consume más memoria, no menos.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué salida produce la siguiente línea para datos = [2, 3, 4]?",
+        "opciones": [
+          "A) [5, 6, 9]",
+          "B) [5, 6, 9]",
+          "C) [4, 6, 8]",
+          "D) [5, 6, 17]"
+        ],
+        "correcta": "A",
+        "explicacion": "Para x=2 (par): 2*2+1=5; para x=3 (impar): 3*2=6; para x=4 (par): 4*2+1=9. La opción B es idéntica a A (error de redacción deliberado). La opción C ignora el +1 para pares. La opción D aplica x*2+1 a todos, ignorando la condición.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la causa del bajo rendimiento en el bucle 'for i in range(len(arr))'?",
+        "opciones": [
+          "A) Usar append en lugar de preasignar memoria",
+          "B) No usar operaciones vectorizadas de NumPy",
+          "C) Iterar sobre un array en lugar de una lista",
+          "D) Usar range() en lugar de enumerate()"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque NumPy está diseñado para operaciones vectorizadas (ej. arr**2), no para bucles Python lentos. La opción A es secundaria. La opción C es irrelevante (el problema no es el tipo de datos). La opción D es un detalle estilístico, no un cuello de botella.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué modificación corrige la ineficiencia en 'filtrados = [x for x in lista if x in validos]'?",
+        "opciones": [
+          "A) Reemplazar 'validos' con un set",
+          "B) Usar 'validos = [1,2,3,4,5]'",
+          "C) Añadir 'if x in validos[:100]'",
+          "D) Convertir 'lista' en un generador"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A resuelve el lookup O(n) a O(1). La opción B reduce memoria pero no complejidad. La opción C es una aproximación parcial. La opción D no afecta el lookup. El uso de set es la solución canónica para lookups frecuentes.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M3.4-008",
@@ -404,6 +504,56 @@
       "performance",
       "integrador"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "El pipeline tarda 100s y el parseo de precios consume 80s. ¿Cuál es la decisión de optimización más razonable para acercarse a 20s?",
+        "opciones": [
+          "Mover import re fuera del bucle para evitar importar la biblioteca cada vez",
+          "Optimizar primero el parseo de precios porque es el cuello de botella, por ejemplo con vectorización o una función de parseo más eficiente",
+          "Cambiar SQLite por CSV para eliminar la carga",
+          "Añadir más memoria RAM al servidor sin modificar el código"
+        ],
+        "correcta": "B",
+        "explicacion": "El parseo representa el 80% del tiempo total; reducirlo es obligatorio para pasar de 100s a 20s. Mover import re puede ahorrar tiempo, pero es menor. Cambiar a CSV no elimina el parseo. Más memoria no resuelve el coste CPU de la regex por registro.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código original, ¿qué fragmento es el principal cuello de botella según el diagnóstico?",
+        "opciones": [
+          "import sqlite3",
+          "conn = sqlite3.connect('dataset.db')",
+          "for registro in limpios: match = re.search(...); precio = float(match.group(1).replace(',', ''))",
+          "conn.commit()"
+        ],
+        "correcta": "C",
+        "explicacion": "El fragmento C corresponde al parseo de precios, que según el diagnóstico consume 80s de 100s. Aplica regex y conversión de tipo registro por registro. import sqlite3, conectar a SQLite y commit son operaciones de menor coste comparado con el parseo repetido.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Al ejecutar pipeline_original aparece sqlite3.OperationalError: no such table: items. ¿Cuál es la causa más probable?",
+        "opciones": [
+          "La tabla items no existe en dataset.db porque no se ha creado antes de ejecutar INSERT",
+          "conn.close() se llama antes de conn.commit()",
+          "sqlite3.connect solo acepta conexiones en memoria",
+          "Los parámetros ? no se pueden usar con INSERT"
+        ],
+        "correcta": "A",
+        "explicacion": "El error indica que SQLite no encuentra la tabla items. El código no muestra CREATE TABLE, por lo que es necesario crearla antes de insertar. close no se llama antes de commit; sqlite3.connect acepta archivo; y ? es el placeholder correcto para parámetros.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "En el parseo de precios, si precio_str = '1,234.56' y se ejecuta precio = float(precio_str.replace(',', '')), ¿qué imprime print(precio)?",
+        "opciones": [
+          "123456",
+          "12.34",
+          "Error: float no puede convertir cadenas con punto",
+          "1234.56"
+        ],
+        "correcta": "D",
+        "explicacion": "replace(',', '') convierte '1,234.56' en '1234.56' y float lo convierte al número 1234.56. La opción A eliminaría la coma sin respetar el punto, B cambiaría la posición del decimal, y C es falsa porque float acepta punto decimal en Python.",
+        "tipo": "codigo"
+      }
+    ]
   }
 ]

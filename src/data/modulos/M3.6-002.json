@@ -125,6 +125,44 @@
       "patrones",
       "arquitectura"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué significa que una clase esté 'abierta a extensión y cerrada a modificación' según OCP?",
+        "opciones": [
+          "Se pueden agregar nuevos comportamientos sin alterar el código fuente existente",
+          "La clase no puede ser heredada nunca",
+          "Todos los métodos deben ser estáticos",
+          "No se pueden agregar nuevos métodos después de la creación"
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta: OCP permite extender behavior vía nuevas clases sin tocar código viejo. B confunde con sealed/final. C es irrelevante. D es falso.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el código_roto, ¿qué retorna calculate(100, 'percentage', 10)?",
+        "opciones": [
+          "90.0",
+          "110.0",
+          "90",
+          "Error"
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta: price*(1-value/100) = 100*0.9 = 90.0. B suma en vez de restar. C ignora punto flotante. D no aplica.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es el principal riesgo al agregar un nuevo tipo de descuento en calculate() sin refactorizar?",
+        "opciones": [
+          "El código se vuelve más legible",
+          "Python no permite más de 3 condicionales",
+          "Hay que modificar calculate(), rompiendo código existente (regresión)",
+          "El precio siempre se duplica"
+        ],
+        "correcta": "C",
+        "explicacion": "C es correcta: modificar código existente introduce riesgo de regresión. A es falso. B es mentira. D sin sentido.",
+        "tipo": "debugging"
+      }
+    ]
   }
 ]

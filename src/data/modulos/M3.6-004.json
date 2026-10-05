@@ -122,6 +122,56 @@
       "patrones",
       "arquitectura"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Según el principio ISP, ¿cuál es la violación principal en la clase Robot del código proporcionado?",
+        "opciones": [
+          "A) Robot implementa métodos (eat, sleep) que no necesita porque la interfaz Worker es demasiado grande.",
+          "B) Robot no implementa el método work(), lo cual es obligatorio para toda clase Worker.",
+          "C) El principio ISP prohíbe el uso de herencia abstracta en Python con la librería abc.",
+          "D) La clase Human viola ISP porque necesita implementar más métodos que Robot."
+        ],
+        "correcta": "A",
+        "explicacion": "Correcta: ISP establece que los clientes no deben depender de métodos que no usan. Robot fuerza implementaciones vacías para comer y dormir. Incorrecta B: Robot sí implementa work(). Incorrecta C: abc es la herramienta estándar para esto. Incorrecta D: Human cumple el contrato naturalmente.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Analiza el método eat() en la clase Robot. ¿Qué ocurre realmente con esta implementación?",
+        "opciones": [
+          "A) Es completamente inválida porque Python lanza un error de sintaxis al encontrar un pass en un método abstracto.",
+          "B) Es sintácticamente válida y satisface a abc, pero viola el contrato semántico al no hacer nada real.",
+          "C) Lanza un TypeError automáticamente cuando se instancia Robot(), impidiendo su uso.",
+          "D) El método eat() se hereda automáticamente de Worker sin necesidad de redefinirlo en Robot."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: Python permite pass, por lo que abc no falla, pero semánticamente el robot no come, violando ISP. Incorrecta A: pass es válido. Incorrecta C: No falla al instanciar porque los métodos abstractos están 'implementados'. Incorrecta D: Debe redefinirse para cumplir ABC.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Debugging: Si agregas @abstractmethod def take_break(self): pass a la clase Worker, ¿qué sucede con Robot?",
+        "opciones": [
+          "A) No pasa nada, Robot mantiene su comportamiento actual y take_break se ignora.",
+          "B) Python elimina automáticamente take_break de la jerarquía de Robot.",
+          "C) Robot se vuelve incompleto y no se puede instanciar hasta que implemente take_break, aunque no lo necesite.",
+          "D) Solo la clase Human debe actualizarse, ya que es la única que duerme y descansa."
+        ],
+        "correcta": "C",
+        "explicacion": "Correcta: Esto ilustra la fragilidad de una interfaz grande: cambiar Worker afecta a todos los clientes. Incorrecta A: abc valida la implementación. Incorrecta B: Python no elimina métodos así. Incorrecta D: Heredan la obligación todos los subclases.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la solución de refactoring correcta para aplicar ISP en este caso?",
+        "opciones": [
+          "A) Convertir Worker en una clase concreta con implementaciones por defecto para todos los métodos.",
+          "B) Añadir lógica real a Robot.eat() para que el robot coma algo y no deje el método vacío.",
+          "C) Eliminar la librería abc y usar mixins genéricos para evitar la obligatoriedad de los métodos.",
+          "D) Dividir Worker en interfaces más pequeñas (Trabajable, Comestible, Dormible) y que Robot implemente solo Trabajable."
+        ],
+        "correcta": "D",
+        "explicacion": "Correcta: Segregar la interfaz grande en pequeñas evita que Robot dependa de comer/dormir. Incorrecta A: Sigue obligando a implementar todo. Incorrecta B: No soluciona el diseño de la interfaz. Incorrecta C: No aborda la segregación de responsabilidades.",
+        "tipo": "concepto"
+      }
+    ]
   }
 ]

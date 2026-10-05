@@ -126,7 +126,57 @@
       "refactoring",
       "creational"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué principio de diseño se viola en el código actual?",
+        "opciones": [
+          "A. Principio de Abierto/Cerrado",
+          "B. Principio de sustitución de Liskov",
+          "C. Principio de segregación de interfaz",
+          "D. Principio de inversión de dependencia"
+        ],
+        "correcta": "A",
+        "explicacion": "El código actual requiere modificar los métodos existentes para añadir nuevos procesadores de pago, lo que viola el Principio de Abierto/Cerrado, que establece que las entidades deben estar abiertas para extensión pero cerradas para modificación.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si se llama a process_payment con method='bitcoin', ¿qué error ocurre?",
+        "opciones": [
+          "A. El código funciona correctamente",
+          "B. Lanza un NameError porque 'processor' no está definido",
+          "C. Devuelve None",
+          "D. Crea un procesador por defecto"
+        ],
+        "correcta": "B",
+        "explicacion": "El código solo maneja los métodos 'credit_card', 'paypal' y 'crypto'. Si se pasa 'bitcoin', none de las condiciones if o elif se cumple, por lo que la variable 'processor' no se asigna, y al intentar acceder a ella, se lanza un NameError.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Se modifica el código para añadir un nuevo método de pago, pero se escribe mal el nombre del módulo al importar. ¿Cuál es el error más probable?",
+        "opciones": [
+          "A. El archivo del módulo no existe",
+          "B. La clase no tiene el método charge",
+          "C. El nombre del módulo está mal escrito",
+          "D. Falta un archivo __init__.py"
+        ],
+        "correcta": "C",
+        "explicacion": "Al importar un módulo, si el nombre está mal escrito, Python no encuentra el módulo y lanza un ImportError. Esto es un error común en debugging cuando se cambian nombres o se tienen errores de tipeo.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es una ventaja del usar Factory Pattern en este contexto?",
+        "opciones": [
+          "A. Reduce la repetición de código",
+          "B. Facilita la adición de nuevos procesadores",
+          "C. Desacopla la creación de objetos del uso",
+          "D. Todas las anteriores"
+        ],
+        "correcta": "D",
+        "explicacion": "El Factory Pattern aborda todos estos puntos: centraliza la creación, reduciendo repetición; permite añadir nuevos tipos sin cambiar el código cliente; y desacopla la instanciación del uso, mejorando la estructura del software.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.6-008",

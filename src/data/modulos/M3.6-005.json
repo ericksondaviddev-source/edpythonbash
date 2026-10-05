@@ -134,6 +134,56 @@
       "patrones",
       "arquitectura"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de estas opciones aplica mejor el Dependency Inversion Principle al código presentado?",
+        "opciones": [
+          "Inyectar en OrderService interfaces o clases abstractas Database y EmailClient, y crear las implementaciones concretas fuera del servicio",
+          "Añadir un parámetro optional engine a MySQLDatabase para cambiar entre MySQL y PostgreSQL",
+          "Mover la creación de MySQLDatabase y SmtpEmailClient a un módulo de configuración global",
+          "Hacer que OrderService herede de MySQLDatabase para reutilizar el método query"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque invierte la dependencia: OrderService depende de abstracciones y recibe las implementaciones por inyección. La opción B sigue acoplada a MySQL. La opción C solo cambia dónde se crean las concreciones, pero no elimina la dependencia concreta. La opción D mezcla responsabilidades y viola además el principio de responsabilidad única.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto, ¿qué línea es la evidencia más directa de que OrderService depende de concreciones?",
+        "opciones": [
+          "def query(self, sql): return f'MySQL result: {sql}'",
+          "self.db = MySQLDatabase()",
+          "self.email.send(to=order_data['email'], subject='Order Confirmation', body='Your order has been processed')",
+          "return result"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el constructor de OrderService crea una instancia concreta de MySQLDatabase, acoplando el módulo de alto nivel a una dependencia de bajo nivel. La opción A solo muestra un método concreto. La opción C usa la dependencia, pero la causa principal del acoplamiento es la creación directa en B. La opción D no muestra ninguna dependencia.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Supón que se refactoriza OrderService para recibir db y email por inyección. Si se ejecuta service = OrderService() y luego service.process_order({'email': 'a@b.com'}), ¿qué causa el error TypeError: __init__() missing 2 required positional arguments?",
+        "opciones": [
+          "MySQLDatabase no implementa el método connect()",
+          "SmtpEmailClient no implementa el método send()",
+          "Se omitió pasar las dependencias inyectadas al constructor de OrderService",
+          "order_data no contiene la clave email"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque, tras aplicar DIP, el constructor de OrderService espera dos argumentos inyectados: la base de datos y el cliente de email. Si se llama a OrderService() sin argumentos, Python lanza TypeError. Las opciones A y B serían errores de implementación, no de llamada al constructor. La opción D causaría un KeyError posterior, no un TypeError en el constructor.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Dado el código original, ¿qué devuelve la llamada order_service.process_order({'email': 'a@b.com'})?",
+        "opciones": [
+          "'SMTP email to a@b.com'",
+          "'Disconnected from MySQL'",
+          "None",
+          "'MySQL result: INSERT INTO orders ...'"
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta porque process_order guarda en result el valor devuelto por self.db.query('INSERT INTO orders ...') y luego devuelve result. La opción A es el valor devuelto por email.send, pero ese valor no se devuelve desde process_order. La opción B es un mensaje intermedio de disconnect. La opción C es falsa porque el método sí tiene return result.",
+        "tipo": "codigo"
+      }
+    ]
   }
 ]

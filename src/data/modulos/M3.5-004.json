@@ -146,7 +146,57 @@
       "mitm",
       "verify"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué verify=False en requests.get() es peligroso ante ataques MITM?",
+        "opciones": [
+          "Reduce la velocidad de conexión",
+          "Permite aceptar certificados falsos sin verificar identidad",
+          "Cambía el puerto a 8080",
+          "Solo funciona con HTTP"
+        ],
+        "correcta": "B",
+        "explicacion": "Con verify=False, Python no valida el certificado del servidor, permitiendo que un atacante MITM presente un certificado falso y Python lo acepte. Las demás opciones son incorrectas: A (no afecta velocidad), C (no cambia puerto), D (funciona con HTTPS pero inseguro).",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué hace exactamente el código roto al ejecutarse?",
+        "opciones": [
+          "Lanza excepción SSL inmediata",
+          "Cifra datos pero con certificado falso",
+          "Envía datos sin verificar identidad del servidor",
+          "Falla por falta de certificado"
+        ],
+        "correcta": "C",
+        "explicacion": "El código realiza la petición sin verificar el certificado, enviando datos en texto claro si el atacante intercepta. A es falso (no lanza excepción), B es confuso (no cifra con certificado falso, sino que no verifica), D es falso (no falla).",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué causa específicamente el InsecureRequestWarning en Python?",
+        "opciones": [
+          "Servidor sin HTTPS configurado",
+          "URL mal escrita con caracteres especiales",
+          "Falta del módulo ssl en el sistema",
+          "verify=False desactiva la validación del certificado"
+        ],
+        "correcta": "D",
+        "explicacion": "El warning aparece específicamente porque verify=False desactiva la verificación de la cadena de certificados. A, B y C son causas de otros errores distintos (ConnectionError, InvalidURL, ModuleNotFoundError).",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la solución correcta para eliminar el riesgo MITM?",
+        "opciones": [
+          "Usar verify=True con CA bundle válido",
+          "Suprimir el warning con warnings.filterwarnings",
+          "Cambiar la URL a protocolo HTTP",
+          "Usar verify='true' como cadena de texto"
+        ],
+        "correcta": "A",
+        "explicacion": "verify=True (valor por defecto) valida el certificado contra CA bundles. B es mala práctica (oculta el problema), C es inseguro (HTTP no cifra), D es incorrecto (debe ser booleano True).",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.5-005",
@@ -292,7 +342,57 @@
       "vaults",
       "git"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué es crítico evitar hardcodear secrets en el código fuente?",
+        "opciones": [
+          "Queda en git log para siempre y bots lo extraen automáticamente",
+          "Ocupa más líneas de código",
+          "Hace el código más lento",
+          "Solo funciona en producción"
+        ],
+        "correcta": "A",
+        "explicacion": "Los secrets commitados permanecen en el historial git para siempre y son extraídos por bots automatizados. B, C y D son razones falsas: no afectan líneas, rendimiento ni funcionamiento.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué reemplaza correctamente el password hardcodeado?",
+        "opciones": [
+          "input('Password: ')",
+          "os.environ.get('DB_PASSWORD')",
+          "# password = 'xxx' comentado",
+          "password=None"
+        ],
+        "correcta": "B",
+        "explicacion": "os.environ.get() lee variables de entorno sin exponer el valor en código. A es interactivo y no escalable, C sigue exponiendo el secret, D causa error de conexión.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si un secret se commitea accidentalmente, ¿cuál es la respuesta correcta?",
+        "opciones": [
+          "Borrar archivo y hacer nuevo commit",
+          "Cambiar permisos del archivo",
+          "Rotar secret inmediatamente y purgar historial git",
+          "Renombrar la variable"
+        ],
+        "correcta": "C",
+        "explicacion": "Borrar el archivo no elimina el secret del historial git. Debe rotarse el secret (invalidar accesos antiguos) y purgar historial con git filter-branch o BFG. A, B y D no solucionan la exposición.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Dónde almacenar secrets de forma segura en producción?",
+        "opciones": [
+          "En variables globales del código",
+          "En comentarios para el equipo",
+          "En README.md",
+          "Archivo .env ignorado por git + vaults como HashiCorp"
+        ],
+        "correcta": "D",
+        "explicacion": ".env ignorado por git + vaults es la práctica segura. A expone en memoria, B en texto plano, C en repositorio público.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.5-006",
@@ -427,7 +527,57 @@
       "brute-force",
       "flask-limiter"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué efecto principal tiene aplicar un límite de 5 intentos de login por minuto por IP?",
+        "opciones": [
+          "Reduce la velocidad máxima de fuerza bruta, aumentando el tiempo necesario para agotar una lista de contraseñas.",
+          "Elimina la necesidad de contraseñas seguras porque bloquea cualquier intento de acceso.",
+          "Hace que el servidor rechace siempre la primera petición válida para evitar ataques DoS.",
+          "Aumenta el rendimiento del endpoint permitiendo más conexiones simultáneas."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque el rate limiting limita cuántas peticiones puede hacer un cliente en un intervalo, lo que reduce la velocidad de fuerza bruta. La B falla porque el límite no elimina la necesidad de contraseñas seguras; solo reduce la velocidad del ataque. La C falla porque un rate limit bien diseñado no rechaza la primera petición válida, solo las que superan el umbral. La D falla porque limitar peticiones no aumenta el rendimiento; lo protege de sobrecarga y abuso.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el codigo_roto, si un atacante envía 100 peticiones POST válidas a /login en 1 segundo, ¿qué comportamiento espera el endpoint?",
+        "opciones": [
+          "Devolverá 429 Too Many Requests a partir del sexto intento.",
+          "Procesará las 100 peticiones, llamando a verificar_credenciales en cada una, porque no hay límite de tasa.",
+          "Lanzará una excepción por falta de token de sesión.",
+          "Devolverá 500 Internal Server Error por sobrecarga automática."
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el código no implementa rate limiting, no cuenta intentos ni devuelve 429. La A falla porque no existe ninguna lógica para devolver 429 Too Many Requests. La C falla porque el código no requiere token de sesión para procesar la petición. La D falla porque un 500 solo ocurriría si el servidor se cae o hay un error interno; el código no lo garantiza automáticamente.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el diagnóstico del codigo_roto, ¿qué causa principal permite un ataque de fuerza bruta?",
+        "opciones": [
+          "El uso de Flask en lugar de Django.",
+          "El token 'abc123' está mal cifrado.",
+          "No hay control de frecuencia ni bloqueo temporal tras varios intentos fallidos.",
+          "El método HTTP POST no está permitido."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque la vulnerabilidad principal es la ausencia de rate limiting y bloqueo temporal. La A falla porque el framework Flask no es la causa directa; el problema es la falta de protección. La B falla porque el token de ejemplo no es la causa del brute-force; el ataque intenta adivinar la contraseña, no el token. La D falla porque el código sí permite el método POST en la ruta /login.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de estos cambios implementa correctamente una protección básica contra brute-force en este endpoint?",
+        "opciones": [
+          "Cambiar la ruta de /login a /autenticar.",
+          "Usar una contraseña más larga para el usuario admin.",
+          "Devolver siempre 200 aunque falten credenciales para no filtrar información.",
+          "Registrar el número de intentos fallidos por usuario/IP y devolver 429 cuando se supere un umbral."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta porque implementa rate limiting: cuenta intentos fallidos por usuario o IP y devuelve 429 cuando se supera un umbral. La A falla porque cambiar la ruta es seguridad por obscuridad y no limita peticiones. La B es buena práctica, pero no previene que un atacante envíe millones de intentos. La C falla porque ocultar errores no limita el ataque y además puede dificultar el diagnóstico.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "M3.5-007",
@@ -723,6 +873,56 @@
       "seguridad",
       "integrador"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Si un atacante envía username=' OR '1'='1 y password=xyz en el endpoint /login, ¿qué ocurre?",
+        "opciones": [
+          "Error 500 por sintaxis SQL inválida",
+          "Login exitoso devolviendo token 'abc123' (inyección SQL)",
+          "Respuesta 'Invalid' con código 401",
+          "Respuesta vacía sin token"
+        ],
+        "correcta": "B",
+        "explicacion": "La consulta usa f-string sin sanitizar, convirtiendo la entrada en 'SELECT * FROM users WHERE username = '' OR '1'='1' AND password = 'xyz''. La condición '1'='1' siempre es verdadera, devolviendo un registro. Las demás opciones fallan porque el SQL es sintácticamente válido (no error 500), la lógica WHERE se satisface (no devuelve error 401), y el endpoint siempre retorna JSON.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es el principal riesgo de tener SECRET_KEY='mi_secreto_inseguro' hardcodeado en el código?",
+        "opciones": [
+          "Corrupción de la base de datos",
+          "Respuestas más lentas del API",
+          "Desbordamiento de memoria",
+          "Falsificación de sesiones si el código fuente se filtra"
+        ],
+        "correcta": "D",
+        "explicacion": "Un SECRET_KEY expuesto permite firmar tokens JWT o cookies falsos, comprometiendo la autenticación. Las demás opciones son incorrectas porque la clave no afecta rendimiento (B), memoria (C), ni integridad de datos directamente (A), sino la confidencialidad y autenticidad.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué causa específicamente que el token de autenticación sea predecible?",
+        "opciones": [
+          "Falta de verificación HTTPS",
+          "Vulnerabilidad de inyección SQL",
+          "Uso de string literal estático 'abc123' en lugar de generación criptográfica",
+          "Ausencia de protección CSRF"
+        ],
+        "correcta": "C",
+        "explicacion": "El token 'abc123' es un valor constante conocido, permitiendo a cualquier usuario impersonar a otros. HTTPS (A) protege transporte, SQL injection (B) afecta consultas, y CSRF (D) protege contra peticiones cruzadas, ninguno causa tokens predecibles.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Por qué almacenar passwords en texto plano es una vulnerabilidad crítica?",
+        "opciones": [
+          "Consumen más espacio de almacenamiento",
+          "Si la BD se filtra, todas las contraseñas quedan comprometidas instantáneamente",
+          "Ralentizan las consultas de login",
+          "Impiden la inyección SQL"
+        ],
+        "correcta": "A",
+        "explicacion": "Sin hashing, un breach expone credenciales directamente reutilizables. Las demás son falsas: el espacio (A) es negligible, el rendimiento (C) no se ve afectado significativamente, y el almacenamiento no previene SQL injection (D), que es un problema de construcción de queries.",
+        "tipo": "concepto"
+      }
+    ]
   }
 ]

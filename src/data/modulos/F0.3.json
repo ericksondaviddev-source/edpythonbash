@@ -54,7 +54,57 @@
       "instalabilidad",
       "arquitectura"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuáles son los tres pilares fundamentales de una Progressive Web App (PWA)?",
+        "opciones": [
+          "Funcionalidad offline, Push notifications, Service workers",
+          "HTML5, CSS3, JavaScript",
+          "Base de datos, API REST, autenticación",
+          "SEO, accesibilidad, rendimiento"
+        ],
+        "correcta": "A",
+        "explicacion": "Los tres pilares de una PWA son la capacidad de funcionar sin conexión (offline), las notificaciones push y el manifiesto que permite al navegador tratarla como una aplicación instalable; la opción A incluye estos conceptos, mientras que las demás describen tecnologías generales o aspectos no específicos de PWA.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué ocurrirá al ejecutar este fragmento de código?\nif ('serviceWorker' in navigator) {\n  navigator.serviceWorker.register('/sw.js');\n}",
+        "opciones": [
+          "El service worker se registrará correctamente porque la condición es verdadera",
+          "No se registrará el service worker porque la condición evalúa a false",
+          "Se producirá un error de sintaxis al intentar registrar el service worker",
+          "El navegador ignorará el script debido a la falta de cierre de la etiqueta <script>"
+        ],
+        "correcta": "B",
+        "explicacion": "La condición comprueba si la cadena 'serviceWorker' es una propiedad de navigator, lo cual nunca es verdadero; por tanto el bloque no se ejecuta y el service worker no se registra. Las demás opciones describen situaciones que no ocurren en este código.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la causa principal del error en el fragmento de código anterior?",
+        "opciones": [
+          "Uso de comillas simples en el atributo <link rel='manifest'>",
+          "Falta de cierre de la etiqueta <script>",
+          "La condición `'serviceWorker' in navigator` verifica una cadena en lugar de la propiedad serviceWorker",
+          "El manifiesto manifest.json no contiene la propiedad \"start_url\""
+        ],
+        "correcta": "C",
+        "explicacion": "El error proviene de que la condición evalúa una cadena ('serviceWorker') en lugar de la propiedad real `navigator.serviceWorker`. Esto hace que la condición sea siempre falsa y el registro del service worker nunca se realice. Las otras opciones son incorrectas porque el atributo rel usa comillas simples válidas, el script está cerrado correctamente y la ausencia de start_url no afecta este código.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de los siguientes elementos es opcional para que una PWA funcione?",
+        "opciones": [
+          "<meta name=\"viewport\">",
+          "<link rel=\"manifest\">",
+          "<script src=\"sw.js\">",
+          "<header>"
+        ],
+        "correcta": "D",
+        "explicacion": "El elemento <header> no es necesario para que una PWA funcione; los demás elementos son esenciales (el meta viewport es recomendado, el link al manifest y el script del service worker son críticos).",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.3-002",
@@ -169,7 +219,57 @@
       "activate",
       "precache"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la finalidad principal del evento 'install' en un Service Worker?",
+        "opciones": [
+          "Registrar el Service Worker en la página",
+          "Ejecutar código cuando el Service Worker se instala y pre‑cachar recursos",
+          "Manejar la navegación del usuario",
+          "Cerrar la conexión"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el evento 'install' se ejecuta cuando el Service Worker se instala por primera vez y permite realizar tareas de configuración, como pre‑cachar recursos, antes de que el Service Worker tome control de la página.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el fragmento de código, ¿qué recursos se añaden a la caché durante el evento 'install'?",
+        "opciones": [
+          "'/index.html' y '/scripts.js'",
+          "'/index.html' y '/styles.css'",
+          "'/styles.css' solo",
+          "No se añaden recursos"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el código abre la caché 'v1' y añade los archivos '/index.html' y '/styles.css', que son los recursos que se almacenan.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la causa más probable de que la caché no se actualice cuando se modifica 'styles.css'?",
+        "opciones": [
+          "Falta el evento 'activate'",
+          "El Service Worker está registrado con scope incorrecto",
+          "Se usa 'caches.open('v1')' en lugar de 'v2'",
+          "La petición fetch no incluye 'event.respondWith'"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque sin el evento 'activate' el Service Worker no puede actualizar la caché; al carecer de este paso, cualquier cambio en los recursos no se reflejará hasta que se reinstale el Service Worker.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué significa que el Service Worker tenga un 'scope' definido?",
+        "opciones": [
+          "Sólo controla la URL donde está registrado",
+          "Controla cualquier página del dominio",
+          "No tiene efecto",
+          "Limita el número de hilos"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque el 'scope' del Service Worker define el conjunto de URLs que controla; si no se especifica, por defecto controla el mismo origen del script, pero no otras rutas del sitio.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.3-004",
@@ -226,7 +326,57 @@
       "service-worker",
       "cache-api"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la diferencia entre la estrategia 'cache first' y 'network first'?",
+        "opciones": [
+          "'cache first' intenta servir desde caché antes que la red, 'network first' intenta servir desde la red antes que la caché",
+          "'cache first' solo funciona con recursos estáticos, 'network first' solo con dinámicos",
+          "'cache first' guarda respuestas en la memoria del navegador, 'network first' las guarda en la red",
+          "No hay diferencia"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque 'cache first' intenta servir la respuesta desde la caché antes de intentar obtenerla de la red, mientras que 'network first' hace lo inverso.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el fragmento dado, ¿qué recurso se devuelve cuando la petición solicitada está presente en la caché?",
+        "opciones": [
+          "El recurso se descarta y se solicita de nuevo",
+          "Se devuelve la respuesta en caché",
+          "Se devuelve una respuesta vacía",
+          "Se lanza un error"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque cuando la petición está presente en la caché, `caches.match` devuelve esa respuesta y el flujo termina sin ejecutar `fetch`.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Por qué la petición a una URL que no está en la caché podría fallar silenciosamente?",
+        "opciones": [
+          "Porque `caches.match` devuelve undefined y la petición se hace a la red sin garantizar conexión, lo que puede fallar si la red está offline",
+          "Porque el Service Worker está registrado fuera del scope de la página actual",
+          "Porque `event.respondWith` solo acepta respuestas síncronas",
+          "Porque la petición se intercepta antes de que el Service Worker se active"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque `caches.match` devuelve `undefined` cuando la petición no está en caché, y el código continúa con `fetch(event.request)`. Si la red está offline o la petición falla, no hay manejador de error que la capture, lo que puede producir una respuesta no definida o un error no controlado.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué estrategia de cacheo permite servir recursos estáticos rápidamente y, al mismo tiempo, garantizar que las peticiones a una API dinámica siempre obtengan la información más reciente?",
+        "opciones": [
+          "Cache first",
+          "Network first",
+          "Stale‑while‑revalidate",
+          "No cache"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque 'stale‑while‑revalidate' sirve la versión en caché (stale) de inmediato y, en segundo plano, actualiza la caché con la versión fresca de la API, asegurando rapidez y frescura.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.3-005",
@@ -398,7 +548,57 @@
       "netlify",
       "github-pages"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En file:///home/user/index.html, ¿por qué falla el registro de Service Worker?",
+        "opciones": [
+          "Porque el archivo no tiene un meta viewport",
+          "Porque el origen es null y no es un contexto seguro compatible con Service Worker",
+          "Porque el navegador bloquea todo JavaScript en el escritorio",
+          "Porque falta un certificado TLS en el disco local"
+        ],
+        "correcta": "B",
+        "explicacion": "file:// produce origen null, no http o https, y Service Worker exige un contexto seguro. El meta viewport no afecta el registro, no se bloquea todo JS y no aplica certificado TLS a file://.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si en file:// ejecutas fetch('/api/courses') y la consola muestra Access to fetch at /api/courses from origin null has been blocked by CORS, ¿qué predices?",
+        "opciones": [
+          "El fetch obtiene la respuesta porque el servidor local ya está corriendo",
+          "El navegador convierte la ruta en file:///api/courses y la lee",
+          "El fetch falla solo si el archivo courses.json no existe",
+          "El fetch falla porque no hay un origen HTTP real para resolver la ruta relativa"
+        ],
+        "correcta": "D",
+        "explicacion": "Con origen null no hay servidor HTTP que resuelva /api/courses, y CORS lo bloquea. No hay servidor implícito, no se convierte en file:// y el nombre del archivo no cambia el comportamiento.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Un estudiante ve Uncaught DOMException: Failed to register a ServiceWorker: The URL protocol of the current origin ('null') is not supported. ¿Cuál es la causa más probable?",
+        "opciones": [
+          "Abrió la PWA con file:// en lugar de un servidor local o HTTPS",
+          "El service worker está escrito en Python",
+          "El navegador no soporta Service Worker en absoluto",
+          "Falta el atributo crossorigin en index.html"
+        ],
+        "correcta": "A",
+        "explicacion": "El origen null indica file://. El error no es por el lenguaje del SW, no es incompatibilidad total del navegador ni por un atributo crossorigin ausente.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Si abres http://localhost:8000 y registras el service worker con la URL /sw.js, ¿qué predices en la consola si sw.js existe?",
+        "opciones": [
+          "Fallará porque localhost nunca es un contexto seguro",
+          "Fallará porque falta un certificado TLS en el navegador",
+          "Se registrará correctamente porque localhost es considerado contexto seguro y hay origen HTTP",
+          "Fallará por CORS siempre que el fetch sea a /api/courses"
+        ],
+        "correcta": "C",
+        "explicacion": "localhost es tratado como contexto seguro por los navegadores modernos, por lo que el origen HTTP permite registrar Service Worker. No se necesita TLS local ni el fetch relativo provoca CORS automático si el origen es el mismo.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "F0.3-008",
@@ -456,6 +656,56 @@
       "cache",
       "offline"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué este Service Worker puede ser considerado un zombie?",
+        "opciones": [
+          "Porque usa el evento install y no el evento activate",
+          "Porque el nombre de la caché es my-cache",
+          "Porque cachea indiscriminadamente todas las respuestas de fetch, incluidas APIs dinámicas",
+          "Porque el archivo se llama service-worker.js"
+        ],
+        "correcta": "C",
+        "explicacion": "El problema es la estrategia: guarda cualquier respuesta en caché. install/activate, el nombre de caché o el nombre del archivo no lo convierten en zombie por sí solos.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Supón que la PWA ya cargó /api/courses y lo guardó en caché. Luego el servidor devuelve una lista de cursos distinta. ¿Qué predices si el usuario abre la app y el fetch llega a este Service Worker?",
+        "opciones": [
+          "El usuario verá la respuesta vieja de caché si el request coincide con la cacheada",
+          "El usuario verá siempre la respuesta nueva porque fetch tiene prioridad sobre caché",
+          "El navegador borrará automáticamente la caché al detectar el cambio en el backend",
+          "El Service Worker lanzará un error de sintaxis en caches.match"
+        ],
+        "correcta": "A",
+        "explicacion": "El handler usa caches.match primero y devuelve la respuesta cacheada si existe. No hay network-first, no hay invalidación automática y caches.match no falla por sí solo.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En install, cache.addAll(['/', '/index.html', '/styles.css', '/app.js']) puede hacer que el Service Worker no se instale. ¿Qué causa el fallo?",
+        "opciones": [
+          "El navegador no permite caché en producción",
+          "La caché no puede guardar archivos .css",
+          "El evento install no admite promesas",
+          "Si alguno de los URLs no responde con éxito, addAll rechaza y la instalación falla"
+        ],
+        "correcta": "D",
+        "explicacion": "addAll espera que todos los recursos se obtengan correctamente. No es un problema general de caché en producción, .css puede guardarse, y install sí puede usar waitUntil con promesas.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué línea del handler fetch contribuye directamente a que una respuesta dinámica de API quede guardada para siempre?",
+        "opciones": [
+          "self.addEventListener('fetch', (event) => {",
+          "cache.put(event.request, fetchResponse);",
+          "return response || fetch(event.request).then((fetchResponse) => {",
+          "caches.open('my-cache').then((cache) => {"
+        ],
+        "correcta": "B",
+        "explicacion": "cache.put guarda la respuesta obtenida de la red en la caché para cualquier request. Las demás líneas solo abren el evento o la caché; no deciden por sí solas guardar la respuesta dinámica.",
+        "tipo": "codigo"
+      }
+    ]
   }
 ]

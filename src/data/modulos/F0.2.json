@@ -55,7 +55,57 @@
       "var",
       "closures"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Cuál es el principal efecto del hoisting en una variable declarada con var dentro de una función?",
+        "opciones": [
+          "Se inicializa con undefined antes de la ejecución del bloque de función.",
+          "Se limita al bloque actual.",
+          "Se convierte en una constante.",
+          "No es accesible fuera de la función."
+        ],
+        "correcta": "A",
+        "explicacion": "var es hoisted al inicio de su ámbito de función y se inicializa con undefined. Esto significa que la variable existe antes de que la declaración se ejecute, a diferencia de let/const que solo están disponibles en la línea de declaración.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Cuál será la salida del siguiente fragmento de código?",
+        "opciones": [
+          "Indice: 0, Indice: 1",
+          "Indice: 2, Indice: 2",
+          "Indice: 0, Indice: 0",
+          "Nada."
+        ],
+        "correcta": "B",
+        "explicacion": "Debido a que var tiene scope de función, todas las funciones de callback comparten la misma variable i. Cuando los timeouts se ejecutan, el bucle ya terminó, dejando i en 2, por lo que ambos console.log imprimen 'Indice: 2'.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Cuál es la causa del comportamiento incorrecto en el código_roto proporcionado?",
+        "opciones": [
+          "setTimeout no espera la actualización de i.",
+          "La función captura i por valor.",
+          "var tiene scope de función, por lo que todas las closures comparten la misma variable i.",
+          "console.log usa el valor incorrecto de i."
+        ],
+        "correcta": "C",
+        "explicacion": "var es declarado con scope de función, no de bloque. El closure dentro de setTimeout captura esa única variable i, por lo que todas las llamadas ven el valor final de i después del bucle, causando la salida inesperada.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Cuál afirmación sobre let y const es verdadera?",
+        "opciones": [
+          "Ambas tienen scope de función.",
+          "Ambas pueden ser reasignadas.",
+          "Ambas son inicializadas antes del código (hoisted).",
+          "Ambas tienen scope de bloque y no se pueden redeclarar."
+        ],
+        "correcta": "D",
+        "explicacion": "let y const tienen scope de bloque y no pueden ser redeclaradas. Además, no son hoisted de la misma forma que var (const no puede ser inicializada con undefined, let está solo disponible en su línea de declaración).",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.2-002",
@@ -110,7 +160,57 @@
       "eventos",
       "dom"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué el código no funciona correctamente al hacer toggle de la clase 'active'?",
+        "opciones": [
+          "Porque las arrow functions no pueden usar 'this'",
+          "Porque 'this' en la arrow function no apunta al botón, sino al contexto global",
+          "Porque el método toggle() no existe en el DOM",
+          "Porque el selector .menu-toggle no devuelve ningún elemento"
+        ],
+        "correcta": "B",
+        "explicacion": "B es correcta porque las arrow functions heredan 'this' del entorno léxico, no del objeto que las invoca. En este caso, 'this' apunta al window (o undefined en strict mode), no al botón. A es incorrecta porque las arrow functions sí pueden usar 'this', pero no lo enlazan. C y D son errores de implementación distintos.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál sería la salida de console.log(this) dentro de la arrow function?",
+        "opciones": [
+          "El elemento button con clase 'menu-toggle'",
+          "El objeto window",
+          "undefined",
+          "Error: 'this' no está definido"
+        ],
+        "correcta": "C",
+        "explicacion": "C es correcta porque en modo estricto, 'this' en una arrow function fuera de un objeto o función constructora es undefined. B podría ser cierto en entornos no estrictos, pero el problema típico es undefined. A es falsa porque 'this' no apunta al botón. D es incorrecto porque 'this' está definido.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué solución corrige el problema manteniendo la arrow function?",
+        "opciones": [
+          "Usar 'button' en lugar de 'this'",
+          "Agregar .bind(this) al final de la arrow function",
+          "Declarar 'const self = this' antes de la función",
+          "Usar 'arguments[0]' para obtener el botón"
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta porque al usar 'button' directamente, se evita el problema de 'this'. B es inválido porque bind no afecta a las arrow functions. C no resuelve el problema ya que 'this' en el contexto léxico sigue siendo undefined. D no es aplicable en este contexto.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es la diferencia clave entre usar una función tradicional vs arrow function en addEventListener?",
+        "opciones": [
+          "Las funciones tradicionales son más rápidas que las arrow functions",
+          "Las arrow functions no tienen scope propio, mientras que las tradicionales sí",
+          "Las funciones tradicionales permiten usar 'this', mientras que las arrow functions heredan 'this' del contexto léxico",
+          "Las arrow functions no pueden usar eventos DOM"
+        ],
+        "correcta": "C",
+        "explicacion": "C es correcta porque las funciones tradicionales enlazan 'this' al objeto que las invoca (el botón), mientras que las arrow functions heredan 'this' del contexto donde fueron definidas. A y D son afirmaciones incorrectas generales. B es parcialmente cierta pero no aborda el problema específico.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.2-003",
@@ -167,7 +267,45 @@
       "raf",
       "pwa"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el comportamiento general del código proporcionado?",
+        "opciones": [
+          "Añade la clase 'scrolled' cuando scrollY > 100 y la elimina cuando scrollY <= 100",
+          "Elimina la clase 'scrolled' cuando scrollY > 100",
+          "Solo añade la clase 'scrolled' sin eliminar",
+          "No realiza ninguna acción basada en la posición de desplazamiento"
+        ],
+        "correcta": "A",
+        "explicacion": "El código verifica si window.scrollY es mayor que 100; si es verdadero, añade la clase 'scrolled' al .header, y si es falso, la elimina. Por lo tanto, la descripción A captura correctamente el comportamiento completo.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si el usuario hace scroll a 80 píxeles, ¿qué línea de código se ejecuta?",
+        "opciones": [
+          "document.querySelector('.header').classList.add('scrolled');",
+          "document.querySelector('.header').classList.remove('scrolled');",
+          "Ambas líneas se ejecutan",
+          "Ninguna línea se ejecuta"
+        ],
+        "correcta": "B",
+        "explicacion": "Con scrollY = 80 (menor que 100) la rama else se ejecuta, por lo que se llama a classList.remove('scrolled'). La opción B describe esa acción.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué causa una posible excepción 'Cannot read property 'classList' of null' en este código?",
+        "opciones": [
+          "Usar una función flecha en lugar de una función regular",
+          "Que document.querySelector('.header') devuelva null porque no existe un elemento con la clase 'header'",
+          "El evento scroll no se dispara",
+          "La propiedad classList no está definida en el navegador"
+        ],
+        "correcta": "B",
+        "explicacion": "document.querySelector('.header') puede devolver null si no hay ningún elemento con la clase 'header' en el DOM, y intentar acceder a classList de null genera el error mencionado.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "F0.2-004",
@@ -222,7 +360,57 @@
       "closest",
       "dom"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el propósito principal de la delegación de eventos en este contexto?",
+        "opciones": [
+          "Asignar un listener de clic a cada .course-item individualmente",
+          "Escuchar eventos de clic en un elemento contenedor y manejar los eventos que provienen de los .course-item",
+          "Impedir el comportamiento predeterminado de los clics",
+          "Almacenar nodos del DOM para mejorar el rendimiento"
+        ],
+        "correcta": "B",
+        "explicacion": "La delegación de eventos permite gestionar clicks en elementos hijos mediante un listener en un ancestro, evitando la necesidad de añadir listeners a cada elemento por separado.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si un elemento .course-item tiene dataset-id=\"123\", ¿qué se imprimirá en la consola al hacer clic en él?",
+        "opciones": [
+          "Curso seleccionado: undefined",
+          "Curso seleccionado: 123",
+          "Error en tiempo de ejecución",
+          "Ninguna salida"
+        ],
+        "correcta": "B",
+        "explicacion": "El listener accede a item.dataset.id, que contiene \"123\", por lo que la consola mostrará \"Curso seleccionado: 123\".",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la causa más probable de un error 'Cannot read property 'dataset' of undefined' en este código?",
+        "opciones": [
+          "querySelectorAll devuelve una lista vacía",
+          "El listener está unido al elemento incorrecto (por ejemplo, window)",
+          "El uso de 'this' dentro del listener de flecha en lugar de la variable 'item'",
+          "La propiedad dataset no existe en el elemento"
+        ],
+        "correcta": "C",
+        "explicacion": "En una función flecha, 'this' se refiere al ámbito léxico (window) y no al elemento que dispara el evento; si se usa 'this' en lugar de 'item', la variable 'item' quedaría indefinida y se produciría el error.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué ventaja ofrece la delegación de eventos respecto a la asignación individual de listeners a cada .course-item?",
+        "opciones": [
+          "Reduce el número de listeners creados, mejorando el rendimiento y la memoria",
+          "Permite que los elementos añadidos dinámicamente hereden automáticamente el comportamiento",
+          "Evita la necesidad de usar querySelectorAll",
+          "Ninguna de las anteriores"
+        ],
+        "correcta": "B",
+        "explicacion": "Con delegación, los eventos de los elementos añadidos después de la carga inicial se manejan automáticamente porque el listener está en un ancestro común.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.2-005",
@@ -278,7 +466,57 @@
       "promesas",
       "fetch"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué `getCourses()` devuelve `undefined` en lugar de los datos de la API?",
+        "opciones": [
+          "Porque `fetch` falla silenciosamente si no se usa `await`.",
+          "Porque la función retorna `data` antes de que las promesas de `.then()` se resuelvan y actualicen la variable.",
+          "Porque `res.json()` devuelve `undefined` si el Content-Type no es application/json.",
+          "Porque `let data` crea un nuevo scope aislado dentro de los callbacks de `.then()`."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta (B): JavaScript no espera a que `fetch` termine. La ejecución pasa de `fetch(...)` directamente a `return data`. En ese momento `data` sigue siendo `undefined`. Los callbacks de `.then()` se ejecutan después (en el event loop), pero la función ya ha terminado. Incorrecta (A): `fetch` no falla silenciosamente; devuelve una promesa que se resuelve luego. Incorrecta (C): `res.json()` devuelve una promesa que se resuelve con el body parseado. Incorrecta (D): `let data` es function-scoped (o block-scoped si está en bloque), los callbacks comparten el mismo scope léxico (closure), por eso *pueden* asignar `data = json`, pero el retorno ocurre antes.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si ejecutamos este código en consola:\njavascript\nfunction test() {\n  let val = 'inicial';\n  Promise.resolve(42).then(v => { val = v; });\n  return val;\n}\nconsole.log(test());\n\n¿Qué se imprime?",
+        "opciones": [
+          "42",
+          "'inicial'",
+          "undefined",
+          "Una Promesa resuelta con 42"
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta (B): Es análogo al código roto. `Promise.resolve(42).then(...)` agenda la asignación `val = 42` para el siguiente tick del event loop (microtask). La función `test` continúa sincrónicamente, ejecuta `return val` (que vale 'inicial') y termina. El callback del `.then()` se ejecuta después, pero el retorno ya ocurrió. Incorrecta (A): Sucedería si usáramos `await` o si el retorno estuviera dentro del `.then()`. Incorrecta (C): `val` se inicializó con string. Incorrecta (D): La función no devuelve la promesa, devuelve el valor primitivo `val`.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código original roto, ¿cuál es la línea exacta que causa el fallo lógico (el 'bug') impidiendo obtener los datos?",
+        "opciones": [
+          "`let data;` (debería ser `const data = await fetch(...)`).",
+          "`.then(res => res.json())` (falta manejo de errores con `.catch`).",
+          "`return data;` (se ejecuta sincrónicamente antes de que la promesa se resuelva).",
+          "`fetch('/api/courses')` (debería ser `fetch('/api/courses', { mode: 'cors' })`)."
+        ],
+        "correcta": "C",
+        "explicacion": "Correcta (C): El `return data` está en el flujo síncrono principal. JavaScript lo ejecuta inmediatamente tras iniciar el `fetch`, mucho antes de que la respuesta del servidor llegue y los `.then()` actualicen `data`. Incorrecta (A): `let data` es válido; el problema no es la declaración sino el momento del retorno. Incorrecta (B): Falta `.catch()` es mala práctica, pero no causa que retorne `undefined` en el caso feliz. Incorrecta (D): `mode: 'cors'` es el default en peticiones cross-origin modernas; no afecta la asincronía.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes implementaciones corrige `getCourses` para que devuelva una Promesa que se resuelva con los cursos?",
+        "opciones": [
+          "Añadir `await` delante de `fetch` y quitar los `.then()`, manteniendo `return data;`.",
+          "Devolver la cadena de promesas: `return fetch(...).then(res => res.json()).then(json => json);`.",
+          "Envolver todo en `new Promise((resolve) => { ... resolve(data); })` dentro de los `.then()`.",
+          "Cambiar `let data` por `var data` para que sea global y accesible tras el retorno."
+        ],
+        "correcta": "D",
+        "explicacion": "Correcta (D - corresponde a la opción B del texto): Devolver (`return`) la promesa resultante de la cadena `.then()` permite al llamante hacer `getCourses().then(courses => ...)`. El último `.then(json => json)` (o simplemente `then(json => json)`) propaga el valor resuelto. Incorrecta (A): `await` solo funciona dentro de funciones `async`; si se añade `async` a la función, esta devuelve una promesa automáticamente, pero la opción dice 'manteniendo return data' sin mencionar `async`, lo que daría SyntaxError. Incorrecta (C): Patrón 'Promise constructor antipattern'; innecesario y propenso a errores (olvidar reject). Incorrecta (D - opción D del texto): `var` no soluciona la carrera de condiciones temporal; el retorno sigue ocurriendo antes de la asignación.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.2-006",
@@ -335,7 +573,57 @@
       "reduce",
       "funcional"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué método de array devuelve un único valor acumulando resultados a partir de todos los elementos?",
+        "opciones": [
+          "map",
+          "filter",
+          "forEach",
+          "reduce"
+        ],
+        "correcta": "D",
+        "explicacion": "reduce aplica una función acumuladora y devuelve un solo valor final. map devuelve un array nuevo con la transformación de cada elemento; filter devuelve un array con los elementos que cumplen la condición; forEach no devuelve un array, solo ejecuta una función por elemento y devuelve undefined.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Tras ejecutar el código_roto, ¿qué valor tiene activeCourses?",
+        "opciones": [
+          "['JS', 'Py']",
+          "[{name: 'JS', active: true}]",
+          "['JS']",
+          "undefined"
+        ],
+        "correcta": "C",
+        "explicacion": "El bucle recorre courses y solo hace push cuando courses[i].active es true. Como solo 'JS' es activo y se empuja courses[i].name, activeCourses queda ['JS']. No incluye 'Py' porque active es false, no devuelve objetos completos y no es undefined porque se inicializó como array vacío.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si el objetivo era que activeCourses contuviera los objetos completos de los cursos activos, ¿cuál es el error principal en el código_roto?",
+        "opciones": [
+          "Pusha courses[i].name en lugar de courses[i]",
+          "El for termina en i < courses.length - 1",
+          "courses[i].active se evalúa como texto",
+          "activeCourses no se declara con const"
+        ],
+        "correcta": "A",
+        "explicacion": "El error es que se guarda solo el nombre del curso en lugar del objeto completo. La condición del for es correcta porque i < courses.length recorre todos los elementos. courses[i].active es booleano, no texto. Y usar let para activeCourses no es el problema, ya que se necesita mutar el array local añadiendo elementos.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál expresión produce ['JS'] a partir de courses?",
+        "opciones": [
+          "courses.map(c => c.name).filter(c => c.active)",
+          "courses.filter(c => c.active).map(c => c.name)",
+          "courses.filter(c => c.active).reduce((acc, c) => acc + c.name, '')",
+          "courses.filter(c => c.active).map(c => c)"
+        ],
+        "correcta": "B",
+        "explicacion": "filter selecciona primero los cursos activos y map extrae el nombre de cada uno, produciendo ['JS']. La opción A falla porque map convierte los objetos a nombres y luego filter intenta leer c.active sobre strings, que no existe. La opción C produce el string 'JS', no un array. La opción D devuelve el objeto completo del curso activo, no solo su nombre.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "F0.2-007",
@@ -391,7 +679,57 @@
       "inmutabilidad",
       "objetos"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué el objeto 'user' original se modifica aunque se asigna el resultado a 'updatedUser'?",
+        "opciones": [
+          "Porque el operador spread no se usó en la función",
+          "Porque JavaScript permite mutaciones de objetos por defecto",
+          "Porque la función no retorna el objeto modificado",
+          "Porque 'user' es una referencia a 'updatedUser'"
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta porque el código no usa spread operator para crear una copia del objeto antes de modificarlo. B es cierta en general, pero no explica el problema específico. C es falsa porque la función sí retorna el objeto. D es incorrecta porque 'user' y 'updatedUser' son referencias distintas.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué imprimirá console.log(user.theme) después de la llamada a toggleTheme?",
+        "opciones": [
+          "'light'",
+          "'dark'",
+          "undefined",
+          "Error: no se puede leer la propiedad 'theme' de undefined"
+        ],
+        "correcta": "B",
+        "explicacion": "B es correcta porque la función mutate el objeto original, por lo que 'user.theme' cambia a 'dark'. A es falsa porque el valor original fue modificado. C y D no ocurren en este caso.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la forma correcta de implementar toggleTheme sin mutar el objeto original?",
+        "opciones": [
+          "return { ...u, theme: u.theme === 'light' ? 'dark' : 'light' };",
+          "u.theme = u.theme === 'light' ? 'dark' : 'light'; return u;",
+          "const newUser = { ...u }; newUser.theme = ...; return newUser;",
+          "Todas son válidas"
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta porque usa spread operator para crear un nuevo objeto con el tema actualizado. B es el código original que causa la mutación. C es redundante ya que A ya crea la copia. D es falsa porque B muta el objeto.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué sucede si se usa destructuring en la firma de la función?",
+        "opciones": [
+          "Se crea una copia automática del objeto",
+          "Se extraen propiedades específicas y se evita la mutación del original",
+          "Se genera un error por incompatibilidad de tipos",
+          "El comportamiento es idéntico al código original"
+        ],
+        "correcta": "B",
+        "explicacion": "B es correcta porque al usar destructuring, se extraen propiedades a variables locales, evitando modificar el objeto original. A es falsa porque el spread es necesario para copiar. C es incorrecto. D es falsa porque el comportamiento cambia si se evita la mutación.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.2-008",
@@ -400,13 +738,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Recordar preferencia de Dark Mode del usuario",
-    "modelo_mental": "LocalStorage es una base de datos clave-valor síncrona y persistente en el navegador. PERO solo guarda STRINGS. Si intentas guardar un objeto o un array, JS lo convertirá a la cadena '[object Object]', destruyendo tus datos. Siempre debes serializar (JSON.stringify) al guardar y deserializar (JSON.parse) al leer.",
+    "modelo_mental": "LocalStorage es una API síncrona que permite almacenar pares clave‑valor en el navegador, persistiendo los datos entre sesiones. Sin embargo, su diseño limita los valores a cadenas de texto; si intentamos guardar objetos o arreglos, JavaScript convierte automáticamente la estructura en la representación textual `[object Object]`, destruyendo la información original. Por tanto, siempre debemos convertir antes de guardar y volver a convertir después de leer.\n\nEste comportamiento evita errores silenciosos cuando se accede a propiedades de datos que en realidad son cadenas, provocando resultados `undefined`. El patrón general es: usar `JSON.stringify()` para transformar cualquier dato en una cadena serializable, luego llamar a `localStorage.setItem()` con esa cadena, y finalmente `JSON.parse()` al recuperarla para obtener el tipo original.",
     "codigo_roto": "const settings = { theme: 'dark', notifications: true };\nlocalStorage.setItem('userSettings', settings);\n\nconst savedSettings = localStorage.getItem('userSettings');\nconsole.log(savedSettings.theme); // Error: undefined",
-    "diagnostico": "Guardaste un objeto directamente. LocalStorage llamó al método .toString() del objeto, guardando literalmente el texto '[object Object]'. Al leerlo, te devuelve esa cadena de texto, que no tiene la propiedad 'theme'. Este bug es ubicuo en código generado por IA que olvida la naturaleza string-only de Web Storage.",
+    "diagnostico": "1. El error principal ocurre porque `settings` es un objeto JavaScript, no una cadena pura; al invocar `localStorage.setItem('userSettings', settings)` el motor ejecuta internamente `settings.toString()`, que devuelve la secuencia `[object Object]`. Esto hace que el valor almacenado sea la cadena literal y no el objeto deseado.\n\n2. Cuando se lee con `localStorage.getItem('userSettings')` y se analiza con `console.log(savedSettings.theme)`, el código intenta acceder a la propiedad `theme` de esa cadena, pero como el contenido no contiene dicha propiedad, devuelve `undefined`. Este comportamiento es típico de código generado por IA que ignora la conversión a JSON.\n\n3. La raíz del problema es la falta de serialización/deserialización; el estándar web garantiza que `JSON.stringify` produce una cadena que puede ser reinterpretada como cualquier tipo, mientras que `JSON.parse` reconstruye la estructura original si se usó correctamente.",
     "codigo_corregido": "const settings = { theme: 'dark', notifications: true };\nlocalStorage.setItem('userSettings', JSON.stringify(settings));\n\nconst savedString = localStorage.getItem('userSettings');\nconst savedSettings = JSON.parse(savedString);\nconsole.log(savedSettings.theme); // 'dark'",
     "codigo_optimizado": "const Storage = {\n  get: (key, fallback = null) => {\n    try {\n      const item = localStorage.getItem(key);\n      return item ? JSON.parse(item) : fallback;\n    } catch (e) {\n      console.warn(`Error reading ${key}`, e);\n      return fallback;\n    }\n  },\n  set: (key, value) => {\n    try {\n      localStorage.setItem(key, JSON.stringify(value));\n    } catch (e) {\n      console.warn(`Storage quota exceeded for ${key}`, e);\n    }\n  }\n};\n\nStorage.set('userSettings', settings);\nconst saved = Storage.get('userSettings', { theme: 'light' });",
     "disenso_experto": "LocalStorage es síncrono y bloquea el hilo principal. Guardar megabytes de datos congelará la UI. Además, si el usuario navega en modo incógnito en algunos navegadores (o con almacenamiento lleno), lanzará un error de QuotaExceeded que tumbará tu app si no usas try/catch. Siempre encapsula LocalStorage.",
-    "pregunta_transferencia": "Si guardas una fecha (new Date()) en LocalStorage con JSON.stringify, y la lees mañana con JSON.parse, ¿seguirá siendo un objeto Date con métodos como .getFullYear(), o será otra cosa? ¿Cómo lo solucionas?",
+    "pregunta_transferencia": "Escenario: Un desarrollador quiere guardar la hora actual (`new Date()`) en LocalStorage para mostrarla en un calendario mañana. Utiliza `localStorage.setItem('currentTime', new Date())` sin ninguna transformación previa. Al leer la siguiente sesión, `JSON.parse` devuelve algo que no es un objeto Date y las funcionalidades se rompen.\n\nPista: Recuerda que LocalStorage almacena únicamente cadenas y que para preservar la semántica de objetos o fechas debe emplearse `JSON.stringify` antes del guardado y `JSON.parse` al leer. Además, las fechas deben manejarse con métodos como `setDate` y `getTime` para evitar problemas de zona horaria.",
     "quiz": {
       "pregunta": "¿Qué sucede si llamas a JSON.parse() sobre un string que no es JSON válido (ej. 'undefined' o texto plano)?",
       "opciones": [
@@ -446,6 +784,57 @@
       "json",
       "persistencia",
       "pwa"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Para guardar un objeto JavaScript en LocalStorage de forma segura, ¿qué método debe utilizarse primero?",
+        "opciones": [
+          "A) JSON.stringify luego localStorage.setItem",
+          "B) localStorage.setItem directamente sin serializar",
+          "C) parseJSON directamente",
+          "D) JSON.parse directamente"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A describe el patrón correcto: primero se serializa el objeto con JSON.stringify para obtener una cadena legible, y luego se guarda esa cadena en LocalStorage. Las otras opciones fallan porque no convierten al objeto ni no leen el valor correctamente.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "El código siguiente lanza un error al intentar imprimir `savedSettings.theme`. ¿Cuál es la causa principal del fallo?",
+        "opciones": [
+          "A) Falta de permiso del usuario para acceder a LocalStorage",
+          "B) savedSettings es una cadena `[object Object]` por no haber usado JSON.stringify",
+          "C) LocalStorage ha sido prohibido por políticas de seguridad",
+          "D) El objeto settings fue eliminado del alcance"
+        ],
+        "correcta": "B",
+        "explicacion": "La cadena almacenada es la representación literal `[object Object]` porque se guardó el objeto sin convertirlo a texto. Acceder a `savedSettings.theme` resulta undefined, indicando que el valor no es un objeto con la propiedad esperada. Corregir el error requiere parsear la cadena con JSON.parse antes de acceder a propiedades.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Dadas las líneas rotas que muestran un intento de leer `savedSettings.theme` sin haber deserializado, ¿qué línea debe modificarse para que la consulta funcione?",
+        "opciones": [
+          "A) Agregar `.json()` al final de `savedSettings`",
+          "B) Usar `JSON.parse(savedSettings)` antes del acceso a la propiedad",
+          "C) Cambiar `savedSettings` a `JSON.parse(localStorage.getItem(...))`",
+          "D) Eliminar `localStorage` y recargar desde un archivo"
+        ],
+        "correcta": "B",
+        "explicacion": "Solo después de transformar la cadena almacenada en un objeto mediante JSON.parse se puede leer cualquier propiedad real. Las otras opciones introducen errores sintácticos o lógicos: añadir `.json()` no existe, cambiar la variable no resuelve el problema, y eliminar LocalStorage reinicia todo.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones sobre la persistencia en LocalStorage es falsa?",
+        "opciones": [
+          "A) Los datos permanecen hasta que el usuario clear la caché de almacenamiento",
+          "B) El límite recomendado es de 5 MB",
+          "C) Las operaciones de escritura en LocalStorage son asíncronas",
+          "D) Se pueden guardar objetos complejos usando JSON.stringify"
+        ],
+        "correcta": "C",
+        "explicacion": "LocalStorage sí tiene un tamaño aproximado de 5‑10 MB según el navegador, pero la operación de escritura es síncrona, no asíncrona. Por lo tanto, la afirmación C es incorrecta y no reflejada en la práctica.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -502,7 +891,57 @@
       "preventDefault",
       "async"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué `event.preventDefault()` dentro del `.then()` del fetch NO impide el envío del formulario, aunque `event` estuviera definido?",
+        "opciones": [
+          "Porque `preventDefault()` solo funciona en eventos síncronos como 'click', no en 'submit'.",
+          "Porque el evento 'submit' ya ha completado su fase de propagación y la acción por defecto (navegación) se disparó antes de que la Promise se resuelva.",
+          "Porque `fetch` crea un nuevo contexto de ejecución que pierde la referencia al evento original del DOM.",
+          "Porque las Promesas se ejecutan en un hilo separado (Web Worker) y no pueden acceder al hilo principal del DOM."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: B. JavaScript es single-threaded. El handler de 'submit' se ejecuta, lanza el fetch (microtask) y termina. El navegador continúa y ejecuta la acción por defecto (enviar formulario/recargar). Cuando el fetch responde (ms después), el `.then()` se ejecuta, pero la navegación ya ocurrió. Las opciones A, C, D son falsas: preventDefault sí funciona en submit; fetch no crea nuevo contexto ni hilo separado.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto, la arrow function del listener es `() => {}`. Si el usuario hace submit, ¿qué error específico lanza la consola *antes* de que ocurra el fetch?",
+        "opciones": [
+          "TypeError: Cannot read property 'preventDefault' of undefined",
+          "ReferenceError: event is not defined",
+          "SyntaxError: Unexpected token 'event'",
+          "Error silencioso: el código falla sin mensaje porque `event` es `undefined` globalmente."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: B. Las arrow functions no tienen binding propio de `arguments` ni `event`. En entornos modernos (módulos, strict mode), `event` no es global (propiedad de `window` solo en legacy). Al intentar leer `event` dentro de la closure, JS lanza ReferenceError. A es incorrecto (sería si `event` fuera `undefined` objeto). C y D son falsos.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes implementaciones corrige correctamente el flujo de validación asíncrona?",
+        "opciones": [
+          "Añadir `event` como parámetro `e =>` y mantener `e.preventDefault()` dentro del `.then()`.",
+          "Usar `event.preventDefault()` al inicio del listener, hacer el fetch, y si `!data.exists` llamar a `event.target.submit()` (o `form.submit()`).",
+          "Cambiar `addEventListener('submit'...)` por `onsubmit = async () => { await fetch... }` para hacerlo síncrono.",
+          "Envolver el fetch en `setTimeout(..., 0)` para dar tiempo al evento a cancelarse."
+        ],
+        "correcta": "C",
+        "explicacion": "Correcta: C (la opción B en el array, índice 1). El patrón correcto: 1. `e.preventDefault()` *inmediatamente* (línea 1 del handler). 2. `fetch`. 3. En `.then()`, si todo OK: `e.target.submit()` (esto dispara submit *sin* volver a pasar por el listener, evitando bucle infinito). Opción A falla por timing (igual que original). Opción C (texto 'async') no funciona: `onsubmit` async devuelve Promise, no cancela acción por defecto. Opción D es anti-patrón race condition.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si se corrige el código usando `e.preventDefault()` al inicio y `form.submit()` en el `.then()`, ¿por qué es seguro llamar a `form.submit()` y no volver a entrar en el listener infinitamente?",
+        "opciones": [
+          "Porque `form.submit()` elimina automáticamente todos los listeners de 'submit' antes de enviarlo.",
+          "Porque `HTMLFormElement.submit()` envía el formulario *programáticamente* sin disparar el evento 'submit' ni sus listeners.",
+          "Porque el navegador detecta la recursión y la bloquea tras la segunda iteración.",
+          "Porque la Promise del fetch marca el evento como 'handled' y el navegador ignora listeners subsiguientes."
+        ],
+        "correcta": "D",
+        "explicacion": "Correcta: D (la opción B en el array, índice 1). `form.submit()` (método nativo del DOM) envía el formulario directamente al servidor *sin* disparar el evento 'submit' ni ejecutar listeners. Es la forma estándar de re-enviar tras validación async. A, C, D son invenciones técnicas incorrectas.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.2-010",
@@ -557,6 +996,56 @@
       "event-listener",
       "performance"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Tras ejecutar `openModal()`, `closeModal()`, y luego `openModal()` de nuevo. El usuario redimensiona la ventana. ¿Cuántas veces se ejecuta `adjustModalSize` y sobre qué elementos?",
+        "opciones": [
+          "1 vez, sobre el modal actual (el segundo).",
+          "2 veces: una sobre el primer modal (ya eliminado, error) y otra sobre el segundo.",
+          "1 vez, pero lanza error porque `modal` del primer listener es `null`.",
+          "2 veces, ambas sobre el segundo modal porque la variable `modal` se actualizó en el closure."
+        ],
+        "correcta": "A",
+        "explicacion": "Correcta: A (la opción B en el array, índice 1). Cada llamada a `openModal` crea *un nuevo listener anónimo* en `window` con su *propio closure* capturando su `modal` local. Tras 2 opens/closes: hay 2 listeners en `window`. Listener 1 captura `modal1` (eliminado del DOM pero vivo en memoria). Listener 2 captura `modal2` (actual). Al resize: ambos disparan. Listener 1 llama `adjustModalSize(modal1)` -> `modal1` ya no está en DOM (posible error o no-op). Listener 2 llama `adjustModalSize(modal2)` -> correcto. Opción D falsa: closures capturan la variable *en el momento de creación*, no por referencia viva compartida.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la forma correcta de reescribir `openModal`/`closeModal` para permitir la limpieza del listener?",
+        "opciones": [
+          "Guardar la función anónima en una variable global `window.modalResizeHandler` y usar `removeEventListener` en `closeModal`.",
+          "Definir una *named function* `handleResize = () => adjustModalSize(modal)` fuera de `openModal` y usarla en add/remove.",
+          "Definir una *named function* `handleResize` *dentro* de `openModal` (para capturar `modal` via closure) y pasarla a `addEventListener` / `removeEventListener` en `closeModal`.",
+          "Usar `window.addEventListener('resize', adjustModalSize, { once: true })` para que se auto-elimine."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: B (la opción C en el array, índice 2). La función *debe* ser named (o guardada en variable accesible) *y* definida en un scope donde `closeModal` pueda acceder a ella (ej. module scope, clase, o variable externa). Si se define dentro de `openModal`, `closeModal` no la ve (scope). Opción A: variable global funciona pero contamina scope global (mal patrón). Opción D: `{once: true}` se elimina tras *un* resize, pero el modal sigue abierto; siguientes resizes no ajustarían tamaño.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Por qué el mero hecho de hacer `modal.remove()` no permite al Garbage Collector liberar la memoria del primer modal en el código original?",
+        "opciones": [
+          "Porque `remove()` solo quita el nodo del árbol DOM, pero las variables JS que lo referencian (el closure del listener) siguen existiendo.",
+          "Porque los nodos DOM eliminados se mueven a una 'papelera' interna del navegador y se limpian solo al cerrar la pestaña.",
+          "Porque `window` mantiene una referencia fuerte a *todos* los nodos creados vía `document.createElement` por seguridad.",
+          "Porque el evento 'resize' mantiene una cola de elementos afectados que impide la recolección."
+        ],
+        "correcta": "C",
+        "explicacion": "Correcta: C (la opción A en el array, índice 0). La raíz del leak es el **closure**: el listener anónimo `() => adjustModalSize(modal)` 'cierra sobre' la variable `modal`. Mientras ese listener exista en `window` (nunca removido), la referencia a `modal` (el objeto HTMLElement y todo su subárbol) está viva. El GC no puede limpiar nada alcanzable desde `window` -> listeners -> closure -> `modal`. B, C, D son mitos técnicos falsos.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si refactorizamos usando una Clase `ModalManager` con métodos `open`/`close`, ¿dónde debemos almacenar la referencia al handler de resize para que `close` pueda hacer `removeEventListener`?",
+        "opciones": [
+          "En una `WeakMap` claveada por la instancia del modal.",
+          "En una propiedad de la instancia `this.resizeHandler = () => ...` (arrow function en class field).",
+          "En una variable `const handler = ...` dentro del constructor.",
+          "En `window.__modalHandlers` array global."
+        ],
+        "correcta": "D",
+        "explicacion": "Correcta: D (la opción B en el array, índice 1). Un *class field* con arrow function `this.resizeHandler = () => ...` crea una función por instancia, accesible tanto en `open()` (para add) como en `close()` (para remove), y captura `this.modal` correctamente via `this`. Opción A: WeakMap no ayuda a recuperar la función para removeEventListener (necesitas la referencia exacta). Opción C: variable en constructor no es accesible en métodos (scope). Opción D: global pollution.",
+        "tipo": "codigo"
+      }
+    ]
   }
 ]

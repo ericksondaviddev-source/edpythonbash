@@ -126,6 +126,56 @@
       "patrones",
       "arquitectura"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué principio de diseño de orientación a objetos se refiere a que las subclases deben poder ser usadas en lugar de su clase base sin problemas?",
+        "opciones": [
+          "A) Principio de Sustitución de Liskov",
+          "B) Principio de Herencia",
+          "C) Principio de Polimorfismo",
+          "D) Principio de Encapsulamiento"
+        ],
+        "correcta": "A",
+        "explicacion": "La respuesta correcta es A porque el Principio de Sustitución de Liskov (LSP) define precisamente que las subclases deben ser sustituibles por su clase base sin alterar el comportamiento. Las opciones B, C y D son otros principios de OO pero no se refieren directamente a esta sustituibilidad; por ejemplo, la herencia es un mecanismo, no un principio de sustituibilidad, el polimorfismo permite múltiples formas pero no garantiza la sustituibilidad, y el encapsulamiento se refiere a la ocultación de detalles.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código proporcionado, al ejecutar test_rectangle_behavior(Square(5)), ¿qué valor de área se calcula antes de que se ejecute el assert?",
+        "opciones": [
+          "A) 50",
+          "B) 100",
+          "C) 25",
+          "D) 0"
+        ],
+        "correcta": "B",
+        "explicacion": "La respuesta correcta es B. Cuando se crea Square(5), inicialmente width y height son 5. En el test, se establece rect.width = 5, lo cual no cambia nada porque ya es 5, pero el setter de width en Square también establece height a 5. Luego, se establece rect.height = 10, y el setter de height en Square también establece width a 10. Por lo tanto, el área es 10 * 10 = 100. Las opciones A, C y D son incorrectas porque no reflejan el comportamiento de los setters en Square, que alteran ambos attributes.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la causa principal del error en el test al usar Square en lugar de Rectangle?",
+        "opciones": [
+          "A) El método area de Rectangle está mal implementado.",
+          "B) El test no está escrito para manejar Square.",
+          "C) Los setters de width y height en Square alteran ambos attributes, rompiendo el contrato de Rectangle.",
+          "D) La herencia entre Square y Rectangle es incorrecta en sí misma."
+        ],
+        "correcta": "C",
+        "explicacion": "La respuesta correcta es C. El problema radica en que los setters de Square modifican tanto width como height, lo que viola el contrato de Rectangle donde cada setter debe afectar solo a su respectivo attribute. Esto hace que el comportamiento de Square no sea sustituible por Rectangle. La opción A es falsa porque el área de Rectangle es correcta. La opción B es incorrecta porque el test es válido para Rectangle y no debe fallar por una implementación incorrecta. La opción D es una afirmación general, pero la causa específica es la implementación de los setters que rompe el contrato.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes acciones resolvería el problema de LSP en el código proporcionado?",
+        "opciones": [
+          "A) Modificar el test para que acepte diferentes áreas al usar Square.",
+          "B) Hacer que Square herede de una clase base abstracta que defina width y height como abstractos.",
+          "C) Implementar Square de manera que sus setters solo modifiquen el attribute correspondiente, pero esto haría que Square no sea un cuadrado.",
+          "D) Rediseñar la jerarquía para que Square no herede de Rectangle, por ejemplo, usando una clase base común para formas."
+        ],
+        "correcta": "D",
+        "explicacion": "La respuesta correcta es D. Para cumplir con el LSP, es necesario que la jerarquía de herencia no permita que una subclase cambie el comportamiento de la base de manera inesperada. Rediseñar para que Square no herede de Rectangle evita la violación, por ejemplo, usando una clase base común que defina propiedades compartidas sin imponer dependencias. La opción A es incorrecta porque el test es correcto y no debe ser modificado para adaptarse a una implementación incorrecta. La opción B podría no resolver el problema si la clase base abstracta aún expects setters independientes. La opción C es contraproducente porque haría que Square pierda su esencia de tener lados iguales, violando su naturaleza.",
+        "tipo": "concepto"
+      }
+    ]
   }
 ]

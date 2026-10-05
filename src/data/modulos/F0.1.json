@@ -54,7 +54,57 @@
       "seo",
       "divitis"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la forma más semántica de representar un menú de navegación?",
+        "opciones": [
+          "<div class='menu'> con varios <div class='item'>",
+          "<nav><ul><li> con enlaces <a>",
+          "<form> con inputs",
+          "<table> con celdas"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque `nav` indica una región de navegación y `ul`/`li` describe una lista de enlaces. La opción A usa divs sin significado. La opción C es para formularios. La opción D es para datos tabulares.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si reemplazas <div class='title'>Mi App</div> por <h1>Mi App</h1>, ¿qué mejora principal obtienes?",
+        "opciones": [
+          "Mejora la jerarquía de encabezados para SEO y accesibilidad",
+          "Cambia el color del texto automáticamente",
+          "Convierte el div en un contenedor flex",
+          "Elimina el contenido de la página"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque `h1` define el título principal de la página y mejora la accesibilidad y el SEO. La opción B es falsa: el color depende del CSS. La opción C es falsa: un `h1` no convierte un contenedor en flex. La opción D es falsa: no elimina contenido.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "El código_roto usa <div class='menu'> y <div class='item'> para un menú. ¿Cuál es el principal defecto de accesibilidad?",
+        "opciones": [
+          "Falta cerrar las etiquetas",
+          "Los divs no tienen class",
+          "No usa nav ni una lista de enlaces, por lo que lectores de pantalla no anuncian un menú",
+          "El HTML no permite menús"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque `nav` y una lista de enlaces comunican al lector de pantalla que hay un menú. La opción A es falsa: el código sí cierra etiquetas. La opción B es falsa: los divs sí tienen class. La opción D es falsa: HTML permite menús semánticos.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué etiqueta semántica representa el contenido principal de la página?",
+        "opciones": [
+          "<div>",
+          "<section>",
+          "<footer>",
+          "<main>"
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta porque `main` representa el contenido central de la página. La opción A es genérica. La opción B es para secciones temáticas. La opción C es para el pie de página.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.1-002",
@@ -63,13 +113,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Landing page estática de la app de aprendizaje",
-    "modelo_mental": "Flexbox es para UNA DIMENSIÓN (fila O columna). Grid es para DOS DIMENSIONES (filas Y columnas simultáneamente). La regla de oro: si puedes describir tu layout diciendo 'elementos en línea', usa Flexbox. Si dices 'elementos en una cuadrícula con filas y columnas alineadas', usa Grid.",
+    "modelo_mental": "**Flexbox** es para **una dimensión**: distribuye elementos en una fila o una columna. Propiedades como `display: flex`, `justify-content` y `align-items` resuelven alineación y espacio en esa línea.\n\n**Grid** es para **dos dimensiones**: controla filas y columnas a la vez con `grid-template-columns` y `grid-template-rows`. La regla de oro: si describes el layout como 'elementos en línea', usa Flexbox; si describes 'cuadrícula con filas y columnas alineadas', usa Grid. Esto previene hacks frágiles como calcular porcentajes a mano.",
     "codigo_roto": "<div style='display: flex; flex-wrap: wrap;'>\n  <div style='flex: 1 1 33.33%;'>Card 1</div>\n  <div style='flex: 1 1 33.33%;'>Card 2</div>\n  <div style='flex: 1 1 33.33%;'>Card 3</div>\n  <div style='flex: 1 1 33.33%;'>Card 4</div>\n  <div style='flex: 1 1 33.33%;'>Card 5</div>\n  <div style='flex: 1 1 33.33%;'>Card 6</div>\n</div>",
-    "diagnostico": "Estás usando Flexbox para hacer una cuadrícula 3x2. Funciona, pero es frágil: si las cards tienen alturas distintas, se rompen las filas. Además, estás calculando manualmente el 33.33%. Esto es exactamente el caso de uso de CSS Grid, que fue inventado precisamente para resolver este problema.",
+    "diagnostico": "1. Estás usando Flexbox para hacer una cuadrícula 3x2. Un linter de CSS o un script de Python/Bash que evalúe layout lo señalaría como anti-pattern: Flexbox resuelve una dimensión; con `flex-wrap` simulas columnas, pero no controlas filas ni alturas de forma robusta.\n\n2. Estás calculando manualmente `33.33%`. Esto es frágil porque bordes, gaps o redondeos pueden romper la fila. El patrón general es no simular una cuadrícula con Flexbox; usa CSS Grid con `grid-template-columns: repeat(3, 1fr)`.",
     "codigo_corregido": "<div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;'>\n  <div>Card 1</div>\n  <div>Card 2</div>\n  <div>Card 3</div>\n  <div>Card 4</div>\n  <div>Card 5</div>\n  <div>Card 6</div>\n</div>",
     "codigo_optimizado": "<div class='cards-grid'>\n  <article>Card 1</article>\n  <article>Card 2</article>\n  <article>Card 3</article>\n  <article>Card 4</article>\n  <article>Card 5</article>\n  <article>Card 6</article>\n</div>\n\n<style>\n.cards-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));\n  gap: 1rem;\n  align-items: start;\n}\n</style>",
     "disenso_experto": "Hay dos escuelas: (1) 'Grid para layout global, Flexbox para componentes' y (2) 'usa lo que te resulte natural'. La escuela 1 es mejor para principiantes porque da reglas claras. La escuela 2 solo funciona cuando ya tienes intuición. Un error común de juniors es mezclar ambos en el mismo contenedor sin razón, lo que complica el mantenimiento sin beneficio real.",
-    "pregunta_transferencia": "Tienes que maquetar el menú de navegación superior de tu app (logo a la izquierda, links al centro, botón de login a la derecha en una sola fila). ¿Flexbox o Grid? ¿Por qué?",
+    "pregunta_transferencia": "Tienes que maquetar el menú de navegación superior de tu app: logo a la izquierda, links al centro y botón de login a la derecha, todo en una sola fila.\n\nPista: piensa si necesitas controlar filas y columnas simultáneamente o solo distribuir elementos en una línea horizontal.",
     "quiz": {
       "pregunta": "¿Cuál es la diferencia FUNDAMENTAL entre Flexbox y Grid?",
       "opciones": [
@@ -111,6 +161,57 @@
       "layout",
       "responsive",
       "maquetacion"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Para qué es ideal Flexbox?",
+        "opciones": [
+          "Crear una cuadrícula 3x2",
+          "Distribuir elementos en una sola fila o columna",
+          "Definir filas y columnas simultáneamente",
+          "Reemplazar JavaScript"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque Flexbox resuelve layout en una dimensión. La opción A es típica de Grid. La opción C es típica de Grid. La opción D es falsa: Flexbox no reemplaza JavaScript.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el código_roto con 6 cards y flex: 1 1 33.33%, ¿qué comportamiento esperado en un contenedor ancho?",
+        "opciones": [
+          "Se forman 2 filas de 3 cards",
+          "Las 6 cards quedan en una sola fila",
+          "El CSS es inválido",
+          "Se forman 3 filas de 2 cards"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque cada card intenta ocupar 33.33% del ancho y `flex-wrap` permite saltar de fila. La opción B es falsa: no caben 6 al 33.33%. La opción C es falsa: el CSS es válido. La opción D es falsa: el cálculo apunta a 3 por fila, no 2.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es el problema principal de calcular 33.33% a mano con Flexbox?",
+        "opciones": [
+          "No se puede usar porcentajes en Flexbox",
+          "Flexbox no soporta flex-wrap",
+          "Es frágil: si cambian alturas o hay gaps, el layout se rompe; Grid resuelve con grid-template-columns: repeat(3, 1fr)",
+          "Las cards se ocultan automáticamente"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque los porcentajes manuales son frágiles ante gaps, bordes o alturas distintas. La opción A es falsa: se pueden usar porcentajes. La opción B es falsa: Flexbox sí soporta `flex-wrap`. La opción D es falsa: no se ocultan automáticamente.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de estas propiedades NO es típica de CSS Grid?",
+        "opciones": [
+          "grid-template-columns",
+          "grid-gap",
+          "display: grid",
+          "flex-direction"
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta porque `flex-direction` pertenece a Flexbox. Las opciones A, B y C son propiedades de Grid: `grid-template-columns`, `grid-gap` y `display: grid`.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -168,7 +269,57 @@
       "breakpoints",
       "rwd"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la razón principal por la que el código original (width: 1200px en base + max-width media query) viola el principio Mobile-First?",
+        "opciones": [
+          "Usa píxeles en lugar de rem para el ancho del contenedor.",
+          "Define estilos de escritorio como base y los anula para móvil, obligando al móvil a descargar y procesar CSS innecesario.",
+          "La media query debería usar min-width: 768px en lugar de max-width: 768px para funcionar.",
+          "Falta la etiqueta meta viewport en el HTML para que el ancho fijo funcione."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta (B): Mobile-First es una arquitectura de carga y prioridad. El navegador móvil recibe primero el CSS de escritorio (width: 1200px) y debe anularlo, gastando CPU y memoria. A: Unidades relativas ayudan pero no definen la estrategia. C: Cambiar a min-width sin cambiar la base sigue siendo desktop-first (la base seguiría siendo 1200px). D: El viewport es necesario, pero el error arquitectónico es el orden de las reglas CSS.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Tras refactorizar a Mobile-First, el CSS base es: `body { width: 100%; max-width: 1200px; margin: 0 auto; font-size: 1rem; }`. ¿Qué media query y regla completan correctamente la mejora para tablets/escritorio (>=768px) subiendo la tipografía a 18px sin romper el contenedor?",
+        "opciones": [
+          "@media (max-width: 768px) { body { font-size: 1.125rem; } }",
+          "@media (min-width: 768px) { body { width: 1200px; font-size: 18px; } }",
+          "@media (min-width: 768px) { body { font-size: 1.125rem; } }",
+          "@media (min-width: 768px) { body { max-width: none; font-size: 1.125rem; } }"
+        ],
+        "correcta": "C",
+        "explicacion": "Correcta (C): Mobile-first usa min-width. La base ya tiene max-width: 1200px y margin:auto, así que no hay que tocar width. 18px = 1.125rem (asumiendo 16px root). A: Usa max-width (desktop-first). B: Vuelve a width fijo (rompe fluidez) y usa px (mal práctica). D: max-width: none anula el contenedor máximo, haciendo la línea de texto infinita en pantallas grandes.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Un desarrollador cambia la media query a `@media (min-width: 768px)` pero mantiene `width: 1200px` en el body base. En un iPhone 12 (390px CSS), ¿qué sucede visualmente y por qué?",
+        "opciones": [
+          "Se ve bien porque min-width no se activa en móvil y el width: 1200px es ignorado por el navegador.",
+          "Aparece scroll horizontal forzado porque width: 1200px en base obliga al body a ser más ancho que la ventana.",
+          "El texto se vuelve ilegible (16px) porque la media query min-width impide que se aplique font-size: 14px.",
+          "El margin: 0 auto centra el body de 1200px dejando espacio blanco a los lados visible."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta (B): El CSS base se aplica SIEMPRE. width: 1200px en body fuerza ese ancho real en el layout, superando el viewport (390px). El navegador muestra scroll horizontal. A: Falso, width no se ignora. C: La media query min-width no se activa, pero el problema no es el texto sino el layout roto. D: El centrado ocurre, pero el desbordamiento (overflow) genera scroll, no solo espacio blanco visible.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Por qué se recomienda usar `max-width: 1200px` en el contenedor base en lugar de `width: 1200px` dentro de una media query min-width?",
+        "opciones": [
+          "Porque max-width tiene mejor soporte en navegadores antiguos que width.",
+          "Permite que el contenedor sea fluido (100%) en móvil y se limite solo cuando hay espacio suficiente, sin duplicar reglas.",
+          "Evita tener que escribir margin: 0 auto dos veces (en base y en media query).",
+          "Porque width dentro de media query no se hereda correctamente en elementos hijos."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta (B): max-width en la base es la esencia mobile-first: 'sé fluido hasta que no quepas, entonces límitate'. Así el móvil usa 100% automáticamente y escritorio respeta el tope. A: Soporte es igual (IE7+). C: margin: 0 auto en base basta; no se duplica. D: La herencia no funciona así; width no se hereda.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.1-004",
@@ -225,7 +376,57 @@
       "dark-mode",
       "temas"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En el código roto, se repite `padding: 0.75rem 1.5rem; border-radius: 0.5rem;` en .button y .button-secondary. ¿Cuál es la forma correcta de centralizar estos valores usando CSS Variables para que un cambio global afecte a ambos?",
+        "opciones": [
+          "Crear .btn-base { padding: var(--btn-padding); border-radius: var(--btn-radius); } y extenderlo con @extend en Sass (no CSS nativo).",
+          "Definir en :root --btn-padding: 0.75rem 1.5rem; --btn-radius: 0.5rem; y usar var(--btn-padding) var(--btn-radius) en cada clase.",
+          "Definir --spacing: 0.75rem 1.5rem; --radius: 0.5rem; en :root y aplicarlas en un selector agrupado: .button, .button-secondary { padding: var(--spacing); border-radius: var(--radius); }",
+          "Usar la propiedad CSS `padding: var(--spacing-md) var(--spacing-lg);` asumiendo que --spacing-md=0.75rem y --spacing-lg=1.5rem existen en un design system."
+        ],
+        "correcta": "C",
+        "explicacion": "Correcta (C): Agrupa selectores para evitar duplicidad y usa variables semánticas (--spacing, --radius) definidas en :root. Es CSS nativo, mantenible y escalable. A: @extend no existe en CSS nativo. B: Variables específicas de botón (--btn-padding) acoplan diseño a componente; mejor tokens genéricos (--spacing-md). D: Asume variables que no existen en el contexto y separa ejes X/Y innecesariamente para padding simétrico.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si definimos en :root `--color-primary: #3b82f6;` y en .button `background: var(--color-primary);`, ¿qué ocurre si un usuario fuerza modo oscuro via `prefers-color-scheme: dark` y nosotros NO sobrescribimos la variable?",
+        "opciones": [
+          "El navegador invierte automáticamente el color hex a su complementario (#c47d09).",
+          "El botón sigue azul (#3b82f6) porque la variable no cambia; el modo oscuro nativo no altera CSS custom properties.",
+          "La variable se vuelve transparente y se ve el fondo del body.",
+          "El navegador lanza error de CSS y ignora la regla background."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta (B): Las CSS variables son valores estáticos hasta que TÚ las cambias via CSS (ej. @media (prefers-color-scheme: dark) { :root { --color-primary: #60a5fa; } }). El navegador NO modifica tus variables automáticamente. A: No hay inversión automática. C: No se vuelven transparentes. D: var() es sintaxis válida siempre.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "El código actual tiene `.card { border: 1px solid #e5e7eb; }`. Para temar correctamente el borde en modo oscuro (ej. #374151), ¿dónde y cómo debes definir la variable?",
+        "opciones": [
+          ":root { --border-color: #e5e7eb; } .card { border-color: var(--border-color); } @media (prefers-color-scheme: dark) { :root { --border-color: #374151; } }",
+          ".card { --border-color: #e5e7eb; border-color: var(--border-color); } @media (prefers-color-scheme: dark) { .card { --border-color: #374151; } }",
+          ":root { --card-border: 1px solid #e5e7eb; } .card { border: var(--card-border); } @media (prefers-color-scheme: dark) { :root { --card-border: 1px solid #374151; } }",
+          "En HTML: <div class='card' style='--border-color: #e5e7eb'> y JS para cambiar el style attribute en dark mode."
+        ],
+        "correcta": "A",
+        "explicacion": "Correcta (A): Define el token de color (no la regla completa) en :root para alcance global. Cambia solo el valor del token en la media query. La cascada actualiza .card automáticamente. B: Alcance limitado a .card; si hay más componentes con borde, hay que repetir. C: Guardar '1px solid #...' en variable acopla estilo y valor; rompe si quieres cambiar grosor o estilo sin cambiar color. D: Inline styles + JS es anti-patrón; rompe separación de responsabilidades y no usa CSS nativo.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Un junior propone crear variables `--button-primary-bg: #3b82f6;` y `--button-secondary-bg: #10b981;` en :root. ¿Por qué esto es un anti-patrón de Design Tokens frente a `--color-brand-primary` y `--color-brand-secondary`?",
+        "opciones": [
+          "Porque los nombres largos reducen rendimiento de parsing del CSS.",
+          "Acopla el token semántico a un componente específico (button), impidiendo reusar el color en enlaces, badges o fondos de card sin crear nuevas variables.",
+          "Las variables con guiones medios no funcionan en var() dentro de background-color.",
+          "Obliga a definir --button-primary-text obligatoriamente para pasar contraste WCAG."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta (B): Los Design Tokens deben ser agnósticos al componente (semánticos: 'brand-primary', 'error', 'surface') para maximizar reuso y consistencia. Si mañana usas el azul primario en un badge, con --button-primary-bg no puedes (semánticamente incorrecto) o duplicas. A: Longitud de nombre es irrelevante para performance. C: Falso, guiones son estándar. D: El contraste se gestiona con pares (--color-text-on-primary), no acoplando a botón.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.1-005",
@@ -282,7 +483,57 @@
       "semantica",
       "keyboard"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En el código de F0.1-005, ¿cuál es el problema de accesibilidad más importante del div con role='button'?",
+        "opciones": [
+          "No puede recibir foco ni activarse con teclado porque falta tabindex y manejadores de Enter/Espacio.",
+          "El atributo aria-label='Menu' no está permitido en elementos con role='button'.",
+          "El icono <i> debe tener role='img' para que el menú sea accesible.",
+          "El div no puede usar onclick porque solo los elementos <button> admiten eventos."
+        ],
+        "correcta": "A",
+        "explicacion": "Los roles ARIA no hacen interactivo un elemento. Un div con role='button' debe ser focusable, por ejemplo con tabindex='0', y debe responder a teclas como Enter o Espacio; sin eso, los usuarios de teclado no pueden usarlo. La opción B es falsa porque aria-label es válido en un elemento con role='button'. La opción C es innecesaria si el botón ya tiene aria-label. La opción D es falsa porque onclick puede usarse en otros elementos, aunque no es la solución accesible por sí sola.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el bloque <div role='alert' style='display:none;'>Error en el formulario</div>, ¿qué ocurre al cargar la página?",
+        "opciones": [
+          "El mensaje se muestra y los lectores de pantalla lo anuncian inmediatamente.",
+          "El mensaje no es visible ni se anuncia porque display:none lo elimina del árbol de accesibilidad.",
+          "El mensaje se muestra oculto pero los lectores de pantalla lo anuncian al cargar.",
+          "El atributo role='alert' convierte el div en un diálogo modal."
+        ],
+        "correcta": "B",
+        "explicacion": "display:none oculta el elemento y lo saca del árbol de accesibilidad, por lo que no se ve ni se anuncia. La opción A es falsa porque el elemento no es visible. La opción C confunde un elemento oculto visualmente con una técnica accesible de ocultamiento; display:none no anuncia contenido. La opción D es falsa porque role='alert' solo indica que es una alerta dinámica, no crea un diálogo modal.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Un usuario con teclado no puede abrir el menú del código. ¿Cuál es la causa más probable del fallo?",
+        "opciones": [
+          "El navegador bloquea onclick en div por seguridad.",
+          "El icono Font Awesome impide el foco del contenedor.",
+          "El div no tiene tabindex='0' ni listeners para teclas Enter/Espacio, por lo que no es operable por teclado.",
+          "role='button' solo es válido en <span>, no en <div>."
+        ],
+        "correcta": "C",
+        "explicacion": "La causa más probable es la falta de interacción por teclado: sin foco y sin manejo de teclas, el usuario no puede activar el elemento. La opción A es falsa porque los navegadores no bloquean onclick en div por seguridad. La opción B es incorrecta porque el icono no impide el foco si el contenedor es focusable. La opción D es falsa porque role='button' puede usarse en div cuando se implementa la accesibilidad adecuada.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuándo es apropiado usar role='alert' en un mensaje de error de formulario?",
+        "opciones": [
+          "Cuando el mensaje está presente en el HTML desde el inicio y siempre visible.",
+          "Cuando se quiere ocultar el mensaje a los lectores de pantalla.",
+          "Cuando el mensaje es decorativo y no contiene información.",
+          "Cuando el mensaje se muestra dinámicamente y debe anunciarse a los usuarios de tecnologías de apoyo."
+        ],
+        "correcta": "D",
+        "explicacion": "role='alert' está pensado para mensajes dinámicos que deben anunciarse cuando aparecen. La opción A es incorrecta porque un mensaje estático visible no necesita role='alert'. La opción B es falsa porque alert no oculta el mensaje. La opción C es falsa porque si el mensaje es decorativo no debe tener semántica de alerta.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.1-006",
@@ -339,7 +590,57 @@
       "input-types",
       "ux"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En el formulario de F0.1-006, ¿cuál es el principal problema de validación HTML5?",
+        "opciones": [
+          "Los inputs usan type='text' para email, password y age, y no hay atributos de validación como required, pattern, min o max.",
+          "El botón Submit no puede ir dentro de un form porque los formularios solo admiten inputs.",
+          "placeholder es un atributo obsoleto y provoca que el navegador bloquee el envío.",
+          "Los nombres email, password y age no son válidos en HTML5."
+        ],
+        "correcta": "A",
+        "explicacion": "El problema central es no usar los tipos y atributos adecuados: type='email', type='password', type='number' con min/max, y required si el campo es obligatorio. La opción B es falsa porque <button> es válido dentro de <form>. La opción C es falsa porque placeholder es válido, aunque no sustituye a label. La opción D es falsa porque esos nombres son válidos en HTML5.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si un usuario hace clic en Submit sin escribir nada en el formulario mostrado, ¿qué comportamiento esperas?",
+        "opciones": [
+          "El navegador muestra un error de validación porque email es obligatorio.",
+          "El formulario se envía con los tres campos vacíos porque no hay required ni validación nativa.",
+          "El navegador convierte automáticamente los type='text' en type='email' y bloquea el envío.",
+          "El botón no funciona porque falta type='submit' en el <button>."
+        ],
+        "correcta": "B",
+        "explicacion": "Sin required, pattern, min o max, el navegador no valida los campos vacíos, por lo que el formulario se envía. La opción A es falsa porque no hay validación de email ni required. La opción C es falsa porque el navegador no cambia los tipos de input automáticamente. La opción D es falsa porque un <button> dentro de un form tiene tipo submit por defecto si no se especifica type.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Un usuario en móvil escribe caracteres extraños en el campo age y el formulario acepta texto. ¿Cuál es la causa más probable?",
+        "opciones": [
+          "El atributo name='age' no permite números en HTML5.",
+          "El botón Submit debe tener type='button' para validar el campo numérico.",
+          "El input usa type='text' en lugar de type='number' y no tiene min/max ni step, por lo que no se aplica validación numérica.",
+          "El campo age necesita aria-label para que el navegador valide el número."
+        ],
+        "correcta": "C",
+        "explicacion": "La causa es el tipo de input: type='text' no aplica validación numérica ni muestra un teclado numérico. La opción A es falsa porque name no afecta la validación. La opción B es falsa porque type='button' impediría el envío del formulario. La opción D es falsa porque aria-label ayuda a la accesibilidad, pero no valida números.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de estas mejoras es la más completa para el campo email del formulario?",
+        "opciones": [
+          "<input type='text' name='email' placeholder='Email' required>",
+          "<input type='email' name='email' placeholder='Email'>",
+          "<input type='email' name='email' placeholder='Email' required pattern='[^@]+@[^@]+\\.[^@]+'>",
+          "<input type='text' name='email' placeholder='Email' required inputmode='email'>"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C combina type='email' para validación nativa y experiencia de teclado, required para exigir un valor y pattern como refuerzo opcional. La opción A no usa type='email'. La opción B no exige el campo con required. La opción D usa type='text' con inputmode='email', que mejora el teclado pero no da validación completa de email.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "F0.1-007",
@@ -396,7 +697,57 @@
       "code-review",
       "semantica"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el problema principal de accesibilidad al usar <div class='nav-item'> en lugar de <li> dentro de un <nav>?",
+        "opciones": [
+          "Los lectores de pantalla no pueden anunciar el número de elementos del menú",
+          "El navegador no aplica estilos CSS a los <div>",
+          "Los <div> no son focusables por teclado",
+          "Los <div> no permiten anidar enlaces <a>"
+        ],
+        "correcta": "A",
+        "explicacion": "Correcta: A. Un <nav> con <ul><li> permite a lectores de pantalla anunciar 'Lista de 3 elementos' y navegar entre ellos. Con <div> se pierde esa estructura semántica. B es falso: CSS funciona igual. C es falso: la focusabilidad depende de tabindex o <a>, no de la etiqueta contenedora. D es falso: <div> permite anidar <a> perfectamente.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código original, el botón 'Empezar' está marcado como <div class='hero-button'>Empezar</div>. ¿Qué falla crítica ocurre si un usuario navega solo con teclado?",
+        "opciones": [
+          "El botón no recibe foco (tabindex ausente) y no se puede activar con Enter/Espacio",
+          "El botón se salta al hacer tab pero funciona con click",
+          "El lector de pantalla lo anuncia como 'botón' automáticamente",
+          "El formulario se envía automáticamente al cargar la página"
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: B. Un <div> no es focusable por defecto (tabindex=0 faltante) ni activable con teclado. A es incorrecto: dice 'no recibe foco' pero la opción B describe el comportamiento real (se salta). C es falso: se anuncia como 'texto', no botón. D es irrelevante.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué estructura semántica correcta reemplaza al bloque de características (features)?",
+        "opciones": [
+          "<section class='features'><article class='feature'>...",
+          "<main class='features'><div class='feature'>...",
+          "<div class='features'><section class='feature'>...",
+          "<article class='features'><section class='feature'>..."
+        ],
+        "correcta": "C",
+        "explicacion": "Correcta: C. <section> agrupa contenido temático (features) y cada <article> es una unidad autocontenida (feature). A invierte la jerarquía. B usa <main> incorrectamente (solo uno por página). D usa <article> como contenedor principal.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si refactorizas el menú de navegación a HTML semántico, ¿cuál es el código correcto?",
+        "opciones": [
+          "<nav><ul><li><a href='#'>Inicio</a></li>...",
+          "<nav><div><a href='#'>Inicio</a></div>...",
+          "<header><menu><li>Inicio</li>...",
+          "<nav><ol><li>Inicio</li>..."
+        ],
+        "correcta": "D",
+        "explicacion": "Correcta: D. <nav> + <ul> (lista no ordenada) + <li> + <a> es el patrón estándar. B usa <div> rompiendo semántica de lista. C usa <menu> (obsoleto para navegación) y falta <a>. A usa <ol> (lista ordenada) que implica secuencia numérica, inapropiada para menú principal.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "F0.1-008",
@@ -454,6 +805,44 @@
       "arquitectura-css",
       "deuda-tecnica"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Dado el código roto, ¿qué color tendrá el fondo del botón con clase 'button' si todos los selectores CSS se aplican correctamente?",
+        "opciones": [
+          "Azul (blue), porque el primer selector .button define el color base.",
+          "Rojo (red), porque .button-primary tiene mayor especificidad que .button.",
+          "Verde (green), porque #main .button usa un ID, lo que le da mayor prioridad.",
+          "Púrpura (purple), porque body header .container .button es la última regla con !important en el stylesheet."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta porque cuando múltiples reglas usan !important, el orden de aparición en el CSS decide. La regla body header .container .button es la última con !important, por lo que anula las anteriores. Las opciones A, B y C son distractores plausibles: A ignora el orden y se enfoca en el primer selector, B confunde specificity con !important (aunque .button-primary es más específico, !important anula esa regla), y C asume que un ID siempre gana, pero !important y el orden son factores decisivos.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la regla CSS que determina qué estilo se aplica cuando hay múltiples !important en selectores que afectan al mismo elemento?",
+        "opciones": [
+          "El selector con mayor specificity (más IDs, clases o elementos) siempre gana, incluso con !important.",
+          "El primer !important en el stylesheet tiene prioridad sobre los demás.",
+          "El último !important en el stylesheet gana, independientemente de la specificity del selector.",
+          "Los !important se anulan entre sí, y se aplica la specificity normal."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque con !important, el orden de aparición en el CSS es el factor decisivo. Las opciones A, B y D son distractores comunes: A confunde specificity con !important (aunque la specificity es importante sin !important, con !important el orden importa), B es un mito sobre el primer !important, y D es incorrecto porque los !important no se anulan, sino que el orden decide.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Un desarrollador esperaba que el botón tuviera fondo rojo (.button-primary), pero en lugar de eso aparece púrpura. ¿Cuál es la causa más probable del error?",
+        "opciones": [
+          "El selector .button-primary no se está aplicando porque falta la clase en el HTML.",
+          "El selector body header .container .button aparece después en el CSS y usa !important, anulando .button-primary.",
+          "El color rojo no es válido en CSS, por lo que el navegador ignora la regla.",
+          "El ID #main .button tiene mayor specificity que .button-primary, pero no afecta el color de fondo."
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el selector body header .container .button es el último en el stylesheet con !important, anulando las reglas anteriores. Las opciones A, C y D son distractores plausibles: A es un error común de HTML, C es un error de sintaxis (el rojo es válido), y D confunde specificity con !important (aunque #main .button es más específico, !important y el orden deciden).",
+        "tipo": "debugging"
+      }
+    ]
   }
 ]
