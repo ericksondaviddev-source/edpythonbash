@@ -123,6 +123,23 @@
     "skip": "Skip animation",
     "speed": "Speed"
   },
+  "tutor": {
+    "title": "Tutor",
+    "stepOf": "Step {{current}} of {{total}}",
+    "play": "Play",
+    "pause": "Pause",
+    "prev": "Previous",
+    "next": "Next",
+    "restart": "Restart",
+    "voice": "Voice",
+    "voiceOn": "Enable voice",
+    "voiceOff": "Mute voice",
+    "empty": "This lesson has no tutor steps yet.",
+    "downloadHtml": "Download HTML",
+    "downloadVideo": "Download video",
+    "recording": "Recording…",
+    "recordError": "Could not record video in this browser."
+  },
   "theme": {
     "light": "Light mode",
     "dark": "Dark mode",

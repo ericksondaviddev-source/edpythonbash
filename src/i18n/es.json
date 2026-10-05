@@ -123,6 +123,23 @@
     "skip": "Saltar animación",
     "speed": "Velocidad"
   },
+  "tutor": {
+    "title": "Tutor",
+    "stepOf": "Paso {{current}} de {{total}}",
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "restart": "Reiniciar",
+    "voice": "Voz",
+    "voiceOn": "Activar voz",
+    "voiceOff": "Silenciar voz",
+    "empty": "Esta lección aún no tiene pasos de tutor.",
+    "downloadHtml": "Descargar HTML",
+    "downloadVideo": "Descargar video",
+    "recording": "Grabando…",
+    "recordError": "No se pudo grabar el video en este navegador."
+  },
   "theme": {
     "light": "Modo claro",
     "dark": "Modo oscuro",

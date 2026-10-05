@@ -1,5 +1,5 @@
 interface IconProps {
-  name: 'close' | 'play' | 'pause' | 'stop' | 'copy' | 'check' | 'chevron-down' | 'chevron-right' | 'menu' | 'search' | 'sun' | 'moon' | 'download' | 'external' | 'github' | 'linkedin' | 'settings' | 'chat'
+  name: 'close' | 'play' | 'pause' | 'stop' | 'copy' | 'check' | 'chevron-down' | 'chevron-right' | 'menu' | 'search' | 'sun' | 'moon' | 'download' | 'external' | 'github' | 'linkedin' | 'settings' | 'chat' | 'prev' | 'next' | 'restart' | 'volume' | 'mute'
   size?: number
   className?: string
 }
@@ -85,6 +85,37 @@ export default function Icon({ name, size = 20, className = '' }: IconProps) {
     chat: (
       <svg width={size} height={size} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+      </svg>
+    ),
+    prev: (
+      <svg width={size} height={size} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <polygon points="19 20 9 12 19 4 19 20" fill="currentColor" stroke="none" />
+        <line x1="5" x2="5" y1="19" y2="5" strokeLinecap="round" strokeWidth={2} />
+      </svg>
+    ),
+    next: (
+      <svg width={size} height={size} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none" />
+        <line x1="19" x2="19" y1="5" y2="19" strokeLinecap="round" strokeWidth={2} />
+      </svg>
+    ),
+    restart: (
+      <svg width={size} height={size} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v5h5" />
+      </svg>
+    ),
+    volume: (
+      <svg width={size} height={size} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5L6 9H2v6h4l5 4V5z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.54 8.46a5 5 0 010 7.07" />
+      </svg>
+    ),
+    mute: (
+      <svg width={size} height={size} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5L6 9H2v6h4l5 4V5z" />
+        <line x1="22" x2="16" y1="9" y2="15" strokeLinecap="round" strokeWidth={2} />
+        <line x1="16" x2="22" y1="9" y2="15" strokeLinecap="round" strokeWidth={2} />
       </svg>
     ),
     github: (
