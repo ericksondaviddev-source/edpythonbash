@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Lesson } from '../../types'
+import type { Lesson, Quiz } from '../../types'
 import { useTranslation } from 'react-i18next'
 import CodeBlock from './CodeBlock'
 import QuizEngine from '../quiz/QuizEngine'
@@ -268,6 +268,7 @@ export default function LessonView({
           simulator={lesson.simulador}
           lessonId={lesson.id}
           nextLessonId={nextLesson?.id}
+          hint={(lesson.quiz as Quiz & { pista?: string }).pista}
           onNavigate={(id) => onNavigate(id)}
         />
       )}

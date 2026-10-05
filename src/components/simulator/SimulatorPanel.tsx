@@ -3,18 +3,20 @@ import type { Simulator } from '../../types'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Icon } from '../atoms'
 import BlockEditor from '../organisms/BlockEditor'
+import TerminalPanel from './TerminalPanel'
 import { useProgressStore } from '../../store/useProgressStore'
 
 interface SimulatorPanelProps {
   simulator: Simulator
   lessonId?: string
   nextLessonId?: string
+  hint?: string
   onNavigate?: (lessonId: string) => void
 }
 
 type VerifyResult = { name: string; passed: boolean; detail?: string }
 
-export default function SimulatorPanel({ simulator, lessonId, nextLessonId, onNavigate }: SimulatorPanelProps) {
+export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint, onNavigate }: SimulatorPanelProps) {
   const { t } = useTranslation()
   const { addXP, completeLesson } = useProgressStore()
   const [code, setCode] = useState(() => simulator.codigo_inicial ?? simulator.solucion ?? '')
@@ -25,6 +27,7 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, onNa
   const [showBlockEditor, setShowBlockEditor] = useState(false)
   const [verifyResults, setVerifyResults] = useState<VerifyResult[] | null>(null)
   const [challengePassed, setChallengePassed] = useState(false)
+  const [failedVerifies, setFailedVerifies] = useState(0)
 
   const hasTests = Boolean(
     simulator.test_code ||
@@ -74,6 +77,11 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, onNa
       const results = await runner.verify(simulator, code)
       setVerifyResults(results)
       const allPassed = results.length > 0 && results.every(r => r.passed)
+      if (allPassed) {
+        setFailedVerifies(0)
+      } else {
+        setFailedVerifies(c => c + 1)
+      }
       if (allPassed && !challengePassed && lessonId) {
         setChallengePassed(true)
         completeLesson(lessonId)
@@ -155,6 +163,21 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, onNa
           <pre className="p-4 bg-[var(--code-bg)] text-[var(--code-text)] rounded-lg font-mono text-sm overflow-x-auto whitespace-pre-wrap">
             {output}
           </pre>
+        </div>
+      )}
+
+      {canExecute && (simulator.engine === 'pyodide' || simulator.engine === 'bash_sim') && (
+        <TerminalPanel
+          lessonId={lessonId ?? simulator.engine}
+          engine={simulator.engine}
+          setupCode={simulator.setup_code}
+          externalCode={code}
+        />
+      )}
+
+      {failedVerifies >= 2 && hint && (
+        <div className="mb-4 p-3 rounded-lg bg-[var(--warning)]/15">
+          <p className="text-sm text-[var(--text-primary)]">{t('simulator.failedTwiceHint', { hint })}</p>
         </div>
       )}
 

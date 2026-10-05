@@ -103,7 +103,18 @@
     "fallbackHint": "This simulator cannot run code yet. Compare your solution with the model solution and manually verify each criterion.",
     "notImplemented": "Simulator not implemented for this engine. Use the model solution as reference.",
     "showBlocks": "Block Editor",
-    "hideBlocks": "Hide Blocks"
+    "hideBlocks": "Hide Blocks",
+    "failedTwiceHint": "💡 Hint: {{hint}}"
+  },
+  "terminal": {
+    "title": "Terminal",
+    "inputLabel": "Terminal input",
+    "runInTerminal": "Run in terminal",
+    "resetSession": "Reset session",
+    "sessionReset": "Session reset. Clean state.",
+    "waitingInput": "⏳ Waiting for input… type below and press Enter",
+    "inputPlaceholder": "Type input and press Enter…",
+    "clearHint": "Ctrl+L clears · ↑/↓ history · Tab completes"
   },
   "video": {
     "title": "Video",
