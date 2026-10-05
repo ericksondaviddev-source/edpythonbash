@@ -54,6 +54,78 @@ class PyodideRunner {
     return output.trim()
   }
 
+  /** Crea un namespace (dict) aislado para una sesión. */
+  async createNamespace(): Promise<unknown> {
+    if (!this.pyodide) await this.init()
+    return this.pyodide.globals.get('dict')()
+  }
+
+  /** Ejecuta código dentro de un namespace dado (o global si ns es null). */
+  async runInNamespace(code: string, ns: unknown): Promise<string> {
+    if (!this.pyodide) await this.init()
+    let output = ''
+    this.pyodide.setStdout({ batched: (text: string) => { output += text + '\n' } })
+    this.pyodide.setStderr({ batched: (text: string) => { output += text + '\n' } })
+    try {
+      if (ns) await this.pyodide.runPythonAsync(code, ns)
+      else await this.pyodide.runPythonAsync(code)
+    } catch (error: any) {
+      output += `Error: ${error.message}`
+    }
+    return output.trim()
+  }
+
+  private needInputError(): Error {
+    const e = new Error('__NEED_INPUT__')
+    e.name = 'NeedInput'
+    return e
+  }
+
+  /**
+   * Ejecuta código alimentando input() con getLine().
+   * Re-ejecuta desde cero cada vez que se agota el stdin (límite 20 inputs).
+   * Limitación documentada: el código se re-ejecuta, así que efectos como
+   * list.append dentro del mismo script se duplicarían; en ejercicios típicos
+   * (print/input/asignaciones) es idempotente.
+   */
+  async runWithStdin(
+    code: string,
+    ns: unknown,
+    getLine: () => Promise<string | null>,
+    maxInputs = 20
+  ): Promise<{ output: string; askedInputs: number }> {
+    if (!this.pyodide) await this.init()
+    const lines: string[] = []
+    let asked = 0
+    for (let attempt = 0; attempt <= maxInputs; attempt++) {
+      let output = ''
+      this.pyodide.setStdout({ batched: (t: string) => { output += t + '\n' } })
+      this.pyodide.setStderr({ batched: (t: string) => { output += t + '\n' } })
+      let idx = 0
+      this.pyodide.setStdin({
+        stdin: () => {
+          if (idx < lines.length) return lines[idx++]
+          throw this.needInputError()
+        }
+      })
+      try {
+        if (ns) await this.pyodide.runPythonAsync(code, ns)
+        else await this.pyodide.runPythonAsync(code)
+        return { output: output.trim(), askedInputs: asked }
+      } catch (error: any) {
+        if (error?.name === 'NeedInput' || error?.message === '__NEED_INPUT__') {
+          const line = await getLine()
+          asked++
+          if (line === null) return { output: (output + '\nError: EOF en input()').trim(), askedInputs: asked }
+          lines.push(line + '\n')
+          continue
+        }
+        return { output: (output + `\nError: ${error.message}`).trim(), askedInputs: asked }
+      }
+    }
+    return { output: 'Error: demasiados input() (límite 20)', askedInputs: asked }
+  }
+
   async verify(
     simulator: {
       setup_code?: string
