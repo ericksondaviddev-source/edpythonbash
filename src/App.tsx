@@ -140,6 +140,7 @@ function AppShell() {
                   lessons={lessons}
                   onLessonSelect={handleLessonSelect}
                   currentLessonId={currentLesson?.id}
+                  onOpenSettings={() => setIsAPIKeyModalOpen(true)}
                 />
               }
             />
@@ -151,6 +152,7 @@ function AppShell() {
                   lessons={lessons}
                   onLessonSelect={handleLessonSelect}
                   currentLessonId={currentLesson?.id}
+                  onOpenSettings={() => setIsAPIKeyModalOpen(true)}
                 />
               }
             />
@@ -177,6 +179,7 @@ function AppShell() {
                     modules={modules}
                     lessons={lessons}
                     onLessonSelect={handleLessonSelect}
+                    onOpenSettings={() => setIsAPIKeyModalOpen(true)}
                   />
                 )
               }

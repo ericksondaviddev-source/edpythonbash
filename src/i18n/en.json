@@ -42,7 +42,16 @@
     "streak": "Streak",
     "days": "days",
     "lessonsCompleted": "Lessons completed",
-    "of": "of"
+    "of": "of",
+    "videos": "Instruction videos",
+    "videosSub": "Learn to use the app in 3 generated videos",
+    "steps": "{{count}} steps",
+    "apiKeyTitle": "Connect your API key",
+    "apiKeyDesc": "Use the AI tutor with your free OpenRouter key.",
+    "apiKeySetup": "Set up key",
+    "apiKeyConnected": "Key connected",
+    "mindmapPreview": "Explore all 174 lessons on the map",
+    "openMindmap": "Open mind map"
   },
   "lesson": {
     "title": "Lesson",

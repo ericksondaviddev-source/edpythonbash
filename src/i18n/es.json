@@ -42,7 +42,16 @@
     "streak": "Racha",
     "days": "días",
     "lessonsCompleted": "Lecciones completadas",
-    "of": "de"
+    "of": "de",
+    "videos": "Videos de instrucción",
+    "videosSub": "Aprende a usar la app en 3 videos generados",
+    "steps": "{{count}} pasos",
+    "apiKeyTitle": "Conecta tu API key",
+    "apiKeyDesc": "Usa el tutor IA con tu clave gratuita de OpenRouter.",
+    "apiKeySetup": "Configurar clave",
+    "apiKeyConnected": "Clave conectada",
+    "mindmapPreview": "Explora las 174 lecciones en el mapa",
+    "openMindmap": "Abrir mapa mental"
   },
   "lesson": {
     "title": "Lección",
