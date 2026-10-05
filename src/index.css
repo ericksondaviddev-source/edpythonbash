@@ -1,35 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #FFF8E7;
-  --bg-secondary: #FFF3D6;
-  --bg-tertiary: #FFE8C2;
+  --bg-primary: #FDFBF3;
+  --bg-secondary: #F5F1E3;
+  --bg-tertiary: #EAE4D0;
   --text-primary: #1A1A2E;
   --text-secondary: #4A4A68;
-  --accent: #FF6B35;
-  --accent-hover: #E55A2B;
+  --accent: #F7D117;
+  --accent-hover: #E5C211;
+  --accent-ink: #1A1A2E;
+  --accent-2: #0033AB;
+  --accent-2-hover: #002A8C;
+  --danger: #CF142B;
   --success: #2ECC71;
-  --error: #E74C3C;
+  --error: #CF142B;
   --warning: #F39C12;
   --code-bg: #1E1E2E;
   --code-text: #CDD6F4;
-  --border: #E0D5C1;
+  --border: #DCD2B8;
+  --surface-glass: rgba(255, 255, 255, 0.55);
+  --border-glass: rgba(26, 26, 46, 0.12);
+  --grad-solar: linear-gradient(135deg, #F7D117, #FF6B35);
+  --grad-tricolor: linear-gradient(180deg, #F7D117 0 33%, #0033AB 33% 66%, #CF142B 66% 100%);
+  --ring: 0 0 0 3px rgba(247, 209, 23, 0.35);
 }
 
 [data-theme="dark"] {
-  --bg-primary: #0D1117;
-  --bg-secondary: #161B22;
-  --bg-tertiary: #21262D;
-  --text-primary: #E6EDF3;
-  --text-secondary: #8B949E;
-  --accent: #FF6B35;
-  --accent-hover: #FF8C5A;
+  --bg-primary: #0B1F17;
+  --bg-secondary: #12241C;
+  --bg-tertiary: #1B3227;
+  --text-primary: #EAF3EC;
+  --text-secondary: #9DB3A8;
+  --accent: #F7D117;
+  --accent-hover: #FFDE4D;
+  --accent-ink: #1A1A2E;
+  --accent-2: #7DA2FF;
+  --accent-2-hover: #9DB9FF;
+  --danger: #FF6B7A;
   --success: #3FB950;
-  --error: #F85149;
+  --error: #FF6B7A;
   --warning: #D29922;
   --code-bg: #1E1E2E;
   --code-text: #CDD6F4;
-  --border: #30363D;
+  --border: #2A4436;
+  --surface-glass: rgba(18, 36, 28, 0.55);
+  --border-glass: rgba(234, 243, 236, 0.14);
+  --grad-solar: linear-gradient(135deg, #F7D117, #FF8C42);
+  --grad-tricolor: linear-gradient(180deg, #F7D117 0 33%, #7DA2FF 33% 66%, #FF6B7A 66% 100%);
+  --ring: 0 0 0 3px rgba(247, 209, 23, 0.3);
 }
 
 body {
@@ -127,4 +145,26 @@ button, a, input, textarea, select {
     font-size: 11px;
     min-width: 120px;
   }
+}
+
+/* Solarpunk utilities */
+.glass {
+  background: var(--surface-glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-glass);
+}
+
+.inti-rays {
+  background-image: repeating-conic-gradient(from 0deg, rgba(247, 209, 23, 0.07) 0deg 6deg, transparent 6deg 12deg);
+}
+
+.badge-double {
+  border: 1px solid var(--border-glass);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tricolor-bar {
+  background: var(--grad-tricolor);
 }
