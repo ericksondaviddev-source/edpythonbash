@@ -1,29 +1,59 @@
+const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
+const PYODIDE_SCRIPT = `${PYODIDE_URL}pyodide.js`
+
+type LoadPyodideFn = (opts: { indexURL: string }) => Promise<unknown>
+
+function getLoadPyodide(): LoadPyodideFn | undefined {
+  const g = globalThis as unknown as { loadPyodide?: LoadPyodideFn }
+  return typeof g.loadPyodide === 'function' ? g.loadPyodide : undefined
+}
+
+let scriptPromise: Promise<void> | null = null
+let scriptEl: HTMLScriptElement | null = null
+
+/** Inyecta pyodide.js del CDN si aún no está cargado (primera ejecución). */
+function ensurePyodideScript(): Promise<void> {
+  if (getLoadPyodide()) return Promise.resolve()
+  if (!scriptPromise || !scriptEl?.isConnected) {
+    scriptPromise = new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = PYODIDE_SCRIPT
+      script.async = true
+      scriptEl = script
+      script.onload = () => resolve()
+      script.onerror = () => {
+        scriptPromise = null
+        scriptEl = null
+        script.remove()
+        reject(new Error(`No se pudo descargar ${PYODIDE_SCRIPT}`))
+      }
+      document.head.appendChild(script)
+    })
+  }
+  return scriptPromise
+}
+
 class PyodideRunner {
   private pyodide: any = null
-  private isLoading = false
+  private initPromise: Promise<void> | null = null
 
   async init() {
     if (this.pyodide) return
-    if (this.isLoading) {
-      while (this.isLoading) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-      return
-    }
-
-    this.isLoading = true
-
-    try {
-      // @ts-ignore
-      this.pyodide = await loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
+    if (!this.initPromise) {
+      this.initPromise = (async () => {
+        await ensurePyodideScript()
+        const loadPyodide = getLoadPyodide()
+        if (!loadPyodide) {
+          throw new Error('pyodide.js cargó pero no expuso loadPyodide')
+        }
+        this.pyodide = await loadPyodide({ indexURL: PYODIDE_URL })
+      })().catch((error) => {
+        this.initPromise = null
+        console.error('Failed to load Pyodide:', error)
+        throw new Error('No se pudo cargar Pyodide. Verifica tu conexión.')
       })
-    } catch (error) {
-      console.error('Failed to load Pyodide:', error)
-      throw new Error('No se pudo cargar Pyodide. Verifica tu conexión.')
-    } finally {
-      this.isLoading = false
     }
+    await this.initPromise
   }
 
   async run(code: string): Promise<string> {

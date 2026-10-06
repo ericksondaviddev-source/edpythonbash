@@ -11,7 +11,20 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // Pyodide se descarga una vez del CDN y se cachea (offline-first)
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/pyodide\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'pyodide-cache',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          }
+        ]
       },
       manifest: {
         name: 'ED-python/bash',
