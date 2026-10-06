@@ -114,13 +114,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Convertir la landing en PWA instalable en tu teléfono",
-    "modelo_mental": "El manifest no es decoración: es el formulario que el navegador evalúa para decidir si tu app es instalable. Chrome exige condiciones mínimas duras: name o short_name, íconos de al menos 192x192 y 512x512 en PNG, start_url, y display en standalone/fullscreen/minimal-ui. Si omites el ícono de 512, no hay instalación. Si pones display: browser, no hay instalación. Es una lista de verificación, no una sugerencia.",
+    "modelo_mental": "El manifest PWA funciona como el pasaporte digital de una aplicación web: el navegador lo lee y decide si puede transformar esa página en una “app” instalable. Es similar a un documento de identidad que contiene datos obligatorios (​n​ase, ​in​icones,​display​) y permisos claros; si falta alguno, el navegador rechaza la instalación.\\n\\nLa lista de verificación es estricta: Chrome exige al menos un ícono de 192×192 px (idealmente 512×528 px), la propiedad `display` debe estar presente para evitar el modo *browser*, y el campo `background_color` evita pantallas blancas en el splash. Omitiendo cualquiera de estos requisitos, la PWA queda visible como una simple página web y el usuario no puede instalarla, lo que impide la experiencia de “a’app” nativa.",
     "codigo_roto": "{\n  \"name\": \"Mi App de Aprendizaje\",\n  \"start_url\": \"index.html\",\n  \"icons\": [\n    {\n      \"src\": \"icon.png\",\n      \"sizes\": \"64x64\"\n    }\n  ]\n}",
-    "diagnostico": "Múltiples fallos de instalabilidad: (1) solo hay un ícono de 64x64, Chrome exige mínimo 192x192 y preferiblemente 512x512; (2) falta la propiedad display, sin la cual el navegador asume 'browser' y la app se abrirá en una pestaña normal; (3) falta background_color, causando un pantallazo blanco feo durante el splash screen; (4) start_url usa ruta relativa 'index.html' en vez de '/', lo que rompe el scope; (5) no declara el type de los íconos.",
+    "diagnostico": "1. Solo existe un ícono de 64×06 px; Chrome requiere un ícono mínimo de 192×192 px (y preferentemente 512×528 px) porque el sistema necesita una imagen representativa para el splash y para que la app parezca una verdadera aplicación. Sin el tamaño adecuado, el navegador descarta el manifest y no permite la instalación.\\n\\n2. La propiedad `display` está ausente. Al no declararse, el navegador asume el valor por defecto `browser`, lo que hace que la PWA se abra en una pestaña normal en lugar de como ventana independiente. Esto impide que el usuario pueda instalarla como app.\\n\\n3. Falta `background_color`, lo que provoca un splash blanco feo. Cuando el manifest no especifica un fondo, Chrome utiliza el color por defecto (blanco) antes de cargar contenido, generando una pantalla vacía durante el arranque. Añadir un color define claramente el área de visualización.",
     "codigo_corregido": "{\n  \"name\": \"Mi App de Aprendizaje\",\n  \"short_name\": \"MiApp\",\n  \"start_url\": \"/\",\n  \"display\": \"standalone\",\n  \"background_color\": \"#0f172a\",\n  \"theme_color\": \"#0f172a\",\n  \"icons\": [\n    {\n      \"src\": \"/icons/icon-192.png\",\n      \"sizes\": \"192x192\",\n      \"type\": \"image/png\"\n    },\n    {\n      \"src\": \"/icons/icon-512.png\",\n      \"sizes\": \"512x512\",\n      \"type\": \"image/png\"\n    }\n  ]\n}",
     "codigo_optimizado": "{\n  \"name\": \"Mi App de Aprendizaje Python y Bash\",\n  \"short_name\": \"PyBash\",\n  \"description\": \"Aprende a leer, corregir y optimizar código desde tu teléfono\",\n  \"start_url\": \"/?source=pwa\",\n  \"scope\": \"/\",\n  \"display\": \"standalone\",\n  \"orientation\": \"portrait\",\n  \"background_color\": \"#0f172a\",\n  \"theme_color\": \"#0f172a\",\n  \"lang\": \"es\",\n  \"categories\": [\"education\", \"productivity\"],\n  \"icons\": [\n    { \"src\": \"/icons/icon-72.png\", \"sizes\": \"72x72\", \"type\": \"image/png\" },\n    { \"src\": \"/icons/icon-96.png\", \"sizes\": \"96x96\", \"type\": \"image/png\" },\n    { \"src\": \"/icons/icon-128.png\", \"sizes\": \"128x128\", \"type\": \"image/png\" },\n    { \"src\": \"/icons/icon-144.png\", \"sizes\": \"144x144\", \"type\": \"image/png\" },\n    { \"src\": \"/icons/icon-192.png\", \"sizes\": \"192x192\", \"type\": \"image/png\" },\n    { \"src\": \"/icons/icon-512.png\", \"sizes\": \"512x512\", \"type\": \"image/png\" },\n    {\n      \"src\": \"/icons/icon-maskable-512.png\",\n      \"sizes\": \"512x512\",\n      \"type\": \"image/png\",\n      \"purpose\": \"maskable\"\n    }\n  ],\n  \"shortcuts\": [\n    {\n      \"name\": \"Continuar aprendiendo\",\n      \"short_name\": \"Seguir\",\n      \"url\": \"/modulos?pinned=true\",\n      \"icons\": [{ \"src\": \"/icons/shortcut-96.png\", \"sizes\": \"96x96\" }]\n    }\n  ]\n}",
     "disenso_experto": "El debate sobre 'purpose: maskable' es real. Los íconos maskable están diseñados con un área segura central para que Android los recorte en círculos o squircles sin cortar el logo. Muchos devs solo usan 'any' y obtienen íconos mutilados en algunos dispositivos. La práctica profesional es servir ambos: un conjunto 'any' y al menos un maskable de 512. El costo es generar un PNG extra; el beneficio es que tu app no se vea amateur en el launcher del usuario.",
-    "pregunta_transferencia": "Tu PWA instalada abre mostrando la barra de URL de Chrome en la parte superior y el usuario te dice que 'se ve como página web, no como app'. ¿Qué campo del manifest es el culpable y qué valor debería tener? ¿Qué efecto secundario tiene ese cambio en la navegación?",
+    "pregunta_transferencia": "Tu PWA instalada abre mostrando la barra de URL de Chrome en la parte superior y el usuario te dice que “sé ve como página web, no como app”.  ¿Qué campo del manifest es el culpable y qué valor debería tener?\\n\\n**Pista:** El campo que controla cómo aparece la ventana de la app en Chrome es `display`; cambiarlo a `standalone` o `minimal-ui` elimina la barra de URL y permite la instalación.",
     "quiz": {
       "pregunta": "¿Cuál es el tamaño MÍNIMO de ícono que Chrome requiere para habilitar la instalación de una PWA?",
       "opciones": [
@@ -163,6 +163,45 @@
       "iconos",
       "display",
       "standalone"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes propiedades del manifest PWA es “obiligoria” para que la aplicación sea instalable?",
+        "opciones": [
+          "A) short_name",
+          "B) name",
+          "C) startup_url",
+          "D) background_color"
+        ],
+        "correcta": "B",
+        "explicacion": "El nombre (​n​ase) es un identificador único dentro del store; Chrome exige al menos uno de los campos obligatorios (name o short_name) para registrar la app. Sin él, el manifest se considera incompleto y la instalación falla.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Veamos el fragmento de manifest roto que se proporciona.  ¿Qué línea contiene el error que hace que la pantalla de splash sea blanca?",
+        "opciones": [
+          "A) La línea con `background_color`: \"background_color\": \"white\" (incorrecto)",
+          "B) La línea con `display`: \"display\": \"standalone\" (presente pero correcto)",
+          "C) La línea con `start_url`: \"start_url\": \"/index.html\" (correcto)",
+          "D) Ninguna línea es errónea"
+        ],
+        "correcta": "A",
+        "explicacion": "El valor asignado a `background_color` es inválido o ausente; Chrome espera un hexadecímico o null. Al no especificar un fondo, usa el color predeterminado blanco, produciendo el splash vacío. Las otras líneas son correctas.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Al ejecutar la PWA desde una carpeta local y abrirla con el navegador, se observa una pantalla blanca al cargar el splash.  ¿Qué ajuste en el manifest corrigirá este problema?",
+        "opciones": [
+          "A) Agregar `\"background_color\": \"#000000\"` al objeto",
+          "B) Cambiar `\"display\"` a `\"fullscreen\"`",
+          "C) Eliminar la propiedad `\"icons\"`",
+          "D) Modificar `\"start_url\"` a `\"https://example.com\""
+        ],
+        "correcta": "A",
+        "explicacion": "El splash blanco se debe a la ausencia de `background_color`, que define el color de fondo del splash. Al establecer un color (por ejemplo, negro), el navegador muestra una superficie coherente y el usuario percibe la app como una aplicación real. Los otros cambios afectarían el modo de visualización o la URL, pero no eliminarían el color por defecto.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
@@ -437,7 +476,57 @@
       "service-worker",
       "navegacion"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Cuál es el propósito principal de usar event.waitUntil en un controlador de evento del Service Worker",
+        "opciones": [
+          "Asegurar que el evento perdure hasta que la promesa resuelta finalice",
+          "Cerrar el evento inmediatamente",
+          "Saltarse el almacenamiento en caché",
+          "Eliminar cachés antiguas"
+        ],
+        "correcta": "A",
+        "explicacion": "event.waitUntil indica al Service Worker que mantenga el evento activo hasta que la promesa que recibe se resuelva, evitando que el worker se termine antes de que la respuesta esté lista.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Qué hace el siguiente controlador fetch?",
+        "opciones": [
+          "Siempre sirve desde caché",
+          "Intenta la caché; si falla, obtiene de red y guarda en caché",
+          "Ignora la caché y solo obtiene de red",
+          "Elimina la caché después de cada solicitud"
+        ],
+        "correcta": "B",
+        "explicacion": "El código abre un caché, intenta hacer coincidir la solicitud; si hay una respuesta, la devuelve. Si no, realiza una solicitud a la red, clona y guarda la respuesta en caché, y devuelve la respuesta de red. Esto implementa una estrategia de red-con-falla.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el siguiente controlador fetch roto, qué linea causa la falta de soporte offline?",
+        "opciones": [
+          "self.addEventListener('fetch', (event) => {",
+          "event.respondWith(fetch(event.request));",
+          "La palabra clave 'fetch'",
+          "La falta de event.waitUntil"
+        ],
+        "correcta": "B",
+        "explicacion": "La línea event.respondWith(fetch(event.request)) simplemente reenvía cada solicitud sin comprobar caches.match primero, por lo que no hay respuesta almacenada en caché cuando el usuario está sin conexión.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Qué se imprime en la consola con este fragmento de código?",
+        "opciones": [
+          "'cached' luego 'after'",
+          "'after' luego 'cached'",
+          "Nada",
+          "Error"
+        ],
+        "correcta": "A",
+        "explicacion": "La promesa se resuelve con 'cached'. El manejador .then imprime ese valor, luego el console.log('after') se ejecuta después. Por lo tanto, la salida es 'cached' seguida de 'after'.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "F0.3-006",
@@ -496,7 +585,57 @@
       "versionado",
       "deploy"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Qué propósito tiene el evento 'activate' del Service Worker",
+        "opciones": [
+          "Saltar waiting y volverse activo",
+          "Eliminar cachés desactualizadas",
+          "Precachear recursos",
+          "Escuchar cambios de red"
+        ],
+        "correcta": "B",
+        "explicacion": "El evento activate se ejecuta después de que el worker está activo. Es el lugar adecuado para limpiar cachés antiguas que ya no se necesitan, asegurando que solo las cachés versionadas permanezcan.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Qué cachés permanecen después de que el controlador activate elimine las no versionadas?",
+        "opciones": [
+          "Todas las cachés",
+          "Solo 'app-cache-v2'",
+          "Ninguna",
+          "Solo 'app-cache'"
+        ],
+        "correcta": "B",
+        "explicacion": "El controlador activate conserva solo la caché cuyo nombre termina con '-v2' (app-cache-v2) y elimina todas las demás, dejando esa sola caché.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código roto proporcionado, qué es el principal problema de control de versiones?",
+        "opciones": [
+          "Falta controlador fetch",
+          "Nombre de caché no versionado",
+          "Uso incorrecto de event.waitUntil",
+          "No hay evento activate"
+        ],
+        "correcta": "B",
+        "explicacion": "El install abre 'app-cache' con un nombre fijo, por lo que las actualizaciones posteriores no pueden distinguir entre versiones antiguas y nuevas. Se necesita un nombre versionado (ej. 'app-cache-v2') y un evento activate para limpiar las versiones anteriores.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Qué se imprime en la consola cuando el SW se activa con este controlador?",
+        "opciones": [
+          "'Cache keys: []'",
+          "'Cache keys: [\"app-cache\"]'",
+          "'Cache keys: [\"app-cache-v2\"]'",
+          "Error"
+        ],
+        "correcta": "C",
+        "explicacion": "caches.keys() devuelve un array con los nombres de todas las cachés abiertas. Como solo tenemos 'app-cache-v2' después de la actualización, la consola muestra ese éxito.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "F0.3-007",

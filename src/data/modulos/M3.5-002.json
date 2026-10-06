@@ -313,6 +313,44 @@
       "samesite",
       "owasp"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué es un ataque CSRF?",
+        "opciones": [
+          "Un ataque donde se envían solicitudes no autorizadas en nombre del usuario autenticado.",
+          "Un ataque donde se intercepta el tráfico de red para robar datos.",
+          "Un ataque donde se corrompe la base de datos mediante inyección SQL.",
+          "Un ataque donde se instala malware en el navegador del usuario."
+        ],
+        "correcta": "A",
+        "explicacion": "La respuesta correcta es A porque CSRF (Cross-Site Request Forgery) se define como el envío de solicitudes no autorizadas utilizando la sessión del usuario, aprovechando que el navegador envía cookies automáticamente. Las opciones B, C y D son incorrectas porque describen otros tipos de ataques: B es una interceptación de red, C es inyección SQL, y D es malware, ninguno de los cuales se relacionan directamente con la naturaleza de CSRF.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué se debe agregar al código para prevenir un ataque CSRF?",
+        "opciones": [
+          "Usar solo protocolo HTTP sin HTTPS.",
+          "Deshabilitar las cookies en el navegador del usuario.",
+          "Verificar un token CSRF único en cada solicitud POST.",
+          "Cambiar el método de la ruta a GET para las transferencias."
+        ],
+        "correcta": "C",
+        "explicacion": "La respuesta correcta es C porque la verificación de un token CSRF único por sessión es el mecanismo estándar para prevenir ataques CSRF, asegurando que la solicitud provenga de un formulario legítimo. Las opciones A, B y D son incorrectas: A no mejora la seguridad, B es inviable y afecta la funcionalidad, y D cambia el método pero no resuelve el problema subyacente, ya que GET también puede ser vulnerable si no se implementan otras medidas.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué causa el error de seguridad en el código proporcionado?",
+        "opciones": [
+          "No se utiliza un secreto fuerte para la sessión.",
+          "No se usa HTTPS para cifrar la comunicación.",
+          "No se validan las entradas del usuario para inyecciones.",
+          "No se verifica el token CSRF antes de procesar la transferencia."
+        ],
+        "correcta": "D",
+        "explicacion": "La respuesta correcta es D porque el código tiene un bug explícito: no verifica el token CSRF, como se indica en los comentarios, lo que permite que un sitio malicioso envíe formularios que se procesan con la sessión del usuario. Las opciones A, B y C son incorrectas porque, aunque son buenas prácticas de seguridad, no son la causa principal del error de CSRF en este contexto; A se refiere a la gestión de secretos, B a la cifrado de comunicación, y C a la validación de datos, pero la vulnerabilidad específica es la falta de token CSRF.",
+        "tipo": "debugging"
+      }
+    ]
   }
 ]
