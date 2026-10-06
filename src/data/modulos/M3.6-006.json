@@ -862,7 +862,57 @@
       "refactoring",
       "code-quality"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "La clase Application contiene métodos para gestionar usuarios, procesar pagos, enviar correos, generar reports y manejar autenticación. ¿Qué principio de diseño se viola al colocar todas estas responsabilidades en una sola clase?",
+        "opciones": [
+          "Se sigue el patrón Singleton para optimizar el acceso global a la instancia.",
+          "Viola el Principio de Responsabilidad Única (SRP), creando un God Object.",
+          "Es una implementación eficiente de un patrón Factory para crear diferentes tipos de usuarios.",
+          "Permite reutilizar el código fácilmente sin necesidad de dependencias externas."
+        ],
+        "correcta": "B",
+        "explicacion": "Un God Object es una clase que acumula demasiadas responsabilidades, lo que dificulta su pruebas, mantenimiento y extensión. El SRP establece que una clase debe tener una única razón para cambiar, es decir, una única responsabilidad clara.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "El antípatrón 'Golden Hammer' sugiere usar JSON para todos los datos (config, logs, templates, cache). ¿Por qué es inadecuado utilizar JSON para almacenar los archivos de logs y las plantillas según el código roto?",
+        "opciones": [
+          "JSON permite serializar fácilmente cualquier tipo de dato estructurado necesario en el sistema.",
+          "Los archivos logs en JSON permiten consultas eficientes con herramientas como jq, facilitando el monitoreo en tiempo real.",
+          "JSON es un formato inmutable que evita corrupciones de datos durante la escritura en producción, lo cual es ideal para logs.",
+          "El uso de JSON reduce significativamente el tamaño del binario de la aplicación al comprimir solo los datos necesarios."
+        ],
+        "correcta": "C",
+        "explicacion": "JSON es apropiado para configuración estática, pero inadecuado para logs (que requieren append-only y manejo de flujos continuos) y plantillas (que suelen contener HTML con estructura específica). Usar JSON para estos casos rompe la eficiencia y la integridad del sistema de observabilidad.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "La función get_data utiliza un threading.Lock. ¿Cuál es el impacto de este bloque si la aplicación no experimenta concurrencia real?",
+        "opciones": [
+          "Previene que múltiples hilos accedan simultáneamente al recurso compartido, garantizando la seguridad de la aplicación.",
+          "Introduce una sobrecarga (overhead) de sincronización que ralentiza el acceso al recurso, aunque no exista concurrencia real.",
+          "Evita que la función falle si la red cae, ya que el lock retiene el control del recurso hasta que se libere.",
+          "Es necesario para asegurar que solo un hilo pueda leer los logs al mismo tiempo, independientemente del entorno."
+        ],
+        "correcta": "B",
+        "explicacion": "El uso de un lock en una aplicación que no es multihilo introduce ruido y penalizaciones de rendimiento innecesarias, ya que el mecanismo de sincronización no ofrece protección donde no existe riesgo de concurrencia.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Las funciones legacy_export_v1, v2 y v3 están implementadas pero nunca se utilizan. ¿Cómo se clasifica este patrón de diseño desde el punto de vista del mantenimiento?",
+        "opciones": [
+          "Es una práctica recomendada de herencia que conserva la historia técnica del software.",
+          "Representa el antípatrón 'Lava Flow', donde código obsoleto permanece sin borrar por falta de conocimiento de su uso.",
+          "Permite reducir drásticamente la complejidad del sistema eliminando lógicas redundantes.",
+          "Garantiza un rendimiento óptimo al evitar la ejecución de código muerto."
+        ],
+        "correcta": "B",
+        "explicacion": "El antípatrón Lava Flow ocurre cuando se deja código obsoleto en el repositorio sin eliminarlo, aumentando la carga cognitiva para los desarrolladores futuros y complicando la refactorización. Aunque técnicamente el código existe, su ausencia de uso lo convierte en una carga negativa.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.6-014",
