@@ -62,7 +62,57 @@
       "unix",
       "linux"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué ocurre si $SOURCE contiene espacios y no está entrecomillado en el comando tar?",
+        "opciones": [
+          "tar crea el backup correctamente",
+          "Error de sintaxis en Bash",
+          "Word splitting rompe las rutas con espacios",
+          "El backup se crea en /tmp"
+        ],
+        "correcta": "C",
+        "explicacion": "Sin comillas, Bash realiza word splitting sobre $SOURCE, dividiendo 'mi archivo.txt' en dos argumentos 'mi' y 'archivo.txt', causando que tar falle o archive archivos incorrectos.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Si el comando tar falla, ¿qué código de salida retorna el script?",
+        "opciones": [
+          "0 - El script siempre reporta éxito",
+          "1",
+          "2",
+          "El código de salida de tar"
+        ],
+        "correcta": "A",
+        "explicacion": "El script no verifica el estado de tar. Siempre ejecuta echo y termina con 0 (éxito) por defecto, ocultando el fallo real.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es el propósito principal de `set -e` al inicio de un script Bash?",
+        "opciones": [
+          "Activar traza de depuración",
+          "Salir inmediatamente si algún comando falla",
+          "Establecer variable de error",
+          "Activar globbing extendido"
+        ],
+        "correcta": "B",
+        "explicacion": "set -e hace que el shell salga inmediatamente si cualquier comando retorna estado distinto de cero, previniendo fallos silenciosos.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Por qué el script reporta 'Backup completado' incluso cuando tar falla?",
+        "opciones": [
+          "set -e está activivo",
+          "Las variables están correctamente entrecomilladas",
+          "tar verifica su propia integridad",
+          "No hay validación del código de salida después de tar"
+        ],
+        "correcta": "D",
+        "explicacion": "El script no verifica si tar tuvo éxito (mediante $? u operador ||), por lo que siempre imprime éxito independientemente del resultado real.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M3.7-002",
@@ -71,13 +121,13 @@
     "nivel": "intermedio",
     "fase": 3,
     "microproyecto": "Pipeline de deployment automatizado con Bash + Python",
-    "modelo_mental": "La filosofía Unix: 'escribe programas que hagan una cosa bien, que trabajen juntos, y que trabajen con streams de texto'. Los pipes (`|`) conectan stdout de un comando con stdin del siguiente. Los redirects (`>`, `>>`, `2>`) controlan a dónde va la salida. Juntos forman pipelines que transforman datos sin archivos intermedios. Los comandos Unix son filtros: reciben texto por stdin, producen texto por stdout. Esta composición es más poderosa que cualquier framework.",
+    "modelo_mental": "La **filosofía Unix** anima a escribir programas pequeños y especializados que **procesan flujos de texto** y se componen mediante pipes (`|`), en lugar de manipular archivos directamente. Un pipeline como `grep \"ERROR\" /var/log/app.log | cut -d' ' -f1,2 | wc -l` encadena filtros: cada comando recibe la salida del anterior como su entrada estándar y escribe el resultado en la salida estándar, permitiendo un procesamiento **en streaming** y sin necesidad de archivos temporales. Esta composición aprovecha el diseño modular del sistema operativo, permitiendo reutilizar herramientas probadas y lograr un alto rendimiento con un solo fork por filtro.\n\nEl enfoque de pipeline **evita muchos errores comunes** en scripts de Bash: elimina la necesidad de bucles `while read`, reduce drásticamente el número de procesos (evitando el sobrecosto de crear millones de procesos para archivos grandes), y elimina la necesidad de variables manuales para acumular resultados. Al delegar la transformación de datos a filtros especializados, se reduce la complejidad, se mejora la legibilidad y se obtiene un script más rápido y robusto que escala bien con el tamaño de los datos.",
     "codigo_roto": "#!/bin/bash\n# Procesamiento de logs SIN usar la filosofía Unix\n\n# Lee archivo, procesa línea por línea en un bucle\nwhile IFS= read -r line; do\n    # Filtra líneas con ERROR\n    if echo \"$line\" | grep -q \"ERROR\"; then\n        # Extrae timestamp con cut\n        timestamp=$(echo \"$line\" | cut -d' ' -f1,2)\n        # Extrae mensaje\n        message=$(echo \"$line\" | cut -d']' -f2-)\n        # Cuenta\n        ((count++))\n    fi\ndone < /var/log/app.log\n\necho \"Total errores: $count\"\n\n# Problema: bucle + 3 forks por línea = lento para archivos grandes\n# Solución: un solo pipeline de comandos Unix",
-    "diagnostico": "El código procesa cada línea del log con un bucle while que hace 3 forks (grep, cut, cut) por línea. Para un log de 1 millón de líneas, esto son 3 millones de forks. La solución Unix es un pipeline de filtros: grep para filtrar, cut para extraer, wc para contar. Un solo fork por filtro, procesamiento en streaming.",
+    "diagnostico": "1. **Bucle while read con múltiples forks** – El script lee el archivo línea por línea y, para cada línea, ejecuta tres comandos separados (`grep`, `cut`, `cut`). Para un archivo grande, esto crea millones de procesos, lo que resulta en un grave problema de rendimiento. Bash lanza el error de \"exceso de procesos\" y el script se vuelve extremadamente lento.\n\n2. **Uso innecesario de `grep -q` y pipes** – `grep -q` silencia la salida, pero luego la línea se vuelve a enviar a `cut` a través de un pipe, lo que obliga a Bash a crear un proceso adicional por línea. El patrón general es \"filtrar y luego procesar en el mismo bucle\", lo que va en contra del principio Unix de hacer todo en un solo pipeline.\n\n3. **Variable `count` no inicializada** – `((count++))` intenta incrementar una variable que nunca se ha establecido, lo que resulta en un error de \"referencia de variable no definida\" en Bash. El patrón es olvidar inicializar acumuladores antes de usarlos en un bucle.\n\n4. **Extensión de corte incorrecta** – `cut -d']' -f2-` asume que el mensaje sigue a un carácter ']' de apertura, pero el formato real del log puede tener un '[' de apertura. Este desajuste sintáctico hace que el corte extraiga texto incorrecto o falle con un error de \"delimitador no encontrado\". El error refleja un análisis de cadena rígido sin validación robusta.",
     "codigo_corregido": "#!/bin/bash\nset -euo pipefail\n\n# Pipeline Unix: un solo comando por filtro, streaming total\nERROR_COUNT=$(grep \"ERROR\" /var/log/app.log | wc -l)\necho \"Total errores: $ERROR_COUNT\"\n\n# Pipeline más complejo: extraer, transformar, contar\ngrep \"ERROR\" /var/log/app.log \\\n  | cut -d']' -f2- \\\n  | sed 's/^[[:space:]]*//' \\\n  | sort \\\n  | uniq -c \\\n  | sort -rn \\\n  | head -10\n# → Top 10 errores más frecuentes, ordenados por frecuencia",
     "codigo_optimizado": "# ========================================================================\n#  PIPES, REDIRECTS Y LA FILOSOFÍA UNIX\n# ========================================================================\n#\n# \"Write programs that do one thing and do it well.\n#  Write programs to work together.\n#  Write programs to handle text streams, because that is a universal interface.\"\n#  - Doug McIlroy (inventor de Unix pipes)\n#\n# FLUJO DE DATOS:\n#   comando1 → stdout → stdin → comando2 → stdout → stdin → comando3\n#\n# Cada comando es un FILTRO: recibe texto, produce texto.\n\n# ========================================================================\n#  PIPES (|)\n# ========================================================================\n# Conecta stdout de un comando con stdin del siguiente\n\n# Encontrar los 10 procesos que más memoria consumen\nps aux | sort -k4 -rn | head -10\n#   ps aux → lista procesos\n#   sort -k4 -rn → ordena por columna 4 (memoria) reverso numérico\n#   head -10 → toma los primeros 10\n\n# Contar archivos por extensión\nfind . -type f | awk -F. '{print $NF}' | sort | uniq -c | sort -rn\n#   find → encuentra archivos\n#   awk -F. '{print $NF}' → extrae extensión (último campo tras .)\n#   sort | uniq -c → cuenta ocurrencias\n#   sort -rn → ordena por frecuencia descendente\n\n# Top 20 IPs que más acceden a un log de web\ngrep -oE '\\b([0-9]{1,3}\\.){3}[0-9]{1,3}\\b' /var/log/nginx/access.log \\\n  | sort | uniq -c | sort -rn | head -20\n\n# ========================================================================\n#  REDIRECTS\n# ========================================================================\n# Controlan a dónde va stdout y stderr\n\n# stdout → archivo (sobrescribe)\nls -la > archivos.txt\n\n# stdout → archivo (append)\necho \"nueva línea\" >> log.txt\n\n# stderr → archivo\ncomando 2> errores.txt\n\n# stdout Y stderr → mismo archivo\ncomando > todo.txt 2>&1\n# O en Bash moderno:\ncomando &> todo.txt\n\n# stderr → stdout (para pipes)\ncomando 2>&1 | grep \"error\"\n\n# stdout → /dev/null (descartar)\ncomando > /dev/null\n\n# stderr → /dev/null (descartar errores)\ncomando 2> /dev/null\n\n# stdin desde archivo (en vez de teclado)\ncomando < input.txt\n\n# Here document (input multi-línea inline)\ncat <<EOF > config.txt\nusuario = admin\npassword = secret\npuerto = 8080\nEOF\n\n# ========================================================================\n#  TEE: DIVIDIR EL STREAM\n# ========================================================================\n# tee envía la salida a un archivo Y a stdout simultáneamente\n\n# Ver en pantalla Y guardar en archivo\ncomando | tee log.txt\n\n# Append en vez de sobrescribir\ncomando | tee -a log.txt\n\n# Ver + guardar + continuar el pipe\ncomando | tee log.txt | grep \"ERROR\"\n\n# ========================================================================\n#  PROCESOS SUSTITUCIÓN (PROCESS SUBSTITUTION)\n# ========================================================================\n# <(comando) crea un archivo temporal del output de comando\n# >(comando) crea un archivo temporal que alimenta a comando\n\n# Comparar dos comandos sin archivos intermedios\ndiff <(ls dir1) <(ls dir2)\n\n# Alimentar un comando con el output de otro\ndiff <(grep ERROR /var/log/app1.log) <(grep ERROR /var/log/app2.log)\n\n# ========================================================================\n#  XARGS: EJECUTAR COMANDOS SOBRE LÍNEAS\n# ========================================================================\n# xargs toma líneas de stdin y las pasa como argumentos a un comando\n\n# Encontrar archivos .log y borrarlos\nfind . -name \"*.log\" | xargs rm\n\n# Con -I para reemplazar placeholder\nfind . -name \"*.log\" | xargs -I {} sh -c 'echo \"Borrando {}\" && rm \"{}\"'\n\n# Limitar número de argumentos por ejecución (evita \"argument list too long\")\nfind . -name \"*.log\" | xargs -n 100 rm\n\n# Procesar en paralelo (GNU xargs)\nfind . -name \"*.log\" | xargs -P 4 -n 1 gzip\n\n# ========================================================================\n#  EJEMPLOS DE PIPELINES REALES\n# ========================================================================\n\n# 1. Analizar uso de disco por directorio\ndu -h /* 2>/dev/null | sort -rh | head -20\n\n# 2. Encontrar puertos en uso\nss -tuln | awk 'NR>1 {print $5}' | awk -F: '{print $NF}' | sort -n | uniq\n\n# 3. Extraer todos los URLs de un HTML\ngrep -oE 'href=\"[^\"]*\"' index.html | cut -d'\"' -f2 | sort -u\n\n# 4. Contar líneas de código por lenguaje (excluyendo comments y vacías)\nfind . -name \"*.py\" -exec cat {} + \\\n  | grep -v '^\\s*#' \\\n  | grep -v '^\\s*$' \\\n  | wc -l\n\n# 5. Monitorear cambios en un archivo en tiempo real\nwatch -n 2 'tail -20 /var/log/app.log | grep -E \"ERROR|WARN\" | tail -5'\n\n# 6. Procesar JSON con jq en pipeline\ncat users.json \\\n  | jq '.[] | select(.age > 18) | .email' \\\n  | sort | uniq -c | sort -rn\n\n# 7. Backup con progreso y checksums\ntar czf - /data 2>/dev/null \\\n  | tee >(md5sum > backup.md5) \\\n  | pv -s $(du -sb /data | awk '{print $1}') \\\n  > backup.tar.gz\n\n# ========================================================================\n#  COMANDOS ESENCIALES PARA PIPELINES\n# ========================================================================\n#\n# FILTRADO:\n#   grep        → busca patrones\n#   awk         → procesamiento de texto por columnas\n#   sed         → transformaciones de texto\n#   cut         → extrae columnas\n#   tr          → traduce caracteres\n#   uniq        → elimina/colapsa duplicados (requiere sort previo)\n#\n# ORDENAMIENTO Y AGRUPACIÓN:\n#   sort        → ordena líneas\n#   uniq -c     → cuenta ocurrencias\n#   head/tail   → primeras/últimas líneas\n#\n# TRANSFORMACIÓN:\n#   xargs       → ejecuta comandos sobre líneas\n#   paste       → combina archivos lado a lado\n#   column      → formatea como tabla\n#\n# CONTAR Y MEDIR:\n#   wc          → cuenta líneas, palabras, bytes\n#   wc -l       → cuenta líneas\n#\n# BÚSQUEDA:\n#   find        → busca archivos\n#   locate      → búsqueda rápida (usa índice)\n#\n# PROCESOS:\n#   ps          → lista procesos\n#   top/htop    → monitoreo interactivo\n#   kill        → termina procesos\n#\n# RED:\n#   curl/wget   → HTTP requests\n#   nc (netcat) → TCP/UDP raw\n#   ss/netstat  → sockets\n#\n# DISCO:\n#   df          → uso de disco\n#   du          → tamaño de directorios\n#   ls          → lista archivos\n#\n# TEXTO:\n#   cat/tac     → concatena/reversa\n#   head/tail   → primeras/últimas\n#   less/more   → paginadores\n\n# ========================================================================\n#  ANTI-PATRÓN: BUCLES EN BASH\n# ========================================================================\n# MAL: bucle para procesar líneas (lento)\n# while read -r line; do\n#     echo \"$line\" | grep ERROR | wc -l\n# done < archivo.txt\n\n# BIEN: pipeline (rápido)\ngrep ERROR archivo.txt | wc -l\n\n# Los bucles en Bash son lentos porque cada iteración hace forks.\n# Los pipelines ejecutan filtros en paralelo, procesando streaming.\n\n# CUÁNDO USAR BUCLES:\n#   - Cuando necesitas lógica compleja por línea\n#   - Cuando cada iteración tiene efectos secundarios (crear archivos)\n#   - Cuando necesitas control de errores fino\n#\n# CUÁNDO USAR PIPES:\n#   - Procesamiento de texto (el 90% de los casos)\n#   - Cuando cada paso es un filtro independiente\n#   - Cuando el archivo es grande (streaming)",
     "disenso_experto": "¿Pipes o archivos intermedios? Pipes son más rápidos (sin I/O a disco) pero más difíciles de debuggear. Archivos intermedios permiten inspeccionar cada paso. Regla: usa pipes para procesamiento en producción; usa archivos intermedios durante desarrollo/debugging, luego refactoriza a pipes cuando esté validado.",
-    "pregunta_transferencia": "Necesitas encontrar los 5 errores más frecuentes en un log de 10GB. ¿Qué pipeline (grep + sed + sort + uniq + head) usas, por qué es más rápido que un bucle en Bash, y cómo lo paralelizas con xargs si tienes 8 cores?",
+    "pregunta_transferencia": "Imagina que tienes un archivo de log de 10 GB y necesitas encontrar los cinco errores más frecuentes. Escribirías un pipeline como `grep \"ERROR\" app.log | sed -E 's/[^ ]+ //;s/ .+//' | sort | uniq -c | sort -nr | head -5`. Explica por qué este pipeline es mucho más rápido que un bucle `while read` en Bash y cómo podrías paralelizar el procesamiento con `xargs` en un sistema con 8 núcleos.",
     "quiz": {
       "pregunta": "¿Qué hace `comando 2>&1 | grep ERROR`?",
       "opciones": [
@@ -131,6 +181,57 @@
       "grep",
       "sed",
       "awk"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué principio de la filosofía Unix se ilustra mejor al encadenar comandos con pipes para filtrar y transformar datos?",
+        "opciones": [
+          "A. Hacer lo más posible en un solo script",
+          "B. Escribir programas que hagan una cosa bien y que trabajen juntos",
+          "C. Evitar el uso de la entrada estándar",
+          "D. Priorizar la complejidad sobre la simplicidad"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B refleja el principio central de la filosofía Unix: cada programa debe tener una responsabilidad única y funcionar bien, y el poder surge de la composición mediante pipes. Las otras opciones contradicen el espíritu de modularidad y simplicidad que promueve el enfoque de pipeline.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el pipeline `cat access.log | grep \"404\" | cut -d' ' -f1,2 | wc -l`, ¿qué es lo que cuenta exactamente?",
+        "opciones": [
+          "A. El número total de líneas en el archivo de acceso",
+          "B. El número de líneas que contienen \"404\" en cualquier columna",
+          "C. El número de entradas de registro que generaron un código de estado 404",
+          "D. El número de direcciones IP distintas que devolvieron 404"
+        ],
+        "correcta": "C",
+        "explicacion": "El pipeline filtra las líneas que contienen \"404\", extrae los dos primeros campos (fecha y hora) y luego cuenta esas líneas filtradas. Por lo tanto, cuenta las entradas de registro que tienen un código de estado 404, no el número total de líneas ni las direcciones IP.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código roto proporcionado, ¿cuál es la causa principal del error \"referencia de variable no definida\" al ejecutar `((count++))`?",
+        "opciones": [
+          "A. `count` está declarado como un string en lugar de un número",
+          "B. `count` nunca se ha inicializado antes de ser utilizado",
+          "C. El shell no soporta el operador de incremento postfijo",
+          "D. `((...))` solo funciona dentro de una función"
+        ],
+        "correcta": "B",
+        "explicacion": "El error ocurre porque `count` nunca se ha establecido (no se le ha asignado un valor inicial). En Bash, los aritméticos $(( )) requieren que la variable exista primero; de lo contrario, se produce un error. Inicializar `count=0` al principio del script resuelve el problema.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Cuál de las siguientes opciones es una ventaja de usar un pipeline de filtros Unix en lugar de un bucle en Bash para el procesamiento de logs grandes?",
+        "opciones": [
+          "A. Mayor uso de la memoria debido a las copias adicionales de datos",
+          "B. Menor número de procesos y mejor rendimiento gracias al procesamiento en streaming",
+          "C. Necesidad de escribir más código para lograr la misma tarea",
+          "D. Mayor dependencia de los formatos de archivos temporales"
+        ],
+        "correcta": "B",
+        "explicacion": "Los pipelines crean un solo proceso por filtro y procesan los datos en streaming, lo que reduce drásticamente el sobrecosto de los procesos y mejora la velocidad en comparación con un bucle que lanza múltiples procesos por línea. Las otras opciones describen desventajas que son lo contrario de los beneficios de los pipelines.",
+        "tipo": "concepto"
+      }
     ]
   },
   {

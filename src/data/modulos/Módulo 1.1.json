@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "Python es fuertemente tipado pero dinámico: las variables no tienen tipo fijo, pero los valores sí, y Python NO hace conversiones automáticas peligrosas ('1' + 1 es error, no '11' como en JS). Todo en Python es un objeto, incluso los números y las funciones. Los tipos fundamentales (int, float, str, bool, None) son inmutables: no puedes cambiarlos, solo crear nuevos. Entender esto desde el día 1 previene el 40% de los bugs sutiles.",
+    "modelo_mental": "Python es **fuertemente tipado pero dinámico**: las variables no tienen un tipo fijo, pero los valores sí, y Python **no** hace conversiones automáticas peligrosas (`'1' + 1` genera error, no `'11'` como en JavaScript). Todo en Python es un objeto, incluso los números y las funciones. Los tipos fundamentales (`int`, `float`, `str`, `bool`, `None`) son **inmutables**: no puedes modificarlos, solo crear nuevos objetos. Entender esta distinción desde el día 1 previene el 40 % de los bugs sutiles. Esta claridad es crucial porque permite al programador anticipar y evitar errores como la suma de una cadena con un número o la interpretación errónea de valores truthy. Cuando se entiende que los tipos están ligados al objeto y no a la variable, se reduce la probabilidad de errores de tipo que aparecen de forma inesperada en tiempo de ejecución. Los errores más comunes que se previenen incluyen `TypeError` por operaciones entre tipos incompatibles, y la confusión entre strings que representan booleanos y objetos `bool`. Conocer que `bool('true')` es True pero que la variable sigue siendo una cadena ayuda a evitar falsos positivos en condiciones lógicas.",
     "codigo_roto": "# Script que procesa datos de contacto\nnombre = 'Juan'\nedad = '25'\ntelefono = 1234567890\nactivo = 'true'\n\n# Mostrar resumen\nprint('Contacto:', nombre, 'Edad:', edad + 1, 'Tel:', telefono, 'Activo:', activo)",
-    "diagnostico": "El error es TypeError en la línea del print: intentas sumar `edad` (que es el STRING '25') con 1 (int). Python NO convierte '25' a 25 automáticamente como hace JavaScript. Este es el error #1 que la IA genera cuando no se le especifican tipos: asume conversión implícita. Además, `activo = 'true'` es un string, no un booleano; `bool('true')` es True, pero `bool('false')` también es True (cualquier string no vacío es truthy).",
+    "diagnostico": "1. **Tipo de dato incorrecto al sumar**: En la línea `edad + 1` se intenta sumar la cadena `'25'` con el entero `1`. Python lanza `TypeError` porque no realiza conversiones automáticas entre tipos incompatibles; el error ocurre en tiempo de ejecución al evaluar la expresión.\n2. **Boolean como cadena**: La variable `activo = 'true'` es una cadena, no un booleano. Aunque `bool('true')` devuelve `True` (cualquier cadena no vacía es truthy), el valor real sigue siendo un string, lo que puede causar comportamientos inesperados al comparar con `True` o usar operaciones booleanas.\n3. **Patrón general de errores de tipo**: Cuando se combinan valores de tipos diferentes (por ejemplo, `str + int`, `list + str`) Python no intenta inferir conversiones implícitas como algunos lenguajes dinámicos; siempre verifica la compatibilidad de tipos y lanza una excepción clara, obligando al programador a ser explícito sobre conversiones.",
     "codigo_corregido": "# Script que procesa datos de contacto con tipos correctos\nnombre = 'Juan'\nedad = 25  # int, no string\ntelefono = '+521234567890'  # str, los teléfonos no son números (tienen +, pueden empezar con 0)\nactivo = True  # bool real, no string\n\nprint(f'Contacto: {nombre} | Edad: {edad + 1} | Tel: {telefono} | Activo: {activo}')",
     "codigo_optimizado": "from typing import TypedDict\n\nclass Contacto(TypedDict):\n    nombre: str\n    edad: int\n    telefono: str\n    activo: bool\n\ndef crear_contacto(nombre: str, edad_raw: str, tel_raw: str, activo_raw: str) -> Contacto:\n    \"\"\"Crea un contacto validando y convirtiendo tipos de entrada.\"\"\"\n    try:\n        edad = int(edad_raw)\n    except ValueError:\n        raise ValueError(f'Edad inválida: {edad_raw}')\n    \n    if not 0 <= edad <= 150:\n        raise ValueError(f'Edad fuera de rango: {edad}')\n    \n    # Normalizar booleano desde string (acepta 'true', 'True', '1', 'si')\n    activo = activo_raw.strip().lower() in ('true', '1', 'si', 'yes')\n    \n    # Teléfono como string para preservar formato\n    telefono = tel_raw.strip()\n    if not telefono.replace('+', '').replace('-', '').isdigit():\n        raise ValueError(f'Teléfono inválido: {telefono}')\n    \n    return {\n        'nombre': nombre.strip().title(),\n        'edad': edad,\n        'telefono': telefono,\n        'activo': activo\n    }\n\n# Uso\ncontacto = crear_contacto('juan perez', '25', '+52-123-456-7890', 'true')\nprint(f'{contacto[\"nombre\"]} | {contacto[\"edad\"]} años | {contacto[\"telefono\"]} | {\"✓\" if contacto[\"activo\"] else \"✗\"}')",
     "disenso_experto": "Hay dos escuelas sobre validación de tipos en Python. Escuela 1 (tradicional): 'Python es dinámico, confía en duck typing, no valides tipos'. Escuela 2 (moderna): 'usa type hints + validación en boundaries (donde entra input del usuario/API)'. La Escuela 2 ganó desde Python 3.5+ con type hints y librerías como Pydantic. Para un principiante, la regla pragmática es: **valida SIEMPRE los datos que vienen del exterior** (usuario, API, archivo), **nunca valides los internos** (entre tus propias funciones).",
-    "pregunta_transferencia": "Si `x = [1, 2, 3]` e `y = x`, y luego haces `y.append(4)`, ¿qué contiene `x`? ¿Por qué? Ahora con `a = 'hello'` y `b = a`, si haces `b += ' world'`, ¿qué contiene `a`? ¿Por qué el comportamiento es diferente?",
+    "pregunta_transferencia": "Si `x = [1, 2, 3]` e `y = x`, y luego haces `y.append(4)`, ¿qué contiene `x`? Explica por qué el comportamiento ocurre así.\nAhora con `a = 'hello'` y `b = a`, si haces `b += ' world'`, ¿qué contiene `a`? Explica la diferencia en el comportamiento.",
     "quiz": {
       "pregunta": "¿Cuál es la salida de `bool('False')` en Python?",
       "opciones": [
@@ -31,14 +31,28 @@
       "setup_code": "",
       "codigo_inicial": "def edad_proximo_anio(edad_str):\n    # Esta función está rota: no convierte tipos\n    return edad_str + 1",
       "test_code": "# Tests que tu código debe pasar\nassert edad_proximo_anio('25') == 26, 'Caso básico falla'\nassert edad_proximo_anio('0') == 1, 'Caso borde falla'\ntry:\n    edad_proximo_anio('200')\n    assert False, 'Debería lanzar ValueError para edad inválida'\nexcept ValueError:\n    pass  # Correcto\ntry:\n    edad_proximo_anio('abc')\n    assert False, 'Debería lanzar ValueError para input no numérico'\nexcept ValueError:\n    pass  # Correcto\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_return": [
-        {"caso": "edad_proximo_anio('25')", "esperado": 26},
-        {"caso": "edad_proximo_anio('0')", "esperado": 1}
+        {
+          "caso": "edad_proximo_anio('25')",
+          "esperado": 26
+        },
+        {
+          "caso": "edad_proximo_anio('0')",
+          "esperado": 1
+        }
       ],
       "asserts_exception": [
-        {"caso": "edad_proximo_anio('200')", "esperada": "ValueError"},
-        {"caso": "edad_proximo_anio('abc')", "esperada": "ValueError"}
+        {
+          "caso": "edad_proximo_anio('200')",
+          "esperada": "ValueError"
+        },
+        {
+          "caso": "edad_proximo_anio('abc')",
+          "esperada": "ValueError"
+        }
       ],
       "asserts_forbidden": [],
       "solucion": "def edad_proximo_anio(edad_str):\n    try:\n        edad = int(edad_str)\n    except (ValueError, TypeError):\n        raise ValueError(f'Edad no válida: {edad_str}')\n    if not 0 <= edad <= 150:\n        raise ValueError(f'Edad fuera de rango: {edad}')\n    return edad + 1"
@@ -46,10 +60,78 @@
     "audio_script": "Bienvenido a Python. La primera regla que debes grabar en tu cabeza: Python no convierte tipos mágicamente como lo hace JavaScript. Si tienes el string 'veinticinco' y le sumas uno, JavaScript te daría 'veinticinco1', Python te lanza un error. Esto parece molesto al principio, pero es lo que hace que los programas en Python fallen menos en producción. Segunda regla: los strings no vacíos son verdaderos. Si conviertes el string 'False' a booleano, obtienes True, porque no está vacío. Esto rompe a muchos cuando leen configs desde archivos. Tercera regla: los números de teléfono, códigos postales y documentos NO son números, son strings. Aunque parezcan dígitos, pueden tener ceros al inicio, guiones, signos más. Trátalos como texto siempre. Dominar estas tres reglas desde el día uno te ahorra horas de debugging.",
     "video_prompt": "Video de 70 segundos. Comparativa lado a lado: JavaScript vs Python procesando el mismo input '25' + 1. JS muestra '251' (concatenación) con cara triste. Python muestra TypeError en rojo con cara de aprobación. Luego muestra tabla de valores truthy/falsy en Python: 0, '', None, [], {} son falsy. Cualquier otra cosa es truthy. Incluye casos trampa: 'False', '0', [] vs [0]. Overlay: 'Python es estricto por diseño. Respeta los tipos.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 2", "Effective Python Item 1-4", "Fluent Python Cap 1"],
-      "conceptos_clave": ["tipos-de-datos", "inmutabilidad", "conversion", "truthy-falsy", "validacion"]
+      "libros_fuente": [
+        "Python Crash Course Cap 2",
+        "Effective Python Item 1-4",
+        "Fluent Python Cap 1"
+      ],
+      "conceptos_clave": [
+        "tipos-de-datos",
+        "inmutabilidad",
+        "conversion",
+        "truthy-falsy",
+        "validacion"
+      ]
     },
-    "tags_rag": ["python", "fundamentos", "tipos", "conversion", "validacion", "principiante"]
+    "tags_rag": [
+      "python",
+      "fundamentos",
+      "tipos",
+      "conversion",
+      "validacion",
+      "principiante"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones describe correctamente el tipado en Python?",
+        "opciones": [
+          "Python es tipado estáticamente y los tipos se declaran antes de usar.",
+          "Las variables pueden cambiar de tipo en tiempo de ejecución porque los valores son objetos inmutables.",
+          "Python convierte automáticamente cadenas a números en cualquier operación aritmética.",
+          "Los booleanos siempre se representan como 1 y 0 en todas las operaciones."
+        ],
+        "correcta": "B",
+        "explicacion": "B es correcta porque en Python las variables son referencias a objetos y pueden apuntar a diferentes tipos en cada asignación; los valores son inmutables, pero la referencia puede cambiar. A es falsa porque Python es dinámico, no estático. C es falsa ya que no hay conversiones automáticas entre str y numéricos. D es falsa porque los booleanos son objetos `bool`, no representaciones numéricas.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el fragmento `print('Contacto:', nombre, 'Edad:', edad + 1, 'Tel:', telefono, 'Activo:', activo)`, ¿qué tipo de error se produce?",
+        "opciones": [
+          "TypeError porque `edad` es una cadena y no se puede sumar con un entero.",
+          "SyntaxError por falta de comas entre los argumentos.",
+          "NameError porque `nombre` no está definido.",
+          "ValueError porque `telefono` no es una cadena."
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta porque `edad` es la cadena `'25'` y al intentar sumarla con `1` (int) Python lanza TypeError al no poder concatenar tipos incompatibles. B es incorrecta porque la sintaxis es válida; las comas son separadores de argumentos, no errores. C es incorrecta porque `nombre` sí está definido. D es incorrecta porque `telefono` es un entero, y el error proviene de la suma, no de un tipo de dato incorrecto en el print.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En la asignación `activo = 'true'`, ¿por qué `bool(activo)` devuelve `True`?",
+        "opciones": [
+          "Porque cualquier cadena no vacía es evaluada como True en contextos booleanos.",
+          "Porque Python convierte automáticamente la cadena 'true' a su significado lógico.",
+          "Porque la función `bool()` siempre devuelve True para cualquier valor.",
+          "Porque la asignación implícita convierte strings a booleanos."
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta ya que en Python cualquier objeto que no sea vacío (incluidas las cadenas) se considera truthy, por lo que `bool('true')` es True. B es impreciso porque la conversión no interpreta el contenido de la cadena, solo su vacuidad. C es falsa porque `bool()` devuelve False para valores falsy como `0`, `''`, `None`. D es falsa porque la asignación no realiza conversiones automáticas de tipo.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué ocurre cuando se asigna `y = x` donde `x` es una lista en Python?",
+        "opciones": [
+          "Se crea una copia profunda de la lista, modificando solo `y`.",
+          "Se crea una referencia al mismo objeto, de modo que modificar `y` afecta a `x`.",
+          "Se genera un error de asignación porque las listas no pueden copiarse.",
+          "Se crea una nueva lista con los mismos elementos pero en una zona de memoria distinta."
+        ],
+        "correcta": "B",
+        "explicacion": "B es correcta porque `y = x` enlaza ambas variables al mismo objeto de lista; cualquier mutación en `y` (por ejemplo, `append`) se refleja en `x`. A es falsa porque no se hace copia profunda. C es falsa porque la asignación es válida. D es falsa porque no se crea una nueva lista, sino una nueva referencia al mismo objeto.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M1.1-002",
@@ -83,17 +165,38 @@
       "setup_code": "from dataclasses import dataclass\n\n@dataclass\nclass Punto:\n    x: float\n    y: float",
       "codigo_inicial": "def clasificar(p):\n    match p:\n        case Punto(x=0, y=0):\n            return 'origen'\n        # Completa los casos faltantes:\n        # - eje_x: cuando y=0 pero x!=0\n        # - eje_y: cuando x=0 pero y!=0  \n        # - cuadrante: cualquier otro caso\n        case ???:\n            return ???",
       "test_code": "assert clasificar(Punto(0, 0)) == 'origen'\nassert clasificar(Punto(5, 0)) == 'eje_x'\nassert clasificar(Punto(0, -3)) == 'eje_y'\nassert clasificar(Punto(2, 3)) == 'cuadrante'\nassert clasificar(Punto(-1, -1)) == 'cuadrante'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["if "],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "if "
+      ],
       "solucion": "def clasificar(p):\n    match p:\n        case Punto(x=0, y=0):\n            return 'origen'\n        case Punto(x=x, y=0) if x != 0:\n            return 'eje_x'\n        case Punto(x=0, y=y) if y != 0:\n            return 'eje_y'\n        case Punto(x=x, y=y):\n            return 'cuadrante'"
     },
     "audio_script": "El control de flujo en Python tiene una herramienta nueva desde la versión tres punto diez que cambia todo: pattern matching. No es un switch de C con fall-through peligroso. Es una forma de descomponer estructuras. Imagina que recibes un comando de usuario como 'buscar python avanzado'. Con if clásico, haces split y luego if comando[0] igual buscar y luego reconstruyes la query. Con match, escribes case buscar coma asterisco query y automáticamente separas la primera palabra del resto. Es como desempacar una caja con un solo movimiento. Para casos simples, if y elif siguen siendo perfectos. Pero cuando estás parseando estructuras de datos, JSON de APIs, o comandos de usuario, match hace que tu código se lea como una especificación en lugar de como una receta de cocina.",
     "video_prompt": "Video de 80 segundos. Lado izquierdo: código if/elif largo parseando comandos, mostrando slicing manual. Lado derecho: código con match, declarativo y limpio. Animación de pattern matching descomponiendo una lista ['buscar', 'python', 'avanzado'] en partes nombradas. Mostrar casos con clases (Punto con x, y). Overlay: 'match = descomponer estructuras. if = evaluar booleanos'.",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 5", "Effective Python Item 7", "Fluent Python Cap 2"],
-      "conceptos_clave": ["if-elif-else", "match-case", "pattern-matching", "structural-patterns", "control-flujo"]
+      "libros_fuente": [
+        "Python Crash Course Cap 5",
+        "Effective Python Item 7",
+        "Fluent Python Cap 2"
+      ],
+      "conceptos_clave": [
+        "if-elif-else",
+        "match-case",
+        "pattern-matching",
+        "structural-patterns",
+        "control-flujo"
+      ]
     },
-    "tags_rag": ["python", "control-flujo", "if", "match", "pattern-matching", "python310"]
+    "tags_rag": [
+      "python",
+      "control-flujo",
+      "if",
+      "match",
+      "pattern-matching",
+      "python310"
+    ]
   },
   {
     "id": "M1.1-003",
@@ -127,17 +230,43 @@
       "setup_code": "",
       "codigo_inicial": "def emparejar(nombres, apellidos):\n    # Esta función falla si las listas tienen longitud diferente\n    resultado = []\n    for i in range(len(nombres)):\n        resultado.append(f'{nombres[i]} {apellidos[i]}')\n    return resultado",
       "test_code": "assert emparejar(['Ana', 'Bob'], ['García', 'Smith']) == ['Ana García', 'Bob Smith']\n# Caso crítico: longitudes diferentes\nassert emparejar(['Ana', 'Bob', 'Carlos'], ['García', 'Smith']) == ['Ana García', 'Bob Smith']\nassert emparejar(['Ana'], ['García', 'Smith', 'López']) == ['Ana García']\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["range(", "len(", "[i]"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "range(",
+        "len(",
+        "[i]"
+      ],
       "solucion": "def emparejar(nombres, apellidos):\n    return [f'{n} {a}' for n, a in zip(nombres, apellidos)]"
     },
     "audio_script": "Los bucles en Python son distintos a los de otros lenguajes, y eso es una ventaja. En C o Java, iteras por índice: for i igual a cero, i menor que largo, i más más. En Python, iteras directamente sobre los elementos: for usuario in usuarios. Es más legible y menos propenso a errores. Pero hay dos herramientas que la IA casi nunca genera pero que deberías conocer. Primera, enumerate: cuando necesitas el índice Y el valor, enumerate te los da juntos como una tupla. Segunda, zip: cuando tienes dos listas paralelas y quieres iterarlas juntas, zip las empareja automáticamente sin que tengas que tocar índices. Y hay una joya oculta: el else del bucle. Se ejecuta solo si el bucle terminó sin un break. Es perfecto para búsquedas: si lo encontraste, haces break y el else no corre. Si terminaste sin encontrarlo, el else te lo avisa. Es como si el bucle te dijera 'oye, revisé todo y no estaba'.",
     "video_prompt": "Video de 75 segundos. Animación de tres bucles. (1) range(len(x)): un dedo contando índices 0,1,2,3 y luego accediendo a la lista. (2) enumerate: un contador que avanza junto al elemento. (3) zip: dos listas que se sincronizan como engranajes, una línea conectando elementos emparejados. Al final, animación del else del bucle: si hay break, el else se apaga; si termina natural, el else se enciende. Overlay: 'Itera elementos, no índices.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 7", "Effective Python Item 8-11", "Fluent Python Cap 14"],
-      "conceptos_clave": ["bucles", "for", "while", "enumerate", "zip", "break", "continue", "else-bucle"]
+      "libros_fuente": [
+        "Python Crash Course Cap 7",
+        "Effective Python Item 8-11",
+        "Fluent Python Cap 14"
+      ],
+      "conceptos_clave": [
+        "bucles",
+        "for",
+        "while",
+        "enumerate",
+        "zip",
+        "break",
+        "continue",
+        "else-bucle"
+      ]
     },
-    "tags_rag": ["python", "bucles", "for", "enumerate", "zip", "iteracion"]
+    "tags_rag": [
+      "python",
+      "bucles",
+      "for",
+      "enumerate",
+      "zip",
+      "iteracion"
+    ]
   },
   {
     "id": "M1.1-004",
@@ -171,17 +300,39 @@
       "setup_code": "",
       "codigo_inicial": "def procesar_con_cache(valor, cache={}):\n    if valor in cache:\n        return cache[valor]\n    resultado = valor * 2\n    cache[valor] = resultado\n    return resultado",
       "test_code": "# Test crítico: cada llamada sin cache debe empezar limpia\nr1 = procesar_con_cache(5)\nassert r1 == 10\n\n# Llamada independiente\nr2 = procesar_con_cache(3)\nassert r2 == 6\n\n# Si el default mutable está roto, esto falla porque cache acumula\nimport inspect\nsig = inspect.signature(procesar_con_cache)\ndefault_cache = sig.parameters['cache'].default\nassert default_cache == {}, f'El default debería ser dict vacío nuevo, pero está contaminado: {default_cache}'\n\n# Test con cache proveído explícitamente\nmi_cache = {10: 999}\nr3 = procesar_con_cache(10, cache=mi_cache)\nassert r3 == 999, 'Debe usar el cache proveído'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def procesar_con_cache(valor, cache=None):\n    if cache is None:\n        cache = {}\n    if valor in cache:\n        return cache[valor]\n    resultado = valor * 2\n    cache[valor] = resultado\n    return resultado"
     },
     "audio_script": "Las funciones en Python son más poderosas de lo que parecen, pero tienen una trampa mortal que casi todos los principiantes pisan: los valores por defecto. Cuando defines una función con un default, ese valor se crea UNA SOLA VEZ, al definir la función, no cada vez que la llamas. Si el default es un objeto mutable como una lista o un diccionario, TODAS las llamadas comparten el mismo objeto. Entonces tu cache se contamina, tus listas acumulan datos entre llamadas, y tienes bugs que aparecen solo en producción. La solución es un patrón universal: usa None como default y crea el objeto mutable dentro de la función con un if. Segunda lección: cuando una función tiene más de tres o cuatro parámetros, deja de usar argumentos posicionales. Usa argumentos con nombre o dataclasses. El que lee tu código en seis meses, que serás tú mismo, necesita entender qué es cada valor sin mirar la firma de la función.",
     "video_prompt": "Video de 80 segundos. Animación del bug del default mutable. Se muestra la definición de la función con lista=[] y se crea UN objeto lista en memoria. Luego tres llamadas a la función: cada una agrega al MISMO objeto, mostrándolo crecer [1], [1,2], [1,2,3]. Luego el fix: default=None, y cada llamada crea una lista nueva en memoria. Comparación lado a lado. Overlay: 'Defaults mutables son compartidos. Usa None como sentinel.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 8", "Effective Python Item 20-24", "Fluent Python Cap 5"],
-      "conceptos_clave": ["funciones", "parametros", "defaults", "args", "kwargs", "type-hints", "mutable-default"]
+      "libros_fuente": [
+        "Python Crash Course Cap 8",
+        "Effective Python Item 20-24",
+        "Fluent Python Cap 5"
+      ],
+      "conceptos_clave": [
+        "funciones",
+        "parametros",
+        "defaults",
+        "args",
+        "kwargs",
+        "type-hints",
+        "mutable-default"
+      ]
     },
-    "tags_rag": ["python", "funciones", "parametros", "defaults", "args", "kwargs", "type-hints"]
+    "tags_rag": [
+      "python",
+      "funciones",
+      "parametros",
+      "defaults",
+      "args",
+      "kwargs",
+      "type-hints"
+    ]
   },
   {
     "id": "M1.1-005",
@@ -215,17 +366,39 @@
       "setup_code": "",
       "codigo_inicial": "def crear_sumadores(n):\n    '''Retorna lista de funciones: [f0(x)=x+0, f1(x)=x+1, ..., fn-1(x)=x+n-1]'''\n    funcs = []\n    for i in range(n):\n        def sumador(x):\n            return x + i\n        funcs.append(sumador)\n    return funcs",
       "test_code": "sumadores = crear_sumadores(4)\nassert sumadores[0](10) == 10, f'Falló f0: esperaba 10, dio {sumadores[0](10)}'\nassert sumadores[1](10) == 11, f'Falló f1: esperaba 11, dio {sumadores[1](10)}'\nassert sumadores[2](10) == 12, f'Falló f2: esperaba 12, dio {sumadores[2](10)}'\nassert sumadores[3](10) == 13, f'Falló f3: esperaba 13, dio {sumadores[3](10)}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def crear_sumadores(n):\n    funcs = []\n    for i in range(n):\n        def sumador(x, i=i):  # Captura el valor actual de i\n            return x + i\n        funcs.append(sumador)\n    return funcs"
     },
     "audio_script": "El scope en Python tiene cuatro niveles y se resuelven en un orden fijo: local, enclosing, global, built-in. LEGB. Memorízalo. Cuando defines una función, ella puede leer variables de todos los niveles superiores, pero si intentas reasignar una variable, Python asume que es local y crea una nueva. Eso causa el error UnboundLocalError que te va a salir mil veces: intentas leer una variable antes de asignarle, porque Python la marcó como local desde el principio. La segunda trampa es la mutación silenciosa: si pasas una lista a una función y la función le hace append, la lista original queda modificada aunque no la hayas retornado. Esto no es un bug, es diseño. Pero es peligroso si el que llama no lo sabe. La tercera trampa es el closure en bucles: cuando creas funciones dentro de un bucle, todas comparten la misma variable del bucle, que al final tiene el último valor. La solución más pythónica es usar un default argument: def funcion x coma i igual i. Ese i igual i captura el valor actual en cada iteración.",
     "video_prompt": "Video de 90 segundos. Diagrama de 4 cajas anidadas representando LEGB: Built-in (más afuera), Global, Enclosing, Local (más adentro). Una flecha muestra búsqueda desde Local hacia afuera. Animación del UnboundLocalError: variable x declarada en global, al intentar leerla en función con asignación local, aparece error. Animación del bug del bucle: 3 funciones creadas en un for i in range(3), todas apuntando a la misma 'i' que termina con valor 3. Fix: default argument i=i captura cada valor. Overlay: 'LEGB: Local-Enclosing-Global-Built-in.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 8", "Effective Python Item 21", "Fluent Python Cap 7"],
-      "conceptos_clave": ["scope", "LEGB", "global", "nonlocal", "closures", "mutabilidad", "referencias"]
+      "libros_fuente": [
+        "Python Crash Course Cap 8",
+        "Effective Python Item 21",
+        "Fluent Python Cap 7"
+      ],
+      "conceptos_clave": [
+        "scope",
+        "LEGB",
+        "global",
+        "nonlocal",
+        "closures",
+        "mutabilidad",
+        "referencias"
+      ]
     },
-    "tags_rag": ["python", "scope", "legb", "closures", "mutabilidad", "global", "nonlocal"]
+    "tags_rag": [
+      "python",
+      "scope",
+      "legb",
+      "closures",
+      "mutabilidad",
+      "global",
+      "nonlocal"
+    ]
   },
   {
     "id": "M1.1-006",
@@ -259,17 +432,40 @@
       "setup_code": "class RecursoFalso:\n    def __init__(self):\n        self.abierto = True\n    def leer(self):\n        if not self.abierto:\n            raise RuntimeError('Recurso cerrado')\n        return 'datos'\n    def cerrar(self):\n        self.abierto = False\n\ndef abrir_recurso():\n    return RecursoFalso()\n\nlog_messages = []\ndef log(msg):\n    log_messages.append(msg)",
       "codigo_inicial": "def procesar():\n    try:\n        r = abrir_recurso()\n        data = r.leer()\n        return data\n    except:\n        log('error')\n        return None\n    # Falta limpieza del recurso",
       "test_code": "# Test 1: éxito\nr1 = procesar()\nassert r1 == 'datos', f'Caso éxito: esperaba datos, dio {r1}'\nassert 'éxito' in ' '.join(log_messages).lower() or len(log_messages) == 0, 'Debe loggear éxito en else'\n\n# Test 2: verificar que finally existe (inspección del código)\nimport inspect\nsrc = inspect.getsource(procesar)\nassert 'finally' in src, 'Debe usar finally para limpieza'\nassert 'except:' not in src and 'except Exception' not in src, 'No usar bare except ni Exception genérico'\nassert 'Exception as e' not in src or 'Exception as e:' not in src, 'Capturar excepciones específicas'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["except:", "except Exception:"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "except:",
+        "except Exception:"
+      ],
       "solucion": "def procesar():\n    r = None\n    try:\n        r = abrir_recurso()\n        data = r.leer()\n    except RuntimeError as e:\n        log(f'Error de runtime: {e}')\n        return None\n    except Exception as e:\n        log(f'Error inesperado: {e}')\n        return None\n    else:\n        log('Éxito')\n        return data\n    finally:\n        if r:\n            try:\n                r.cerrar()\n            except Exception as e:\n                log(f'Error cerrando: {e}')"
     },
     "audio_script": "Las excepciones en Python son como las alarmas de incendio de un edificio. No las activas para anunciar que llegó el correo, las activas cuando hay fuego. Esa es la primera regla: las excepciones son para situaciones excepcionales. La segunda regla es la más importante y la que la IA rompe todo el tiempo: nunca uses except dos puntos a secas. Eso captura absolutamente todo, incluso cuando el usuario presiona control C para cancelar tu programa. Siempre especifica qué excepción quieres atrapar. FileNotFoundError, ValueError, TypeError. La tercera regla es el orden de los bloques. Try es el código que puede fallar. Except es cómo manejas cada tipo de error. Else se ejecuta solo si NO hubo error, perfecto para lógica de éxito. Finally se ejecuta siempre, con o sin error, y es donde cierras archivos, conexiones, liberas recursos. Si te saltas el finally, tu programa va a ir acumulando recursos abiertos hasta colapsar. Y la regla más pythónica de todas: usa with siempre que puedas, porque hace el finally automáticamente.",
     "video_prompt": "Video de 90 segundos. Analogía de un restaurante. Try: el mesero toma la orden. Except: si la cocina no tiene el platillo, ofrece alternativa. Else: si todo salió bien, trae la cuenta con postre gratis. Finally: limpiar la mesa SIEMPRE, haya habido problema o no. Mostrar los 4 bloques en código. Luego caso del bare except: el restaurante se incendia pero el mesero dice 'todo bien' y sigue atendiendo. Overlay: 'Except específico. Finally siempre. With cuando puedas.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 10", "Effective Python Item 13-15", "Fluent Python Cap 16"],
-      "conceptos_clave": ["excepciones", "try-except", "finally", "context-managers", "errores", "eafp"]
+      "libros_fuente": [
+        "Python Crash Course Cap 10",
+        "Effective Python Item 13-15",
+        "Fluent Python Cap 16"
+      ],
+      "conceptos_clave": [
+        "excepciones",
+        "try-except",
+        "finally",
+        "context-managers",
+        "errores",
+        "eafp"
+      ]
     },
-    "tags_rag": ["python", "excepciones", "try-except", "finally", "errores", "context-managers"]
+    "tags_rag": [
+      "python",
+      "excepciones",
+      "try-except",
+      "finally",
+      "errores",
+      "context-managers"
+    ]
   },
   {
     "id": "M1.1-007",
@@ -303,17 +499,41 @@
       "setup_code": "",
       "codigo_inicial": "def aplicar_descuento(producto, descuento_pct):\n    '''Aplica descuento a un producto. Retorna precio final o 'GRATIS' si es 0.'''\n    if producto['id'] is 0:  # Bug 1: is vs ==\n        return 'producto inválido'\n    \n    precio_original = producto['precio']\n    descuento = precio_original * descuento_pct\n    precio_final = precio_original - descuento\n    \n    # Bug 2: comparación exacta de float\n    if precio_final == 0:\n        return 'GRATIS'\n    \n    # Bug 3: mutación del argumento\n    producto['precio'] = precio_final\n    return round(precio_final, 2)",
       "test_code": "import math\n\n# Test 1: id 0 debe ser inválido\np1 = {'id': 0, 'precio': 100}\nassert aplicar_descuento(p1, 0.5) == 'producto inválido'\n\n# Test 2: descuento 100% debe dar GRATIS\np2 = {'id': 1, 'precio': 100.0}\nassert aplicar_descuento(p2, 1.0) == 'GRATIS', f'Esperaba GRATIS, dio {aplicar_descuento(p2, 1.0)}'\n\n# Test 3: NO debe mutar el producto original\np3 = {'id': 2, 'precio': 200.0}\nprecio_original = p3['precio']\naplicar_descuento(p3, 0.5)\nassert p3['precio'] == precio_original, f'¡El producto fue mutado! Precio original era {precio_original}, ahora es {p3[\"precio\"]}'\n\n# Test 4: id grande (300) debe funcionar sin usar is\np4 = {'id': 300, 'precio': 50}\nresultado = aplicar_descuento(p4, 0.5)\nassert resultado == 25 or math.isclose(resultado, 25, abs_tol=0.01)\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["is 0", "is None"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "is 0",
+        "is None"
+      ],
       "solucion": "import math\n\ndef aplicar_descuento(producto, descuento_pct):\n    if producto['id'] == 0:  # Fix 1: == en vez de is\n        return 'producto inválido'\n    \n    precio_original = producto['precio']\n    descuento = precio_original * descuento_pct\n    precio_final = precio_original - descuento\n    \n    # Fix 2: math.isclose para floats\n    if math.isclose(precio_final, 0, abs_tol=1e-9):\n        return 'GRATIS'\n    \n    # Fix 3: NO mutar el argumento, solo retornar\n    return round(precio_final, 2)"
     },
     "audio_script": "Hay tres bugs sutiles en Python que la IA comete todo el tiempo y que pueden costarte días de debugging. El primero: usar 'is' en vez de 'doble igual' para comparar valores. 'is' compara si dos variables apuntan al MISMO objeto en memoria. 'doble igual' compara si los valores son iguales. Python cachea números pequeños, entonces 'x is uno' funciona por accidente, pero 'x is trescientos' puede fallar aunque x valga trescientos. Única excepción: usa 'is' para comparar con None, True y False, porque esos sí son singletons. El segundo bug: comparar floats con doble igual. Cero punto uno más cero punto dos NO es igual a cero punto tres por la representación binaria. Da cero punto tres con muchos ceros y un cuatro al final. Usa math.isclose. El tercer bug: modificar argumentos. Si tu función recibe un diccionario y le hace modificaciones, está modificando el original, no una copia. Esto causa bugs donde datos cambian mágicamente entre una llamada y otra. La regla: si una función va a transformar datos, retorna un objeto nuevo. Nunca modifiques lo que te pasaron.",
     "video_prompt": "Video de 90 segundos estilo 'cazador de bugs'. Pantalla dividida con código de la IA. Cursor va marcando en rojo 3 bugs: (1) 'is 0' con advertencia 'usa ==', (2) 'precio == 0' con advertencia 'usa math.isclose', (3) 'producto[precio]=' con advertencia 'no mutes el argumento'. Para cada bug, mostrar demo visual del problema: is fallando con número grande, 0.1+0.2 dando 0.30004, diccionario original modificado. Overlay final: 'Tres bugs que la IA no ve. Tú sí.'",
     "trazabilidad": {
-      "libros_fuente": ["Effective Python Item 5-8", "Fluent Python Cap 1, 3", "Classic CS Problems (numeric precision)"],
-      "conceptos_clave": ["is-vs-equals", "floats", "mutabilidad", "ieee-754", "decimal", "code-review"]
+      "libros_fuente": [
+        "Effective Python Item 5-8",
+        "Fluent Python Cap 1, 3",
+        "Classic CS Problems (numeric precision)"
+      ],
+      "conceptos_clave": [
+        "is-vs-equals",
+        "floats",
+        "mutabilidad",
+        "ieee-754",
+        "decimal",
+        "code-review"
+      ]
     },
-    "tags_rag": ["python", "bugs-sutiles", "is-vs-equals", "floats", "mutabilidad", "code-review", "ia"]
+    "tags_rag": [
+      "python",
+      "bugs-sutiles",
+      "is-vs-equals",
+      "floats",
+      "mutabilidad",
+      "code-review",
+      "ia"
+    ]
   },
   {
     "id": "M1.1-008",
@@ -347,16 +567,39 @@
       "setup_code": "",
       "codigo_inicial": "def validar_lista(items):\n    '''Valida que todos los items sean strings no vacíos y únicos.'''\n    if len(items) == 0:\n        return False\n    \n    # Verificar que todos sean strings no vacíos\n    todos_validos = True\n    for item in items:\n        if not isinstance(item, str):\n            todos_validos = False\n        if len(item) == 0:\n            todos_validos = False\n    \n    if not todos_validos:\n        return False\n    \n    # Verificar que no haya duplicados\n    vistos = []\n    for item in items:\n        if item in vistos:\n            return False\n        vistos.append(item)\n    \n    return True",
       "test_code": "assert validar_lista(['a', 'b', 'c']) == True\nassert validar_lista([]) == False\nassert validar_lista(['a', '']) == False\nassert validar_lista(['a', 'b', 'a']) == False\nassert validar_lista([1, 2, 3]) == False  # No son strings\nassert validar_lista(['solo']) == True\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["todos_validos", "vistos"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "todos_validos",
+        "vistos"
+      ],
       "solucion": "def validar_lista(items):\n    if not items:\n        return False\n    \n    # Todos son strings no vacíos\n    todos_validos = all(isinstance(x, str) and x for x in items)\n    if not todos_validos:\n        return False\n    \n    # Sin duplicados (comparar len de lista vs set)\n    return len(items) == len(set(items))"
     },
     "audio_script": "Cuando revises código generado por IA, busca estos cinco patrones que delatan que nadie lo supervisó. Primero: strings concatenados con más en un bucle. Cada concatenación crea un string nuevo copiando todo lo anterior. Es orden n cuadrado, brutalmente lento para listas grandes. La solución es join. Segundo: reinventar funciones built-in. Si ves un bucle que busca el mayor, el menor, la suma, o si hay algún elemento que cumple, está reinventando max, min, sum, any, all. Esas funciones están escritas en C, son cien veces más rápidas y se leen mejor. Tercero: verificar len mayor que cero para ver si una lista tiene elementos. En Python las listas vacías son falsy. Un simple if lista basta. Cuarto: calcular algo dentro del bucle que no depende del bucle. Si haces punto lower sobre el mismo string N veces, estás recalculando lo mismo. Muévelo afuera. Quinto: banderas booleanas que cambian en un bucle y luego se retornan. Eso es any o all con una generator expression. Si ves estos patrones, pídele a la IA que refactorice. Tu código quedará más corto, más rápido y más pythónico.",
     "video_prompt": "Video de 100 segundos. 5 escenas rápidas mostrando cada anti-patrón vs la versión pythónica. (1) String concat en bucle (barra de progreso muy lenta) vs join (instantáneo). (2) Bucle manual para max vs max() (una línea). (3) len > 0 vs if lista. (4) Recálculo en bucle vs precomputar. (5) Bandera booleana vs any(). Cada transición con un 'check' verde apareciendo. Overlay final: 'Pythónico = Built-ins + Comprehensions + Truthy checks.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 4, 7", "Effective Python Item 27-32", "Fluent Python Cap 2"],
-      "conceptos_clave": ["anti-patrones", "comprehensions", "built-ins", "performance", "code-review", "zen-python"]
+      "libros_fuente": [
+        "Python Crash Course Cap 4, 7",
+        "Effective Python Item 27-32",
+        "Fluent Python Cap 2"
+      ],
+      "conceptos_clave": [
+        "anti-patrones",
+        "comprehensions",
+        "built-ins",
+        "performance",
+        "code-review",
+        "zen-python"
+      ]
     },
-    "tags_rag": ["python", "anti-patrones", "comprehensions", "built-ins", "performance", "code-review"]
+    "tags_rag": [
+      "python",
+      "anti-patrones",
+      "comprehensions",
+      "built-ins",
+      "performance",
+      "code-review"
+    ]
   }
 ]

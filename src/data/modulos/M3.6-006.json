@@ -62,7 +62,57 @@
       "refactoring",
       "functools"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Cuál de las siguientes afirmaciones describe mejor el beneficio principal del uso del patrón Decorator para agregar logging, reintentos y temporización a los métodos de DataService?",
+        "opciones": [
+          "Permite agregar responsabilidades dinámicamente en tiempo de ejecución manteniendo la interfaz original.",
+          "Reduce la necesidad de usar herencia para compartir código común.",
+          "Centraliza toda la lógica de error en una sola excepción.",
+          "Garantiza que los métodos siempre se ejecuten más rápido."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque el patrón Decorator envuelve un objeto y añade comportamiento extra sin alterar su interfaz, permitiendo que cada concern (logging, reintentos, temporización) sea añadido o quitado en cualquier momento. Las otras opciones no capturan este beneficio central: B describe la herencia, no el Decorator; C es sobre manejo de errores, no sobre el patrón; D es un efecto no relacionado sobre el rendimiento.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Cuál será el resultado de la siguiente implementación defectuosa de un decorador que solo imprime un mensaje de entrada pero no devuelve el resultado?",
+        "opciones": [
+          "La lista original devuelta por el método decorado.",
+          "None, porque el decorador no devuelve el resultado de la función original.",
+          "Solo el mensaje de log impreso.",
+          "Un error debido a una línea faltante."
+        ],
+        "correcta": "B",
+        "explicacion": "El decorador imprime el mensaje de log pero nunca llama a la función original ni devuelve su valor, por lo que wrapper devuelve None implícitamente. Por lo tanto, el programa imprime el mensaje de log y luego None. Las otras opciones son incorrectas: A sería cierto si el decorador devolviera el resultado; C solo captaría la impresión; D no ocurre porque no hay un error de sintaxis.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Cuál de las siguientes acciones de refactorización abordaría directamente la causa raíz de la duplicación de código en DataService?",
+        "opciones": [
+          "Mover toda la lógica de logging a una variable de clase.",
+          "Extraer la lógica común de logging, reintentos y temporización en decoradores separados.",
+          "Convertir DataService en una clase abstracta con métodos concretos para cada concern.",
+          "Usar un único método que acepte un parámetro de bandera para habilitar cada concern."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque el patrón Decorator está diseñado precisamente para extraer concerns transversales en componentes reutilizables y componibles, eliminando la duplicación. Las otras opciones no resuelven la duplicación de forma elegante: A seguiría duplicando código; B describe el mismo problema; D añade complejidad sin eliminar la repetición.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Al aplicar el patrón Decorator a DataService, cuál de las siguientes afirmaciones es verdadera sobre el diseño resultante?",
+        "opciones": [
+          "Todos los concerns transversales deben estar en un único decorador grande para mantener la simplicidad.",
+          "La clase original DataService ya no puede ser utilizada sin los decoradores.",
+          "Cada concern (logging, reintentos, temporización) puede ser añadido o removido independientemente en tiempo de ejecución.",
+          "El número de clases en el sistema se reduce necesariamente."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta porque el Decorator permite composición aditiva: puedes envolver un objeto con cualquier combinación de decoradores, habilitando o deshabilitando cada concern de forma independiente. Las otras opciones son falsas: A limitaría la flexibilidad; B es incorrecto porque la clase original sigue existiendo; C es un beneficio del Strategy, no del Decorator; D no es un efecto guarantee.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.6-007",
@@ -240,7 +290,57 @@
       "refactoring",
       "behavioral"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Cuál de las siguientes definiciones captura el propósito central del patrón Strategy?",
+        "opciones": [
+          "Define una familia de algoritmos, encapsula cada uno, y los hace interchangeables.",
+          "Añade comportamiento a objetos de forma dinámica usando composición en tiempo de ejecución.",
+          "Garantiza que una clase tenga solo una responsabilidad única.",
+          "Oculta la implementación de una clase detrás de una interfaz abstracta."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es la definición textbook del patrón Strategy: separar la definición de los algoritmos de su uso. Las otras opciones describen conceptos relacionados (Decorator, SRP, Abstract Factory) pero no el Strategy en sí.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Cuál será el resultado de ejecutar el siguiente fragmento que usa una estrategia de ordenamiento?",
+        "opciones": [
+          "[5, 4, 3, 2, 1]",
+          "[1, 2, 3, 4, 5]",
+          "Error: algoritmo desconocido",
+          "[]"
+        ],
+        "correcta": "B",
+        "explicacion": "El código crea una estrategia SortAscending (que usa sorted(data)) y la pasa a DataProcessor.process, produciendo una lista ordenada ascendentemente. Las otras opciones corresponden a una estrategia descendente, un algoritmo desconocido, o un caso vacío.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Cuál de las siguientes partes del original DataProcessor viola directamente el Principio de Abierto/Cerrado?",
+        "opciones": [
+          "La declaración if/elif que selecciona el algoritmo basado en una cadena.",
+          "La excepción ValueError que se lanza para algoritmos desconocidos.",
+          "La falta de clases separadas para cada algoritmo.",
+          "El método process que acepta un parámetro algorithm."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque sin clases de estrategia separadas, cualquier nuevo algoritmo requiere modificar el if/elif chain, cerrando la clase para extensión. Las otras opciones no son la causa raíz: A es el síntoma, B es manejo de errores, D es parte del diseño pero no la violación del OCP.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Cuál de los siguientes beneficios proporciona el uso del patrón Strategy para DataProcessor?",
+        "opciones": [
+          "Fija el algoritmo en tiempo de compilación para mayor velocidad.",
+          "Reduce la necesidad de escribir pruebas unitarias.",
+          "Hace que el código sea más fuertemente acoplado entre el contexto y los algoritmos.",
+          "Permite cambiar algoritmos en tiempo de ejecución sin modificar la clase del contexto."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D captura el beneficio clave: algoritmos interchangeables en tiempo de ejecución. Las otras opciones son falsas: A contradice la naturaleza en tiempo de ejecución del patrón; B es un malentendido; C es lo opuesto a lo que busca el patrón (debe reducir el acoplamiento).",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.6-009",
@@ -306,7 +406,57 @@
       "clean-code",
       "mantenibilidad"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En `process_user`, los campos `street, city, zip_code, country` se pasan como parámetros separados pero siempre viajan juntos. ¿Qué olor de código identifica este patrón?",
+        "opciones": [
+          "Data Clumps (Agrupación de datos)",
+          "Long Parameter List (Lista larga de parámetros)",
+          "Primitive Obsession (Obsesión por primitivos)",
+          "Switch Statement (Instrucción condicional)"
+        ],
+        "correcta": "A",
+        "explicacion": "La correcta es A porque un Data Clump ocurre cuando varios datos aparecen juntos consistentemente y deberían tratarse como una unidad (ej. un objeto Address). B es un olor presente en la función (9 params), pero no describe específicamente el agrupamiento de la dirección. C se refiere a usar tipos primitivos en vez de objetos, no al agrupamiento. D se refiere al bloque if/elif de planes.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es la técnica de refactorización más indicada para reducir la 'lista larga de parámetros' (9 argumentos) de `process_user`?",
+        "opciones": [
+          "Inline Function (Incrustar función)",
+          "Introduce Parameter Object (Introducir objeto de parámetros)",
+          "Extract Method (Extraer método)",
+          "Replace Magic Number (Reemplazar número mágico)"
+        ],
+        "correcta": "B",
+        "explicacion": "La correcta es B porque agrupa parámetros relacionados en un solo objeto, reduciendo la firma de la función. A es lo contrario (unir funciones). C ayuda con Long Method pero no reduce parámetros. D corrige literales numéricos, no la firma de la función.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué causa que la validación de emails y la lógica de negocio del usuario estén acopladas en una sola función, obligando a editarla por múltiples razones?",
+        "opciones": [
+          "Long Method (Método largo)",
+          "Data Clumps (Agrupación de datos)",
+          "Divergent Change (Cambio divergente)",
+          "Switch Statement (Instrucción condicional)"
+        ],
+        "correcta": "C",
+        "explicacion": "La correcta es C porque Divergent Change significa que la función cambia por múltiples razones (validación, construcción, configuración). A es una consecuencia del tamaño, no la causa del acoplamiento de razones. B y D son olores específicos presentes, pero no explican por qué la función responde a múltiples cambios.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Representar el email como un simple `string` en lugar de un objeto `Email` es un ejemplo clásico de:",
+        "opciones": [
+          "Data Clumps",
+          "Long Parameter List",
+          "Long Method",
+          "Primitive Obsession"
+        ],
+        "correcta": "D",
+        "explicacion": "La correcta es D porque Primitive Obsession ocurre cuando usamos tipos primitivos (string) donde un tipo rico con comportamiento sería mejor. A, B y C describen problemas de agrupamiento o longitud, no de tipo de dato.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.6-010",
@@ -370,7 +520,57 @@
       "fowler",
       "techniques"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Los nombres `d`, `t`, `r`, `amt` en `calc` no comunican su propósito. ¿Qué técnica de refactorización aplica?",
+        "opciones": [
+          "Rename Function/Variable (Renombrar función/variable)",
+          "Extract Method (Extraer método)",
+          "Replace Magic Number (Reemplazar número mágico)",
+          "Move Method (Mover método)"
+        ],
+        "correcta": "A",
+        "explicacion": "La correcta es A porque Rename mejora la legibilidad cambiando nombres crípticos por descriptivos. B organiza el código pero no arregla los nombres. C corrige los literales numéricos. D mueve el código a otra clase.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué técnica corrige el uso de literales numéricos sin contexto como `0.15` o `1000` en el código?",
+        "opciones": [
+          "Rename Function/Variable",
+          "Replace Magic Number with Symbolic Constant (Reemplazar número mágico con constante simbólica)",
+          "Extract Method",
+          "Inline Variable"
+        ],
+        "correcta": "B",
+        "explicacion": "La correcta es B porque define constantes nombradas (ej. COMISION_PRO) para los valores literales. A no afecta los números. C organiza la lógica. D une variables en su uso.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué técnica permite aislar la lógica de cálculo de un tipo específico para facilitar las pruebas unitarias?",
+        "opciones": [
+          "Rename Function/Variable",
+          "Replace Magic Number",
+          "Extract Method (Extraer método)",
+          "Inline Variable"
+        ],
+        "correcta": "C",
+        "explicacion": "La correcta es C porque extrae un bloque de código en una función independiente, permitiendo testearlo por separado. A y B mejoran nombres y valores pero no aíslan el comportamiento. D reduce variables pero no separa la lógica.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es el objetivo principal al aplicar refactorización en `calc`?",
+        "opciones": [
+          "Acelerar la ejecución del código",
+          "Cambiar la lógica de negocio para ganar más comisiones",
+          "Reducir el número de líneas a menos de 10",
+          "Mejorar legibilidad y mantenibilidad sin cambiar el comportamiento externo"
+        ],
+        "correcta": "D",
+        "explicacion": "La correcta es D porque refactorizar significa reestructurar sin alterar el comportamiento observable. A no es el objetivo principal (a veces incluso ralentiza). B viola la seguridad de refactorizar. C es una meta artificial, no el fin.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.6-011",
@@ -434,7 +634,57 @@
       "refactoring",
       "characterization-tests"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el orden correcto de las fases en el ciclo Red-Green-Refactor?",
+        "opciones": [
+          "Green-Red-Refactor",
+          "Red-Green-Refactor",
+          "Refactor-Red-Green",
+          "Green-Refactor-Red"
+        ],
+        "correcta": "B",
+        "explicacion": "El ciclo comienza con Red (escribir test que falla), luego Green (hacer pasar el test), y finalmente Refactor (mejorar el código). Las otras opciones alteran este orden crucial.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el código, ¿cuál es el resultado de generate_invoice con items=[{'price':100, 'qty':2, 'taxable':True}], customer='A', tax_rate=0.1, discount_code='SAVE10'?",
+        "opciones": [
+          "subtotal: 198.0",
+          "subtotal: 180.0",
+          "subtotal: 200.0",
+          "subtotal: 190.0"
+        ],
+        "correcta": "A",
+        "explicacion": "El código aplica impuesto primero: 100 * 1.1 = 110 por item, 110 * 2 = 220. Luego descuento SAVE10: 220 * 0.9 = 198. El redondeo no cambia el valor. Las otras opciones no consideran correctamente el impuesto o el descuento.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué error común puede ocurrir si se usa un discount_code no definido, como 'SAVE30'?",
+        "opciones": [
+          "El código lanza un ValueError",
+          "El subtotal se vuelve negativo",
+          "El código ignora el descuento y devuelve el subtotal sin aplicar",
+          "Hay un error de sintaxis"
+        ],
+        "correcta": "C",
+        "explicacion": "El código solo aplica descuentos para los códigos conocidos; para otros, no hace nada, por lo que el descuento no se aplica. No lanza error, sino que ignora el código.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es el valor por defecto de discount_code en la función generate_invoice?",
+        "opciones": [
+          "'SAVE10'",
+          "'SAVE20'",
+          "'FLAT50'",
+          "None"
+        ],
+        "correcta": "D",
+        "explicacion": "El parámetro discount_code tiene un valor por defecto de None, como se ve en la firma de la función.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "M3.6-012",
@@ -498,7 +748,57 @@
       "strategy",
       "factory"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué patrón de diseño se sugiere para refactorizar el código del ReportGenerator?",
+        "opciones": [
+          "Strategy",
+          "Singleton",
+          "Factory",
+          "Observer"
+        ],
+        "correcta": "A",
+        "explicacion": "El patrón Strategy es adecuado porque se trata de intercambiar algoritmos para diferentes formatos, permitiendo agregar nuevos formatos sin cambiar la clase principal.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué formato de reporte genera el método generate cuando format_type='csv'?",
+        "opciones": [
+          "Un diccionario JSON",
+          "Un string HTML",
+          "Un string CSV con cabeceras y filas",
+          "Un PDF"
+        ],
+        "correcta": "C",
+        "explicacion": "El código para CSV crea una lista de líneas, la primera con los nombres de las columnas, y luego cada fila con los valores, unidos por comas.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la función del método _pdf_footer en el código?",
+        "opciones": [
+          "Devuelve el encabezado PDF",
+          "Devuelve el cuerpo PDF",
+          "Devuelve el pie de página PDF",
+          "Devuelve '%%EOF'"
+        ],
+        "correcta": "D",
+        "explicacion": "El método _pdf_footer retorna la cadena '%%EOF', que marca el fin del archivo PDF.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si se agrega un nuevo formato 'xml', ¿qué pasaría en el código actual?",
+        "opciones": [
+          "El código funciona correctamente",
+          "Se lanza un ValueError porque 'xml' no está en los elif",
+          "El código devuelve None",
+          "Se produce un error de sintaxis"
+        ],
+        "correcta": "B",
+        "explicacion": "El código tiene un else que lanza ValueError para formatos no reconocidos, por lo que 'xml' causaría ese error.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M3.6-013",
@@ -571,13 +871,13 @@
     "nivel": "intermedio",
     "fase": 3,
     "microproyecto": "Refactoring de codebase legacy con SOLID y patterns",
-    "modelo_mental": "La IA genera código funcional pero con defectos arquitectónicos sistemáticos: (1) God Objects (clases que hacen todo), (2) dependencias circulares, (3) sin separación de capas (UI/lógica/datos mezclados), (4) hardcoding de configuración, (5) sin manejo de errores consistente, (6) acoplamiento fuerte (importaciones directas en vez de interfaces), (7) código duplicado. Este chunk entrena la auditoría de 5 minutos que detecta estos defectos antes de que se acumulen como deuda técnica.",
+    "modelo_mental": "Imagina una **fábrica** donde una sola **máquina** realiza todas las tareas: ensambla, pinta, empaqueta y envía. Este **God Object** `TaskManager` concentra UI, lógica y acceso a datos en una sola clase, lo que **centraliza** todo y **dificulta** la escalabilidad y el mantenimiento.\n\nCuando el método `def create_task(title, description, priority):` construye la consulta con una f‑string (`f\"INSERT INTO tasks (title, desc, priority) VALUES ('{title}', '{description}', {priority})\"`), **mezcla** la lógica de negocio con la presentación y abre la puerta a **inyección SQL**. Además, el `print(f'✓ Task \"{title}\" created!')` muestra que la salida de consola está **acoplada** a la lógica de dominio.\n\nEste patrón **reduce la legibilidad** del código, **complica** los tests unitarios y **impide** reutilizar componentes, convirtiéndose en una fuente constante de **deuda técnica** que se acumula rápidamente.",
     "codigo_roto": "# Código típico generado por IA para 'sistema de gestión de tareas'\nimport sqlite3\nimport json\nfrom datetime import datetime\n\nclass TaskManager:\n    '''God Object: UI + lógica + datos + config en una clase'''\n    \n    def __init__(self):\n        # Hardcoded: debería ser configurable\n        self.db = sqlite3.connect('/home/user/tasks.db')\n        self.api_key = 'sk_live_abc123'  # Secret hardcoded\n        self.max_tasks = 100  # Magic number\n    \n    def create_task(self, title, description, priority):\n        # Sin validación\n        # Sin manejo de errores\n        self.db.execute(\n            f\"INSERT INTO tasks (title, desc, priority) VALUES ('{title}', '{description}', {priority})\"\n        )  # SQL injection\n        self.db.commit()\n        \n        # UI mezclada con lógica\n        print(f'✓ Task \"{title}\" created!')\n        print(f'  Priority: {priority}')\n    \n    def list_tasks(self):\n        tasks = self.db.execute('SELECT * FROM tasks').fetchall()\n        # UI mezclada con lógica\n        print('\\n=== TASKS ===')\n        for t in tasks:\n            print(f'  [{t[3]}] {t[1]}: {t[2]}')\n        return tasks\n    \n    def export_tasks(self):\n        tasks = self.db.execute('SELECT * FROM tasks').fetchall()\n        # Duplicado: misma query que list_tasks\n        with open('/home/user/tasks_export.json', 'w') as f:\n            json.dump(tasks, f)  # Hardcoded path\n        print('✓ Exported!')\n    \n    def send_notification(self, task_id):\n        # Acoplamiento fuerte: importa directamente\n        import requests\n        response = requests.post(\n            'https://api.notifications.com/send',\n            json={'task_id': task_id, 'key': self.api_key},\n            verify=False  # Inseguro\n        )\n        return response.json()\n\n# Sin separación de capas\n# Sin interfaces/abstracciones\n# Sin tests posibles (todo acoplado)\n# Sin manejo de errores",
-    "diagnostico": "Este código tiene 7 defectos arquitectónicos: (1) God Object: TaskManager mezcla UI, lógica, datos y configuración. (2) Secret hardcoded: api_key en el código. (3) SQL injection: f-string en query. (4) Hardcoding: paths absolutos, magic numbers. (5) Sin separación de capas: print() en la lógica de negocio. (6) Acoplamiento fuerte: import requests dentro del método, sin abstracción. (7) Código duplicado: misma query en list_tasks y export_tasks. Verificado: es imposible testear create_task sin una DB real, sin capturar stdout, y sin red.",
+    "diagnostico": "1. **God Object**: la clase `TaskManager` concentra UI, lógica y acceso a datos, lo que hace que cualquier cambio en la interfaz obligue a modificar la lógica de negocio; Python lanza este error al no existir separación de responsabilidades, y el patrón general es la falta de modularidad. 2. **Secret hardcoded**: la variable `api_key` está escrita directamente en el código, lo que permite que se filtre si el repositorio se comparte; Python/Bash lo detecta porque no hay inyección de dependencias, y el patrón es la ausencia de configuración externa. 3. **SQL injection**: el uso de f‑strings para construir la consulta (`f\"INSERT INTO tasks ... {priority}\"`) permite que un usuario malicioso inserte código SQL; Python lanza este error al concatenar datos sin sanitizar, y el patrón es la falta de parametrización. 4. **Hardcoding de rutas y números mágicos**: rutas absolutas y `max_tasks = 100` están fijadas, impidiendo reutilización; Python/Bash lo lanzan al no abstraer valores configurables, y el patrón general es la rigidez del código.\n5. **Sin separación de capas**: `print` está dentro del método de negocio, mezclando presentación con lógica; Python/Bash lo detecta porque la salida de consola se invoca desde la lógica, y el patrón es la violación del principio de responsabilidad única. 6. **Acoplamiento fuerte**: la importación de `requests` dentro de `send_notification` crea dependencia directa a una biblioteca externa sin abstracción; Python/Bash lo lanzan cuando el código necesita cambiar la forma de envío, y el patrón es la falta de interfaces o inyección de dependencias. 7. **Código duplicado**: la misma consulta SQL se repite en `list_tasks` y `export_tasks`; Python/Bash lo detecta como redundancia que dificulta mantenimiento, y el patrón general es la ausencia de reutilización de lógica.",
     "codigo_corregido": "from abc import ABC, abstractmethod\nfrom dataclasses import dataclass\nfrom typing import List, Optional\nfrom enum import IntEnum\nimport sqlite3\n\n# Capa de dominio (sin dependencias externas)\nclass Priority(IntEnum):\n    LOW = 1\n    MEDIUM = 2\n    HIGH = 3\n\n@dataclass\nclass Task:\n    id: Optional[int]\n    title: str\n    description: str\n    priority: Priority\n    created_at: str = ''\n\n# Capa de datos (abstracción)\nclass TaskRepository(ABC):\n    @abstractmethod\n    def save(self, task: Task) -> int: ...\n    @abstractmethod\n    def find_all(self) -> List[Task]: ...\n    @abstractmethod\n    def find_by_id(self, task_id: int) -> Optional[Task]: ...\n\nclass SQLiteTaskRepository(TaskRepository):\n    def __init__(self, db_path: str):\n        self._conn = sqlite3.connect(db_path)\n        self._conn.execute(\n            'CREATE TABLE IF NOT EXISTS tasks '\n            '(id INTEGER PRIMARY KEY, title TEXT, description TEXT, priority INTEGER)'\n        )\n    \n    def save(self, task: Task) -> int:\n        cursor = self._conn.execute(\n            'INSERT INTO tasks (title, description, priority) VALUES (?, ?, ?)',\n            (task.title, task.description, int(task.priority))\n        )\n        self._conn.commit()\n        return cursor.lastrowid\n    \n    def find_all(self) -> List[Task]:\n        rows = self._conn.execute('SELECT * FROM tasks').fetchall()\n        return [Task(id=r[0], title=r[1], description=r[2], priority=Priority(r[3])) for r in rows]\n    \n    def find_by_id(self, task_id: int) -> Optional[Task]:\n        row = self._conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()\n        if row:\n            return Task(id=row[0], title=row[1], description=row[2], priority=Priority(row[3]))\n        return None\n\n# Capa de notificación (abstracción)\nclass Notifier(ABC):\n    @abstractmethod\n    def notify(self, message: str) -> bool: ...\n\nclass HttpNotifier(Notifier):\n    def __init__(self, api_url: str, api_key: str):\n        self._url = api_url\n        self._key = api_key\n    \n    def notify(self, message: str) -> bool:\n        import requests\n        response = requests.post(\n            self._url,\n            json={'message': message, 'key': self._key},\n            timeout=10,\n            verify=True\n        )\n        return response.status_code == 200\n\n# Capa de servicio (lógica de negocio)\nclass TaskService:\n    def __init__(self, repo: TaskRepository, notifier: Optional[Notifier] = None):\n        self._repo = repo\n        self._notifier = notifier\n    \n    def create_task(self, title: str, description: str, priority: Priority) -> Task:\n        if not title or len(title) < 3:\n            raise ValueError('Title must be at least 3 characters')\n        \n        task = Task(id=None, title=title, description=description, priority=priority)\n        task.id = self._repo.save(task)\n        \n        if self._notifier:\n            self._notifier.notify(f'New task: {title} (priority: {priority.name})')\n        \n        return task\n    \n    def list_tasks(self) -> List[Task]:\n        return self._repo.find_all()\n\n# Capa de presentación (UI separada)\nclass TaskCLI:\n    def __init__(self, service: TaskService):\n        self._service = service\n    \n    def display_tasks(self):\n        tasks = self._service.list_tasks()\n        print('\\n=== TASKS ===')\n        for t in tasks:\n            print(f'  [{t.priority.name}] {t.title}: {t.description}')\n    \n    def create_task_interactive(self):\n        title = input('Title: ')\n        description = input('Description: ')\n        priority = Priority(int(input('Priority (1-3): ')))\n        \n        task = self._service.create_task(title, description, priority)\n        print(f'✓ Task \"{task.title}\" created with id={task.id}')",
     "codigo_optimizado": "# ========================================================================\n#  CHECKLIST DE AUDITORÍA DE ARQUITECTURA (5 minutos)\n# ========================================================================\n#\n# □ 1. GOD OBJECT: ¿alguna clase tiene > 10 métodos o > 200 líneas?\n#      Fix: Extract Class por responsabilidad (SRP)\n#\n# □ 2. SEPARACIÓN DE CAPAS: ¿print()/input() en la lógica de negocio?\n#      Fix: separar en capas: dominio / servicio / presentación / datos\n#\n# □ 3. ACOPLAMIENTO: ¿importaciones directas de librerías en métodos?\n#      Fix: abstracciones (ABC/Protocol) + inyección de dependencias (DIP)\n#\n# □ 4. HARDCODING: ¿paths absolutos, URLs, credentials en el código?\n#      Fix: variables de entorno, archivo de configuración\n#\n# □ 5. MANEJO DE ERRORES: ¿funciones que nunca lanzan excepción o try/except vacío?\n#      Fix: excepciones específicas, logging, propagación apropiada\n#\n# □ 6. DUPLICACIÓN: ¿misma lógica en 2+ lugares?\n#      Fix: Extract Method, DRY\n#\n# □ 7. TESTEABILIDAD: ¿puedes instanciar la clase sin DB/red/FS?\n#      Fix: inyección de dependencias, interfaces, mocks\n\n# ========================================================================\n#  ARQUITECTURA POR CAPAS (LAYERED ARCHITECTURE)\n# ========================================================================\n#\n# CAPA DE DOMINIO (sin dependencias externas):\n#   - Entidades (Task, User, Order)\n#   - Value Objects (Email, Money, DateRange)\n#   - Enums (Priority, Status)\n#   - Excepciones de dominio (TaskNotFoundError)\n#\n# CAPA DE SERVICIO (lógica de negocio):\n#   - Services (TaskService, OrderService)\n#   - Depende de: dominio + abstracciones de datos\n#   - NO depende de: UI, DB concreta, HTTP\n#\n# CAPA DE DATOS (persistencia):\n#   - Repositories (SQLiteTaskRepository, PostgresTaskRepository)\n#   - Implementa abstracciones del servicio\n#   - Depende de: dominio\n#\n# CAPA DE PRESENTACIÓN (UI):\n#   - CLI, API REST, Web\n#   - Depende de: servicio\n#   - NO depende de: datos directamente\n#\n# REGLA DE DEPENDENCIA:\n#   Las flechas de dependencia apuntan HACIA ADENTRO (hacia el dominio).\n#   El dominio no sabe nada de las capas externas.\n\n# ========================================================================\n#  DEPENDENCY RULE EN PYTHON\n# ========================================================================\n# MAL: servicio importa DB concreta\n# class TaskService:\n#     def __init__(self):\n#         self.db = sqlite3.connect('tasks.db')  # ← acoplamiento\n#\n# BIEN: servicio depende de abstracción\n# class TaskService:\n#     def __init__(self, repo: TaskRepository):  # ← abstracción\n#         self._repo = repo\n#\n# Composición en el entry point:\n# repo = SQLiteTaskRepository('tasks.db')\n# service = TaskService(repo=repo)\n# cli = TaskCLI(service=service)\n\n# ========================================================================\n#  COMPOSITION ROOT: UN SOLO LUGAR PARA CREAR DEPENDENCIAS\n# ========================================================================\n# El Composition Root es el único lugar donde se crean las dependencias\n# concretas y se inyectan. Típicamente es el main.py o app.py.\n\ndef create_application(config: dict) -> 'TaskCLI':\n    '''Composition Root: crea todas las dependencias'''\n    repo = SQLiteTaskRepository(config['db_path'])\n    \n    notifier = None\n    if config.get('notifications_enabled'):\n        notifier = HttpNotifier(\n            api_url=config['notification_url'],\n            api_key=config['notification_api_key']\n        )\n    \n    service = TaskService(repo=repo, notifier=notifier)\n    return TaskCLI(service=service)\n\n# main.py:\n# config = load_config()  # desde env vars o archivo\n# app = create_application(config)\n# app.run()",
     "disenso_experto": "¿Arquitectura por capas siempre o solo para proyectos grandes? Para scripts de < 200 líneas, la separación en capas es over-engineering. Para aplicaciones con múltiples endpoints, usuarios, y evolución esperada, es esencial. Regla: si tu código tiene más de 500 líneas o múltiples entry points, aplica arquitectura por capas. Si es un script de una sola ejecución, no.",
-    "pregunta_transferencia": "La IA te genera una API REST completa en un solo archivo de 800 líneas (rutas + lógica + queries SQL + modelos). ¿Cómo la divides en capas, en qué orden refactorizas, y qué tests escribes primero?",
+    "pregunta_transferencia": "La IA te entrega una API REST completa en un único archivo de 800 líneas, con rutas, lógica, queries SQL y modelos, todo dentro de una sola clase `TaskManager`. Este monolitos dificulta la escalabilidad, el testing y la mantenibilidad del sistema.\nUn buen primer paso es extraer la capa de acceso a datos en un módulo separado, inyectar la conexión a la base de datos y escribir pruebas unitarias para el repositorio antes de tocar las rutas; piensa en la arquitectura como una pila de platos, donde debes retirar el fondo (datos) antes de reorganizar los superiores.",
     "quiz": {
       "pregunta": "¿Cuál es la señal MÁS CLARA de que el código generado por IA tiene problemas de arquitectura?",
       "opciones": [
@@ -626,6 +926,45 @@
       "clean-architecture",
       "capas",
       "codigo-ia"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la principal desventaja de un God Object como `TaskManager`?",
+        "opciones": [
+          "Reduce la legibilidad del código",
+          "Facilita los tests unitarios",
+          "Mezcla UI, lógica y datos",
+          "Mejora la performance"
+        ],
+        "correcta": "A",
+        "explicacion": "La principal desventaja es que reduce la legibilidad del código, dificultando su comprensión y mantenimiento. Las otras opciones son incorrectas: B es falsa porque los God Objects dificultan los tests, C describe una consecuencia pero no la causa principal, y D es irrelevante.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es el principal riesgo de la variable `api_key` hardcodeada en la clase?",
+        "opciones": [
+          "Hace que el programa se ejecute más lento",
+          "Permite que la clave sea expuesta si el código se comparte",
+          "Provoca un error de sintaxis",
+          "No tiene impacto en la seguridad"
+        ],
+        "correcta": "B",
+        "explicacion": "La variable `api_key` hardcodeada expone la clave si el código se comparte, lo que constituye un riesgo de seguridad. Las demás opciones son incorrectas: A no afecta la velocidad, C no ocurre, y D es falsa porque sí impacta la seguridad.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué problema introduce la importación directa de `requests` dentro de `send_notification`?",
+        "opciones": [
+          "Reduce la legibilidad del código",
+          "Permite usar HTTPS de forma segura",
+          "Acopla fuertemente el código a una biblioteca externa",
+          "Mejora la seguridad del envío"
+        ],
+        "correcta": "C",
+        "explicacion": "Importar `requests` directamente dentro del método acopla fuertemente el código a una biblioteca externa, dificultando pruebas y mantenimiento. Las demás opciones son incorrectas: A no es el problema principal, B es falsa porque verify=False no garantiza HTTPS, y D es incorrecta porque no mejora la seguridad.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
@@ -693,6 +1032,56 @@
       "arquitectura",
       "integrador"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál principio de diseño SOLID se viola más claramente al tener a ReportManager encargarse de la conexión a la base, la generación del reporte, la llamada a la API y la exportación de archivos?",
+        "opciones": [
+          "Principio de responsabilidad única (SRP)",
+          "Principio de abierto/cerrado (OCP)",
+          "Principio de sustitución de Liskov (LSP)",
+          "Principio de inversión de dependencias (DIP)"
+        ],
+        "correcta": "A",
+        "explicacion": "SRP establece que una clase debe tener una sola razón para cambiar. ReportManager maneja acceso a DB, generación de reportes, notificación HTTP y exportación de archivos, por lo que tiene múltiples responsabilidades. Los otros principios no describen el problema principal.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Supón que la base de datos está inicialmente vacía y se ejecuta el siguiente código: mgr = ReportManager(); mgr.generate_report('Test', 'SELECT 1 as val', format='json'); mgr.list_reports(); ¿Qué salida producirá list_reports en la consola?",
+        "opciones": [
+          "No imprimirá nada",
+          "Imprimirá el encabezado '=== REPORTS ===' seguido de una línea con el id, nombre y timestamp del reporte",
+          "Solo imprimirá el encabezado",
+          "Lanzará una excepción por falta de columnas"
+        ],
+        "correcta": "B",
+        "explicacion": "generate_report inserta una fila en la tabla reports con el nombre 'Test', el resultado JSON de la consulta y la marca de tiempo actual. Luego list_reports selecciona id, name, created y los imprime precedidos por el encabezado '=== REPORTS ==='. Por lo tanto se verá el encabezado y una línea con los valores.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la vulnerabilidad de seguridad más crítica presente en generate_report?",
+        "opciones": [
+          "Desactivar verificación SSL con verify=False",
+          "API key hardcodeada",
+          "Inyección SQL debido a concatenación directa de la query",
+          "Uso de f‑string para el INSERT"
+        ],
+        "correcta": "C",
+        "explicacion": "La concatenación directa de la cadena query permite a un atacante inyectar SQL arbitrario, lo que puede llevar a robo, modificación o eliminación de datos. Aunque desactivar SSL y hardcodear la API key son problemas, la inyección SQL es la más crítica porque compromete la integridad de la base de datos.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Si se llama a export_all con un directorio que no existe, ¿qué ocurrirá?",
+        "opciones": [
+          "Creará el directorio automáticamente",
+          "Lanzará FileNotFoundError al intentar abrir el archivo",
+          "Ignorará silenciosamente la exportación",
+          "Escribirá los archivos en el directorio de trabajo actual"
+        ],
+        "correcta": "B",
+        "explicacion": "export_all construye una ruta con os.path.join y luego abre el archivo con open(path, 'w'). Si el directorio padre no existe, open lanza una FileNotFoundError. No hay código que cree el directorio ni que capture la excepción.",
+        "tipo": "debugging"
+      }
+    ]
   }
 ]
