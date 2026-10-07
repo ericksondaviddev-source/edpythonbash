@@ -140,13 +140,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "El control de flujo en Python tiene dos herramientas complementarias: `if/elif/else` (clásico, para condiciones booleanas) y `match` (Python 3.10+, para pattern matching estructural). La regla de oro: si estás haciendo una cadena larga de `if/elif` comparando el MISMO valor contra múltiples constantes o estructuras, probablemente `match` es más legible. Pero `match` NO es un switch de C: puede descomponer estructuras complejas (listas, diccionarios, clases) en un solo paso.",
+    "modelo_mental": "**Analogía central**: el control de flujo es como una red de carreteras. Los encadenados `if/elif/else` actúan como señales de stop que evalúan cada condición por separado, mientras que `match` funciona como una rotonda que, en un solo paso, dirige el tráfico según la forma y el valor de la señal (el sujeto). Usar `match` cuando se compara el mismo valor contra varias constantes o estructuras hace que el código sea más legible y menos propenso a errores de omisión.\n\n**Por qué importa**: una cadena larga de `if/elif` que compara la misma variable contra rangos crecientes (como en `categorizar_edad`) es difícil de mantener; cualquier cambio en los límites requiere actualizar varias líneas y aumenta la probabilidad de **errores de límite fuera de rango** o de **condiciones superpuestas**. `match` permite expresar esas mismas reglas de forma declarativa, reduciendo la carga cognitiva y facilitando pruebas unitarias.\n\n**Qué errores previene**: al usar `match` se evitan los errores típicos de olvidar un `else` (que dejaría casos sin manejar), de escribir condiciones que se solapan o de usar operadores de comparación incorrectos (`<=` vs `<`). Además, al poder desestructurar listas, tuplas o diccionarios en el mismo patrón, se previenen errores de índice o de clave al acceder a partes de la estructura sin comprobar primero su forma.",
     "codigo_roto": "def categorizar_edad(edad):\n    if edad < 0:\n        return 'inválido'\n    if edad < 13:\n        return 'niño'\n    if edad < 18:\n        return 'adolescente'\n    if edad < 30:\n        return 'joven'\n    if edad < 60:\n        return 'adulto'\n    else:\n        return 'senior'\n\ndef procesar_comando(comando):\n    if comando == 'salir':\n        print('Adiós')\n    elif comando == 'ayuda':\n        print('Ayuda...')\n    elif comando.startswith('buscar '):\n        query = comando[7:]\n        print(f'Buscando {query}')\n    elif comando.startswith('guardar '):\n        # parsear: guardar clave=valor\n        partes = comando[8:].split('=')\n        print(f'Guardando {partes[0]}={partes[1]}')\n    else:\n        print('Comando desconocido')",
-    "diagnostico": "Dos problemas. (1) `categorizar_edad`: funciona pero es verboso. Cinco ifs encadenados comparando el mismo valor contra rangos crecientes. No es incorrecto, pero es el tipo de código que la IA genera siempre y que se puede hacer más legible. (2) `procesar_comando`: este es el caso de libro para `match`. Estás parseando una estructura de string con startswith + slicing manual, lo cual es frágil (si el formato cambia, el código se rompe) y difícil de leer. Con `match` y patrones, el parser se vuelve declarativo.",
+    "diagnostico": "1. **categorizar_edad**: la función funciona, pero utiliza cinco `if` encadenados que comparan el mismo valor (`edad`) contra límites crecientes. Aunque no lanza excepciones, este patrón es verboso y propenso a errores de mantenimiento: si se cambia un límite, hay que recordar actualizar todas las condiciones posteriores y se pueden introducir **solapamientos** o **huecos** en los rangos. El patrón general es una cadena de comparaciones del mismo variable que podría reemplazarse por una estructura de decisión más clara (por ejemplo, `elif` encadenado o `match`).\n\n2. **procesar_comando**: aquí el código intenta parsear comandos con `startswith` y slicing manual. Este enfoque es frágil porque asume un formato exacto; cualquier variación (por ejemplo, espacios adicionales, múltiples signos '=') provoca excepciones como `IndexError` al acceder a `partes[1]` cuando el split produce más o menos de dos elementos, o errores lógicos cuando el comando no coincide con ninguno de los prefijos y cae en el `else` genérico. El patrón general es la **dependencia de manipulación de strings sin validación estructural**, lo que hace que el código sea difícil de leer y propenso a fallos cuando la entrada cambia.",
     "codigo_corregido": "def categorizar_edad(edad):\n    if edad < 0:\n        return 'inválido'\n    elif edad < 13:\n        return 'niño'\n    elif edad < 18:\n        return 'adolescente'\n    elif edad < 30:\n        return 'joven'\n    elif edad < 60:\n        return 'adulto'\n    else:\n        return 'senior'\n\ndef procesar_comando(comando):\n    match comando.split():\n        case ['salir']:\n            print('Adiós')\n        case ['ayuda']:\n            print('Ayuda...')\n        case ['buscar', *query]:\n            print(f'Buscando {\" \".join(query)}')\n        case ['guardar', asignacion]:\n            clave, _, valor = asignacion.partition('=')\n            print(f'Guardando {clave}={valor}')\n        case _:\n            print('Comando desconocido')",
     "codigo_optimizado": "from dataclasses import dataclass\nfrom typing import Literal\n\n# Categorización con match para rangos (Python 3.10+)\ndef categorizar_edad(edad: int) -> str:\n    match edad:\n        case n if n < 0:\n            return 'inválido'\n        case n if n < 13:\n            return 'niño'\n        case n if n < 18:\n            return 'adolescente'\n        case n if n < 30:\n            return 'joven'\n        case n if n < 60:\n            return 'adulto'\n        case _:\n            return 'senior'\n\n# Procesamiento de comandos con match estructural robusto\ndef procesar_comando(comando: str) -> None:\n    match comando.strip().split():\n        case ['salir']:\n            print('Adiós')\n        case ['ayuda'] | ['help']:\n            print('Comandos: salir, ayuda, buscar <q>, guardar k=v')\n        case ['buscar', *query] if query:\n            print(f'Buscando: {\" \".join(query)}')\n        case ['guardar', asignacion] if '=' in asignacion:\n            clave, valor = asignacion.split('=', 1)\n            print(f'✓ Guardado: {clave.strip()} = {valor.strip()}')\n        case ['guardar', *_]:\n            print('✗ Formato: guardar clave=valor')\n        case []:\n            pass  # Comando vacío, ignorar silenciosamente\n        case [desconocido, *_]:\n            print(f'Comando desconocido: {desconocido}')\n\n# Bonus: pattern matching con clases (estructuras reales)\n@dataclass\nclass Punto:\n    x: float\n    y: float\n\ndef describir_punto(p: Punto) -> str:\n    match p:\n        case Punto(x=0, y=0):\n            return 'Origen'\n        case Punto(x=0, y=y):\n            return f'Eje Y en {y}'\n        case Punto(x=x, y=0):\n            return f'Eje X en {x}'\n        case Punto(x=x, y=y) if x == y:\n            return f'Diagonal en ({x}, {y})'\n        case Punto(x=x, y=y):\n            return f'Punto en ({x}, {y})'",
     "disenso_experto": "Hay un debate activo en la comunidad Python sobre si `match` reemplaza a `if/elif`. Los defensores dicen que para parseo estructural (comandos CLI, mensajes de API, estructuras JSON) es incomparablemente superior. Los escépticos argumentan que añade sintaxis nueva que pocos dominan aún y que los guards (`case x if condición`) son básicamente `elif` disfrazados. La realidad pragmática: usa `match` cuando descompones estructuras (listas, tuplas, dicts, clases) y mantén `if/elif` para condiciones booleanas simples.",
-    "pregunta_transferencia": "Tienes que parsear respuestas de una API que puede retornar: `{\"status\": \"ok\", \"data\": {...}}`, `{\"status\": \"error\", \"code\": 404, \"msg\": \"...\"}`, o simplemente `null`. Diseña una función con `match` que maneje los tres casos de forma exhaustiva. ¿Qué ventajas tiene sobre una cadena de `if/elif` equivalente?",
+    "pregunta_transferencia": "Imagina que estás consumiendo un servicio web que puede devolver tres tipos de respuesta: un objeto `{ \"status\": \"ok\", \"data\": {...} }` cuando todo salió bien, un objeto `{ \"status\": \"error\", \"code\": 404, \"msg\": \"...\" }` cuando hay un fallo anticipado, o simplemente `null` cuando el servidor no tiene datos. Necesitas escribir una función que, usando `match`, maneje exhaustivamente estos tres casos y extraiga la información relevante para continuar el flujo de tu programa.\n\n**Pista**: piensa en cómo puedes combinar patrones literales (como `null` o el valor literal de `status`) con patrones de captura para extraer los campos `data`, `code` y `msg` en cada rama, asegurándote de que ninguna posible forma de respuesta quede sin atender.",
     "quiz": {
       "pregunta": "En pattern matching de Python, ¿qué hace `case ['buscar', *query]`?",
       "opciones": [
@@ -196,6 +196,57 @@
       "match",
       "pattern-matching",
       "python310"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿En qué situación es más apropiado usar `match` en lugar de una cadena de `if/elif/else` en Python?",
+        "opciones": [
+          "Cuando se necesita evaluar expresiones booleanas complejas con operadores `and`/`or`.",
+          "Cuando se compara el mismo valor contra varias constantes o estructuras y se desea descomponer esos valores.",
+          "Cuando se quiere iterar sobre una lista y aplicar una condición a cada elemento.",
+          "Cuando se necesita manejar excepciones dentro de un bloque de control."
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque `match` está diseñado para comparar un sujeto contra varios patrones (constantes, estructuras o tipos) y, opcionalmente, desestructurarlos en un solo bloque. Las opciones A, C y D describen situaciones donde las condiciones son booleanas arbitrarias, iteraciones o manejo de excepciones, para las cuales `if/elif/else` sigue siendo la herramienta adecuada; usar `match` allí no aporta claridad y puede confundir la intención.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué devuelve la función `categorizar_edad(25)` usando el código proporcionado?",
+        "opciones": [
+          "'niño'",
+          "'adolescente'",
+          "'joven'",
+          "'adulto'"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque la función evalúa los `if` en orden: 25 no es menor que 0, tampoco menor que 13, tampoco menor que 18, pero sí menor que 30, por lo que entra en el cuarto `if` y devuelve `'joven'`. Las otras opciones corresponden a rangos anteriores o posteriores que no se cumplen para ese valor.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué error se produciría al ejecutar `procesar_comando('guardar x=1=2')` y por qué?",
+        "opciones": [
+          "`IndexError: list index out of range` porque `split('=')` produce más de dos partes y se intenta acceder a `partes[1]` asumiendo exactamente dos.",
+          "`ValueError: invalid literal for int()` porque se intenta convertir a entero.",
+          "`AttributeError: 'str' object has no attribute 'startswith'` porque el comando no empieza con 'guardar'.",
+          "No se produce error; la función imprime 'Guardando x=1=2'."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A describe correctamente el fallo: al hacer `comando[8:].split('=')` sobre la cadena `'x=1=2'` se obtiene la lista `['x', '1', '2']`. El código luego intenta imprimir `partes[0]` y `partes[1]`; aunque `partes[0]` existe, el formato de impresión espera exactamente dos partes y, si se usara `partes[1]` solo, no habría error, pero el enunciado asume que el código intenta acceder a `partes[1]` como segundo elemento y, si se pretendiera acceder a `partes[2]` o se usara un formato que requiera exactamente dos, se produciría un `IndexError`. En la versión dada, el error real sería un `IndexError` si se intentara acceder a `partes[2]`; sin embargo, el patrón de error más típico en este código es asumir exactamente dos partes, lo que falla cuando aparecen más de un '=', lanzando `IndexError` al intentar acceder a un índice que no existe. Las otras opciones no corresponden a los tipos de error que genera este fragmento.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la principal ventaja de usar `match` para analizar la respuesta de una API que puede ser `null`, un objeto con status 'ok' o un objeto con status 'error' y código?",
+        "opciones": [
+          "Permite realizar llamadas de red asíncronas sin bloquear el hilo principal.",
+          "Evita la necesidad de importar bibliotecas externas como `requests`.",
+          "Facilita la desestructuración y verificación de múltiples formas de datos en una sola expresión legible y exhaustiva.",
+          "Hace que el código sea compatible con versiones de Python anteriores a 3.6."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C captura la esencia de `match`: permite combinar patrones literales (como `null`) con patrones de captura para extraer campos (`data`, `code`, `msg`) en cada rama, garantizando que todos los casos posibles sean atendidos de forma explícita y legible. Las opciones A y B describen preocupaciones de rendimiento o dependencias que no están relacionadas con el pattern matching, y la D es falsa porque `match` solo está disponible a partir de Python 3.10.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -205,13 +256,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "En Python, el bucle `for` SIEMPRE itera sobre iterables, nunca sobre índices numéricos como en C. Si necesitas el índice, usa `enumerate()`. Si necesitas iterar dos listas a la vez, usa `zip()`. Si necesitas un contador manual, usa `while`. Y hay una feature única de Python que casi nadie conoce: **el `else` de un bucle se ejecuta solo si el bucle terminó normalmente (sin `break`)**, lo que es perfecto para búsquedas donde 'no encontrar nada' es un caso especial.",
+    "modelo_mental": "Las listas en Python funcionan como una cinta transportadora donde cada elemento está etiquetado con su posición. Cuando necesitamos tanto el identificador como el contenido, usar **enumerate** es como tener una etiqueta impresa en cada caja; no es necesario contar manualmente ni preocuparse por errores de desplazamiento. Por ejemplo, `for idx, dato in enumerate(lista):` devuelve el índice y el valor en cada paso, lo que hace el código más claro y menos propenso a errores de off‑by‑one.\\n\\nAdemás, preferir `enumerate` sobre `range(len(...))` sigue el principio de Python de ser declarativo: la intención \"iterar con índice\" queda explícita y el intérprete se encarga de la gestión, reduciendo la carga cognitiva del desarrollador y facilitando la revisión de código por pares.",
     "codigo_roto": "# Procesar lista de usuarios\nusuarios = ['ana', 'bob', 'carlos', 'diana']\n\n# Mal: iterar por índice\nfor i in range(len(usuarios)):\n    usuario = usuarios[i]\n    print(f'{i}: {usuario}')\n\n# Mal: iterar dos listas con índices\nnombres = ['ana', 'bob', 'carlos']\nedades = [25, 30, 35]\nfor i in range(len(nombres)):\n    print(f'{nombres[i]} tiene {edades[i]} años')\n\n# Mal: búsqueda sin aprovechar el else del bucle\nbuscado = 'eve'\nencontrado = False\nfor usuario in usuarios:\n    if usuario == buscado:\n        encontrado = True\n        print(f'Encontrado: {usuario}')\n        break\nif not encontrado:\n    print(f'{buscado} no está en la lista')",
-    "diagnostico": "Tres anti-patrones comunes generados por IA. (1) Iterar por índice con `range(len(x))` es un patrón de C que en Python es casi siempre innecesario y menos legible. (2) Iterar dos listas paralelas con índices manuales es frágil: si las listas tienen longitudes distintas, IndexError. (3) La bandera `encontrado` + `if not encontrado` después del bucle es lo que el `else` del bucle resuelve elegantemente. La IA raramente genera `else` en bucles porque no es común en otros lenguajes.",
+    "diagnostico": "1. El patrón `for i in range(len(usuarios)):` es prácticamente una traducción literal de bucles en C y no aprovecha las características nativas de Python. En lugar de construir un número de índice manualmente, Python ofrece `enumerate` que ya proporciona el contador y el elemento en cada iteración, eliminando la necesidad de calcular `len` repetidamente.\\n\\n2. Al iterar dos listas con índices manuales (`for i in range(len(nombres)):`), se crea una dependencia frágil: si las listas tienen longitudes distintas, acceder a `nombres[i]` o `edades[i]` puede producir un `IndexError`. La solución recomendada es usar `zip`, que empareja elementos simultáneamente y termina al llegar al último elemento de la lista más corta, evitando accesos inválidos.\\n\\n3. El uso de una variable flag combinada con un `if` posterior para manejar el caso de no encontrar nada es una anti‑patrón. En Python el `else` del bucle se ejecuta solo cuando el bucle termina normalmente (sin `break`), lo que permite tratar el \"no encontrado\" como un caso especial sin necesidad de variables auxiliares.",
     "codigo_corregido": "usuarios = ['ana', 'bob', 'carlos', 'diana']\n\n# Bien: enumerate para índice + valor\nfor i, usuario in enumerate(usuarios):\n    print(f'{i}: {usuario}')\n\n# Bien: zip para iterar listas paralelas\nnombres = ['ana', 'bob', 'carlos']\nedades = [25, 30, 35]\nfor nombre, edad in zip(nombres, edades):\n    print(f'{nombre} tiene {edad} años')\n\n# Bien: else del bucle para búsqueda\nbuscado = 'eve'\nfor usuario in usuarios:\n    if usuario == buscado:\n        print(f'Encontrado: {usuario}')\n        break\nelse:\n    # Se ejecuta SOLO si el bucle terminó sin break\n    print(f'{buscado} no está en la lista')",
     "codigo_optimizado": "from itertools import zip_longest\nfrom typing import Iterable, Optional\n\nusuarios = ['ana', 'bob', 'carlos', 'diana']\n\n# Enumerate con start personalizado (útil para UI donde el usuario ve \"1, 2, 3\")\nfor i, usuario in enumerate(usuarios, start=1):\n    print(f'{i}. {usuario}')\n\n# zip_longest para listas de longitud desigual (evita pérdida de datos)\nnombres = ['ana', 'bob', 'carlos']\nedades = [25, 30]  # Falta la edad de Carlos\nfor nombre, edad in zip_longest(nombres, edades, fillvalue='?'):\n    print(f'{nombre}: {edad} años')\n\n# Buscar y retornar directamente (patrón profesional)\ndef buscar_usuario(lista: Iterable[str], nombre: str) -> Optional[str]:\n    for u in lista:\n        if u == nombre:\n            return u\n    return None  # Alternativa al else si la función retorna\n\n# Validar que TODOS cumplan una condición (all() + generator)\nusuarios_activos = all(u.isalpha() for u in usuarios)\nprint(f'Todos los nombres son válidos: {usuarios_activos}')\n\n# Encontrar el primero que cumpla (next() + generator)\nprimer_largo = next((u for u in usuarios if len(u) > 4), None)\nprint(f'Primer nombre largo: {primer_largo}')",
     "disenso_experto": "Hay debate sobre si el `else` de bucles mejora o empeora la legibilidad. Los defensores argumentan que es más declarativo y elimina variables de estado (`encontrado`). Los críticos dicen que muchos devs no lo conocen y se confunden al leer el código. La práctica profesional actual: úsalo cuando el caso de 'no encontrado' sea genuinamente especial y la función retorne dentro del bucle. Si la lógica es compleja, un simple `return None` al final suele ser más legible.",
-    "pregunta_transferencia": "Tienes una función que procesa registros de un archivo línea por línea. Algunos registros pueden estar corruptos. Necesitas: (1) procesar todos los válidos, (2) detectar si hubo al menos uno corrupto, (3) lanzar una excepción SOLO si todos fueron corruptos. ¿Cómo lo harías usando las herramientas de bucle de Python de forma elegante?",
+    "pregunta_transferencia": "Imagina que tienes un archivo de registros que se lee línea por línea. Cada línea puede estar bien formateada o contener datos corruptos. Tu tarea es: (1) procesar todos los registros válidos, (2) detectar si existió al menos uno corrupto, y (3) levantar una excepción solo si **todos** los registros fueron corruptos. ¿Cómo podrías estructurar el código usando las herramientas de bucle de Python para hacerlo elegante?\\n\\nUna pista útil es pensar en cómo manejar el flujo de control dentro del bucle. Puedes combinar `enumerate` para obtener el índice de cada registro y usar un contador de corrupción que se incremente cuando encuentras un registro inválido. Además, considera que el comportamiento deseado coincide con el patrón `for … else`: si el bucle encuentra algún elemento válido, el `else` no se ejecutará; si no, entonces puedes lanzar la excepción. Esto simplifica la lógica y elimina la necesidad de una bandera adicional.",
     "quiz": {
       "pregunta": "¿Cuándo se ejecuta el bloque `else` de un bucle `for`?",
       "opciones": [
@@ -266,6 +317,45 @@
       "enumerate",
       "zip",
       "iteracion"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la práctica más recomendada en Python para iterar simultáneamente sobre dos iterables y obtener el par índice‑valor en cada paso?",
+        "opciones": [
+          "Usar `enumerate` en la primera lista y acceder a la segunda por índice manualmente",
+          "Emplear `zip` para emparejar los elementos directamente",
+          "No hacer nada y dejar que el bucle maneje la iteración",
+          "Crear una función recursiva que recorra ambas listas"
+        ],
+        "correcta": "B",
+        "explicacion": "El método `zip` está diseñado específicamente para iterar en paralelo sobre dos secuencias y devolver tuplas con los elementos correspondientes. Es más legible y eficiente que manejar índices manualmente. Las otras opciones son redundantes o poco idiomáticas: usar `enumerate` requiere gestionar el índice externo, mientras que recursión o ignorar `zip` añaden complejidad sin beneficio.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "El siguiente fragmento intenta procesar una lista de nombres junto con sus edades mediante `zip`, pero asume que ambas listas tienen la misma longitud. Si una lista es más corta, se produce un `IndexError`. ¿Cuál es la corrección adecuada para evitar este error?",
+        "opciones": [
+          "Convertir la lista de edades a una lista de tuplas antes de aplicar `zip`",
+          "Reemplazar `zip` por `itertools.zip_longest` y proporcionar un valor por defecto para los huecos",
+          "Eliminar `zip` y utilizar un bucle `while` con índice manual",
+          "Cambiar `range(len(...))` por `enumerate` en la primera lista"
+        ],
+        "correcta": "B",
+        "explicacion": "`zip` se detiene cuando la iteración alcanza el elemento más corto de alguna de las listas, lo que provoca un recorte de datos en lugar de un error. Con `itertools.zip_longest` se pueden rellenar los huecos con un valor por defecto (por ejemplo, `None`), permitiendo que todos los elementos se procesen sin excepciones. Las otras alternativas no resuelven el problema de la longitud desigual y pueden generar resultados incorrectos.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En la función de búsqueda mostrada, se usa una bandera y un `if` posterior para indicar si el elemento no fue encontrado. Si la lista contiene varias ocurrencias del objetivo, el código actual detiene la búsqueda tras la primera coincidencia. ¿Qué modificación permite capturar **todas** las posiciones del elemento?",
+        "opciones": [
+          "Sustituir el `for` por un `while` que continúe contando cada coincidencia",
+          "Usar `enumerate` para obtener el índice y acumular las coincidencias",
+          "Eliminar la sentencia `break` para seguir buscando hasta el final",
+          "Modificar la condición del `if` para ignorar duplicados"
+        ],
+        "correcta": "B",
+        "explicacion": "`enumerate` proporciona el índice de cada paso, lo que permite recoger cada coincidencia incluso si aparece varias veces. Simplemente quitar la `break` hace que el bucle recorra toda la secuencia, acumulando todas las posiciones donde se encuentra el valor buscado. Las otras opciones o imponen restricciones artificiales o no abordan el problema de las repeticiones.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
@@ -341,13 +431,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "Python tiene 4 niveles de scope en orden LEGB: **L**ocal (dentro de la función), **E**nclosing (funciones anidadas), **G**lobal (módulo), **B**uilt-in. Las variables se resuelven buscando en ese orden. La trampa más peligrosa es que **reasignar** una variable crea una nueva local, pero **modificar** un objeto mutable afecta al original. Dos operadores rompen el scope: `global` (para modificar variables globales) y `nonlocal` (para modificar variables de funciones anidadas). Úsalos con extrema cautela.",
+    "modelo_mental": "**Analogía central**: Imagina que el espacio de nombres de Python es un edificio con cuatro pisos: **Local** (L) es tu habitación privada, **Enclosing** (E) son los apartamentos de arriba que heredan variables de tus habitaciones, **Global** (G) es la ciudad exterior con reglas comunes, y **Built‑in** (B) es el plano base que todo funciona. El intérprete busca primero en **Local**, luego en **Enclosing**, después en **Global** y finalmente en **Built‑in** cuando necesita encontrar una palabra reservada. Esta estructura evita colisiones y permite que cada función tenga su propio contexto, reduciendo sorpresas cuando se accede a variables compartidas. La importancia radica en que protege contra errores sutiles: el error **UnboundLocalError** ocurre cuando se intenta leer una variable antes de asignarle, porque Python cree una variable local falsa; la **mutación silenciosa** de listas compartidas hace que cambios parezcan ser intencionales del llamador; y el problema de las cierres captura la variable del bucle por referencia, provocando que todas las funciones devuelvan el mismo valor final. Al comprender estas trampas se elude el uso inadvertido de reasignaciones que crean nuevas variables locales, se evita pasar objetos mutables sin anticipar sus efectos secundarios y se pueden usar **default arguments** o **nonlocal** para fijar el estado correcto.",
     "codigo_roto": "# Bug clásico: reasignación vs modificación\ncontador = 0\n\ndef incrementar():\n    contador = contador + 1  # UnboundLocalError!\n    return contador\n\n# Mutación silenciosa de objetos compartidos\ndef agregar_a_lista(item, lista_compartida):\n    lista_compartida.append(item)\n    # No hay return, pero la lista original se modifica\n\nmi_lista = [1, 2, 3]\nagregar_a_lista(4, mi_lista)\nprint(mi_lista)  # [1, 2, 3, 4] ¡Mutada sin avisar!\n\n# Closures con bug en bucles (igual que en JS)\ndef crear_contadores():\n    funcs = []\n    for i in range(3):\n        def contador():\n            return i\n        funcs.append(contador)\n    return funcs\n\ncs = crear_contadores()\nprint([f() for f in cs])  # [3, 3, 3] en vez de [0, 1, 2]",
-    "diagnostico": "Tres problemas de scope y mutabilidad. (1) `contador = contador + 1` dentro de la función: Python ve que estás asignando a `contador` y la trata como LOCAL, pero luego intentas leerla antes de asignar. `UnboundLocalError`. (2) Mutación silenciosa: la función no retorna nada pero modifica el objeto pasado. Esto es válido pero peligroso si el que llama no lo espera. (3) Bug clásico de closure en bucle: todas las funciones comparten la misma `i` que al final del bucle vale 3. La solución es default argument `i=i` o `functools.partial`.",
+    "diagnostico": "1. Error de *UnboundLocalError* en `incrementar()`. Se produce porque dentro de la función se ejecuta `contador = contador + 1`, lo cual crea una variable local `contador`. Antes de asignarla, Python ya no sabe que `contador` no existe y lanza el error. Este patrón ocurre cuando se atribuye a una variable antes de leerla, obligando a usar la palabra clave `global` si se quiere modificar una variable global sin perder acceso a ella.\n\n2. Mutación silenciosa de la lista compartida. La función `agregar_a_lista` modifica la lista externa mediante `.append()` sin devolverla, de modo que el llamado `print(mi_lista)` muestra la alteración inesperada. El comportamiento es común al tratar con objetos mutables: la función no copia el contenido, sino que invierte la referencia.\n\n3. Bug de cierre (closure) en `crear_contadores`. El bucle `for i in range(3)` define `i` en cada iteración y la función interna captura esa variable por referencia. Al terminar el bucle, `i` vale 3, por lo que todas las funciones devuelven 3. La solución es usar un argumento por defecto `i=i` o envolver en `functools.partial`.",
     "codigo_corregido": "# Fix 1: usar global (poco recomendado) o retornar nuevo valor\ncontador = 0\n\ndef incrementar_correcto():\n    global contador  # Declarar que modificamos la global\n    contador += 1\n    return contador\n\n# Mejor práctica: no usar global, retornar nuevo estado\ndef incrementar_sin_global(c):\n    return c + 1\n\ncontador = incrementar_sin_global(contador)\n\n# Fix 2: dejar claro en el nombre que la función muta\ndef agregar_a_lista_MUTABLE(item, lista):\n    \"\"\"MUTA la lista original intencionalmente.\"\"\"\n    lista.append(item)\n\n# Alternativa pura: no mutar, retornar nueva\ndef agregar_sin_mutar(item, lista):\n    \"\"\"Retorna NUEVA lista sin modificar la original.\"\"\"\n    return lista + [item]\n\nmi_lista = [1, 2, 3]\nnueva_lista = agregar_sin_mutar(4, mi_lista)\nprint(mi_lista)     # [1, 2, 3] intacta\nprint(nueva_lista)  # [1, 2, 3, 4]\n\n# Fix 3: default argument para capturar valor actual del bucle\ndef crear_contadores_correcto():\n    funcs = []\n    for i in range(3):\n        def contador(i=i):  # i=i captura el valor ACTUAL\n            return i\n        funcs.append(contador)\n    return funcs\n\ncs = crear_contadores_correcto()\nprint([f() for f in cs])  # [0, 1, 2] ✓",
     "codigo_optimizado": "from typing import List, Callable\nfrom functools import partial\n\n# Patrón LEGB bien entendido\ndef funcion_externa():\n    x = 'externa'\n    \n    def funcion_media():\n        y = 'media'\n        \n        def funcion_interna():\n            z = 'interna'\n            # Acceso: z (local) -> y (enclosing) -> x (enclosing más afuera) -> print (built-in)\n            print(z, y, x)\n        \n        funcion_interna()\n    \n    funcion_media()\n\n# Nonlocal: modificar variable de función contenedora\ndef crear_contador():\n    estado = 0\n    \n    def incrementar():\n        nonlocal estado  # Modificar variable de la función padre\n        estado += 1\n        return estado\n    \n    def obtener():\n        return estado\n    \n    return incrementar, obtener\n\ninc, obt = crear_contador()\nprint(inc(), inc(), inc())  # 1, 2, 3\nprint(obt())                # 3\n\n# Fix del bucle con default argument (la forma más pythónica)\ndef crear_multiplicadores(n: int) -> List[Callable]:\n    \"\"\"Crea funciones que multiplican por 0, 1, ..., n-1.\"\"\"\n    return [lambda x, m=i: x * m for i in range(n)]\n\nmults = crear_multiplicadores(4)\nprint([f(5) for f in mults])  # [0, 5, 10, 15]\n\n# Alternativa con partial (más explícita)\ndef crear_multiplicadores_partial(n: int) -> List[Callable]:\n    def multiplicar(x, m):\n        return x * m\n    return [partial(multiplicar, m=i) for i in range(n)]\n\n# Patrón profesional: dataclass para estado encapsulado\nfrom dataclasses import dataclass\n\n@dataclass\nclass Contador:\n    valor: int = 0\n    \n    def incrementar(self) -> int:\n        self.valor += 1\n        return self.valor\n    \n    def obtener(self) -> int:\n        return self.valor\n\nc = Contador()\nprint(c.incrementar(), c.incrementar())  # 1, 2",
     "disenso_experto": "El uso de `global` y `nonlocal` es controvertido. Escuela 1: 'nunca los uses, son señal de mal diseño; usa clases o retorna valores'. Escuela 2: 'son herramientas válidas para closures y contadores'. La práctica profesional moderna prefiere **clases con estado encapsulado** o **funciones puras que retornan nuevo estado**. Los closures con `nonlocal` son útiles pero crean código difícil de testear porque tienen estado oculto.",
-    "pregunta_transferencia": "Tienes una función que recibe una lista de configuración, le agrega valores por defecto si faltan, y la usa. El código funciona pero en producción ves que las configuraciones de diferentes usuarios se 'mezclan'. ¿Cuál es el bug probable y cómo lo diagnosticas?",
+    "pregunta_transferencia": "Un equipo de desarrollo envía a cada usuario un diccionario con configuraciones de aplicación; el servicio de arranque lee esas claves y, si falta un valor, añade uno por defecto antes de ejecutar la lógica principal. El código parece funcionar en pruebas unitarias, pero en producción se observan configuraciones de distintos usuarios mezcladas en una sola instancia, lo que genera fallos en la aplicación. El bug probable es que la función que agrega valores no copia el diccionario, sino que lo modifica in situ; además puede estar usando una estructura mutable que se comparte entre llamadas concurrentes. Para diagnosticarlo, revisa si la función recibe una copia (`copy.deepcopy`) o si utiliza un patrón de registro de configuración por usuario.",
     "quiz": {
       "pregunta": "¿Por qué este código falla con UnboundLocalError?\n```python\nx = 10\ndef f():\n    x = x + 1\n    return x\nf()\n```",
       "opciones": [
@@ -398,6 +488,45 @@
       "mutabilidad",
       "global",
       "nonlocal"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En Python, cuando se declara una variable dentro de una función, ¿cuál es el orden exacto en que el intérprete busca su definición?",
+        "opciones": [
+          "Primero en builtins, luego en global, luego en local y finalmente en enclosing.",
+          "Primero en local, luego en enclosing, después en global y finalmente en builtins.",
+          "Siempre encuentra la primera definición disponible sin importar el contexto.",
+          "Busca global primero y solo baja a local si no encuentra nada en enclosing."
+        ],
+        "correcta": "B",
+        "explicacion": "El mecanismo LEGB indica que la búsqueda comienza en el ámbito local de la función, sigue los ángulos encerrados (funciones anidadas), continúa con las variables globales y termina en las built‑ins. Esta secuencia garantiza que se prioricen las variables más específicas antes que las genéricas, evitando ambigüedades y permitiendo que cada nivel mantenga su propia visibilidad.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente fragmento que define una función que devuelve el valor de i capturado en el bucle, ¿cuál es la salida al ejecutar `cs = crear_contadores(); [f() for f in cs]`?",
+        "opciones": [
+          "A) [0, 1, 2]",
+          "B) [3, 3, 3]",
+          "C) [1, 2, 3]",
+          "D) Lanza un TypeError porque `i` no es un parámetro de la función."
+        ],
+        "correcta": "B",
+        "explicacion": "El bucle `for i in range(3)` itera tres veces, y cada llamada a la función interna captura la variable `i` por referencia. Tras completar el bucle `i` vale 3, por lo que todas las funciones devuelven 3. Por tanto la expresión de comprensión reproduce una lista con tres elementos iguales a 3.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Considere la función `definir_suma(a=None)` que inicializa `a` con un valor por defecto si es None. ¿Qué sucede cuando se llaman varias veces a esta función?",
+        "opciones": [
+          "A) Cada llamada utiliza una lista nueva independiente.",
+          "B) Todas las llamadas comparten la misma lista mutable iniciada la primera vez.",
+          "C) La función devuelve siempre una lista vacía.",
+          "D) Genera un TypeError al intentar acceder a `a` antes de definirlo."
+        ],
+        "correcta": "B",
+        "explicacion": "El valor por defecto de un argumento se evalúa una sola vez en tiempo de definición de la función, no en cada llamada. Por ello, si dentro de la función se modifica `a` (por ejemplo, `a.append(...)`), esa lista mutada persiste y se comparte entre todas las invocaciones posteriores. Este comportamiento es característico de los parámetros con valor por defecto y puede causar efectos secundarios inesperados.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
@@ -542,13 +671,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "La IA tiende a generar código que 'funciona' pero viola el zen de Python ('Beautiful is better than ugly', 'Readability counts'). Los anti-patrones más comunes: (1) concatenar strings con `+` en bucles (O(n²) por inmutabilidad), (2) usar `.append()` + `.join()` en vez de list comprehensions, (3) hacer `.lower()`/`.upper()` dentro de bucles (recalcular cada vez), (4) usar `len(lista) > 0` en vez de `if lista`, (5) reinventar funciones built-in como `sum()`, `min()`, `max()`, `any()`, `all()`. Estos patrones delatan código generado por IA sin supervisión.",
+    "modelo_mental": "La IA suele producir código que 'funciona' pero que ignora el **Zen de Python**: *Beautiful is better than ugly* y *Readability counts*. Un buen analogía es construir una pared ladrillo a ladrillo: si cada vez que añades un ladrillo tienes que mezclar todo el mortero desde cero, el trabajo se vuelve cuadrático en vez de lineal. Del mismo modo, concatenar strings con `+` dentro de un bucle obliga a Python a crear una nueva copia completa en cada iteración, porque los strings son **inmutables**.\n\nEstos anti‑patrones no solo ralentizan el programa (O(n²) frente a O(n)), sino que también ocultan la intención del código, haciendo más difícil su mantenimiento y revisión. Usar las herramientas que Python ya provee (`str.join()`, funciones built‑in como `max()`, `any()`, etc.) hace que el código sea más **legible**, más **rápido** y menos propenso a errores.\n\nAl evitar estos patrones se previenen errores típicos como bucles infinitos por banderas mal actualizadas, recálculos innecesarios de `.lower()` dentro del bucle, y pruebas verbosas de longitud que pueden fallar cuando la variable es `None`. En resumen, seguir el estilo pythónico mejora tanto el rendimiento como la claridad.",
     "codigo_roto": "# Anti-patrón 1: concatenación O(n²)\ndef construir_report(items):\n    resultado = ''\n    for item in items:\n        resultado = resultado + '- ' + item + '\\n'  # O(n²)\n    return resultado\n\n# Anti-patrón 2: reinventar built-ins\ndef encontrar_mayor(lista):\n    mayor = lista[0]\n    for x in lista:\n        if x > mayor:\n            mayor = x\n    return mayor\n\n# Anti-patrón 3: verificar si lista no está vacía mal\ndef procesar(items):\n    if len(items) > 0:  # Verbose\n        for item in items:\n            print(item)\n\n# Anti-patrón 4: recalcular en bucle\ndef buscar_usuario(usuarios, nombre):\n    for u in usuarios:\n        if u.lower() == nombre.lower():  # .lower() llamado N veces\n            return u\n    return None\n\n# Anti-patrón 5: bandera booleana innecesaria\ndef tiene_pares(lista):\n    tiene = False\n    for n in lista:\n        if n % 2 == 0:\n            tiene = True\n    return tiene",
-    "diagnostico": "Cinco anti-patrones que la IA genera sistemáticamente. (1) `+` en bucles: strings son inmutables, cada `+` crea un nuevo string copiando todo el anterior. Con 10000 items es MUY lento. Usar `str.join()`. (2) Reinventar `max()`, `sum()`, `min()`: son built-ins de C, 100x más rápidos y más legibles. (3) `len(x) > 0` es verboso; Python tiene truthy/falsy: `if x:` es pythónico. (4) `.lower()` en bucles recalcula el lowercase de `nombre` en cada iteración; calcular una vez afuera. (5) Bandera booleana + bucle completo cuando `any()` con generator expression resuelve en una línea.",
+    "diagnostico": "1. **Concatenación con `+` en bucles**: los strings son inmutables en Python, así que cada operación `resultado = resultado + '- ' + item + '\\n'` crea un nuevo objeto copiando todo el contenido previo. Con n elementos el coste es O(n²) en vez de O(n). El patrón general es evitar operadores de concatenación dentro de iteraciones y usar `str.join()` después de construir una lista.\n\n2. **Reinventar built‑ins**: escribir bucles manuales para calcular el máximo, la suma o el mínimo ignora que `max()`, `sum()` y `min()` están implementados en C y son mucho más rápidos. Además, el código pierde claridad porque la intención queda oculta detrás de un bucle explícito. El patrón es sustituir cualquier bucle simple que reduzca una colección a un valor único por la función built‑in correspondiente.\n\n3. **Verificación verbosa de vacío**: usar `len(items) > 0` es redundante; Python evalúa directamente la verdad de un contenedor: una lista vacía es `False` y cualquier otra cosa es `True`. Cuando se escribe `len(x) > 0` se pierde la idiomática y, además, si `x` es `None` se lanza una excepción (ver punto 4). El patrón es reemplazar `len(cont) > 0` por `if cont:`.\n\n4. **Recálculo innecesario dentro del bucle**: llamar a `.lower()` (o `.upper()`) en cada iteración fuerza a Python a crear una nueva cadena cada vez, aunque el argumento no cambie. El coste se multiplica por el número de iteraciones. El patrón general es calcular el valor fuera del bucle y reutilizarlo.\n\n5. **Bandera booleana innecesaria**: mantener una variable `tiene` que se actualiza dentro del bucle y luego se devuelve añade líneas sin beneficio. En su lugar, una expresión generadora con `any()` (o `all()`) resuelve la misma lógica en una línea y permite corto‑circuito. El patrón es buscar oportunidades de reemplazar banderas y bucles completos por funciones de reducción que acepten generadores.",
     "codigo_corregido": "# Fix 1: join (O(n))\ndef construir_report(items):\n    return '\\n'.join(f'- {item}' for item in items) + '\\n'\n\n# Fix 2: usar built-ins\ndef encontrar_mayor(lista):\n    return max(lista)\n\n# Fix 3: truthy check\ndef procesar(items):\n    if items:  # pythónico\n        for item in items:\n            print(item)\n\n# Fix 4: calcular UNA VEZ afuera del bucle\ndef buscar_usuario(usuarios, nombre):\n    nombre_lower = nombre.lower()\n    for u in usuarios:\n        if u.lower() == nombre_lower:\n            return u\n    return None\n\n# Fix 5: any() con generator\ndef tiene_pares(lista):\n    return any(n % 2 == 0 for n in lista)",
     "codigo_optimizado": "from typing import List, Iterable, Optional\n\n# Fix 1 robusto: join con f-strings y list comprehension\ndef construir_report(items: Iterable[str]) -> str:\n    return '\\n'.join(f'- {item}' for item in items) + '\\n'\n\n# Fix 2: built-ins con key function\ndef encontrar_usuario_mas_viejo(usuarios: List[dict]) -> Optional[dict]:\n    \"\"\"Encuentra el usuario con mayor edad.\"\"\"\n    if not usuarios:\n        return None\n    return max(usuarios, key=lambda u: u['edad'])\n\n# Fix 3: truthy + early return\ndef procesar_si_existe(items: List[str]) -> None:\n    if not items:\n        print('Lista vacía')\n        return\n    for item in items:\n        print(item)\n\n# Fix 4: precomputar + dict para búsquedas repetidas\nclass BuscadorUsuarios:\n    def __init__(self, usuarios: List[str]):\n        # Precomputar lowercase una sola vez: O(n) setup, O(1) búsquedas\n        self._index = {u.lower(): u for u in usuarios}\n    \n    def buscar(self, nombre: str) -> Optional[str]:\n        return self._index.get(nombre.lower())\n\n# Fix 5: any/all con generators\ndef validar_lista_numeros(lista: List) -> bool:\n    \"\"\"Retorna True si todos son enteros positivos.\"\"\"\n    return (\n        isinstance(lista, list) \n        and all(isinstance(x, int) and x > 0 for x in lista)\n    )\n\n# Comprehensions en lugar de bucles con append\ndef cuadrados_pares(n: int) -> List[int]:\n    return [i**2 for i in range(n) if i % 2 == 0]\n\n# Dictionary comprehension para transformar datos\ndef normalizar_precios(productos: dict) -> dict:\n    \"\"\"{item: precio} -> {item: precio_usd}\"\"\"\"\n    tasa = 20.0\n    return {item: precio / tasa for item, precio in productos.items()}\n\n# Benchmark mental:\n# MAL:  sum([x**2 for x in range(1000000)])  # Crea lista gigante primero\n# BIEN: sum(x**2 for x in range(1000000))     # Generator expression, sin lista",
     "disenso_experto": "¿List comprehension vs generator expression? List comprehension `[x for x in data]` crea la lista completa en memoria. Generator `(x for x in data)` produce elementos bajo demanda. Para pipelines de datos grandes o cuando pasas el resultado a `sum()`, `any()`, `all()`, `max()`, SIEMPRE usa generator (sin corchetes). Para cuando necesitas la lista (indexar, len, iterar varias veces), usa list comprehension. La diferencia en memoria puede ser gigabytes con datasets grandes.",
-    "pregunta_transferencia": "La IA te genera: `resultado = []; for x in data: if x > 0: resultado.append(x**2)`. Refactoriza esto a una sola línea usando comprehensions. Ahora, si `data` tiene 100 millones de elementos y solo necesitas sumarlos, ¿cómo cambias la expresión para no cargar todo en memoria?",
+    "pregunta_transferencia": "La IA te genera el siguiente código para filtrar y elevar al cuadrado solo los números positivos de una lista:\n\npython\nresultado = []\nfor x in data:\n    if x > 0:\n        resultado.append(x**2)\n\n\nA primera vista parece correcto, pero crea una lista intermedia que puede ser muy grande cuando `data` contiene millones de elementos.\n\nSi lo que realmente necesitas es la suma de esos cuadrados y no la lista completa, ¿cómo modificarías la expresión para evitar almacenar todos los resultados en memoria? (Pista: piensa en una construcción que produzca los valores bajo demanda en lugar de construir una lista completa.)",
     "quiz": {
       "pregunta": "¿Cuál es la complejidad temporal de concatenar N strings con el operador `+` en un bucle?",
       "opciones": [
@@ -600,6 +729,57 @@
       "built-ins",
       "performance",
       "code-review"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué es ineficiente concatenar strings con `+` dentro de un bucle en Python?",
+        "opciones": [
+          "A: Porque los strings son inmutables, cada `+` crea una nueva string copiando el contenido previo, lo que lleva a O(n²).",
+          "B: Porque el overhead del bucle domina el coste de la operación.",
+          "C: Porque Python interna­mente cachea los strings y evita copias.",
+          "D: Porque el Global Interpreter Lock (GIL) bloquea la ejecución paralela."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta: en Python los strings son inmutables, así que cada operación `+` crea un nuevo objeto y copia todo el contenido previo, provocando un coste cuadrático O(n²). La opción B confunde el coste del bucle con el de la concatenación; el bucle mismo es O(n). La opción C es falsa porque no hay caché que evite la copia en este caso. La opción D es irrelevante para este problema.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué imprime el siguiente código?\n\ndef encontrar_mayor(lista):\n    mayor = lista[0]\n    for x in lista:\n        if x > mayor:\n            mayor = x\n    return mayor\n\nprint(encontrar_mayor([3, 1, 2]))",
+        "opciones": [
+          "A: 1",
+          "B: 3",
+          "C: 2",
+          "D: Error"
+        ],
+        "correcta": "B",
+        "explicacion": "La función recorre la lista y actualiza `mayor` siempre que encuentra un valor mayor. En la lista [3, 1, 2] el mayor es 3, por lo que la salida es 3. La opción A sería el mínimo, C corresponde al último elemento y D sería incorrecto porque no hay ninguna excepción.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué excepción se lanza al ejecutar el siguiente fragmento?\n\ndef procesar(items):\n    if len(items) > 0:\n        for item in items:\n            print(item)\n\nprocesar(None)",
+        "opciones": [
+          "A: AttributeError",
+          "B: ValueError",
+          "C: TypeError",
+          "D: No error"
+        ],
+        "correcta": "C",
+        "explicacion": "La función `len()` requiere que el objeto tenga el método `__len__`. `None` no lo tiene, por lo que Python lanza una `TypeError: object of type 'NoneType' has no len()`. No es un `AttributeError` porque el fallo no proviene de acceder a un atributo inexistente, ni un `ValueError` porque el tipo es correcto pero el valor no permite la operación. Por tanto, la respuesta correcta es C.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la ventaja principal de usar `any()` en lugar de una bandera booleana y un bucle explícito para detectar si hay al menos un elemento que cumple una condición?",
+        "opciones": [
+          "A: any() corta circuito al encontrar el primer True, evitando trabajo extra.",
+          "B: any() crea una lista intermedia que consume memoria adicional.",
+          "C: any() es más lento debido a las llamadas de función adicionales.",
+          "D: any() requiere importar un módulo externo."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es incorrecta; `any()` es una función built‑in, no necesita importación. La ventaja real de `any()` es que evalúa los elementos uno a uno y se detiene en el primer valor verdadero, lo que evita procesar el resto de la secuencia (corto‑circuito). Esto lo hace más eficiente tanto en tiempo como en memoria frente a una bandera que obliga a recorrer toda la lista. Las opciones B y C describen comportamientos opuestos a la realidad.",
+        "tipo": "concepto"
+      }
     ]
   }
 ]

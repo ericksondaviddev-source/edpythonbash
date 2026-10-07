@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "Una lista de Python es un array dinámico (no una lista enlazada): acceso por índice O(1), append al final O(1) amortizado, pero insertar/eliminar al inicio O(n) porque desplaza todos los elementos. El slicing crea copias superficiales. `append` agrega UN elemento; `extend` agrega CADA elemento de un iterable. Conocer estos costos te dice cuándo una lista es la herramienta equivocada (colas → deque, búsquedas → set/dict).",
+    "modelo_mental": "Una lista de Python funciona como un **array dinámico contiguo en memoria**, no como una lista enlazada. Imagina un estacionamiento donde los autos están uno al lado del otro: para llegar al auto número 5 solo necesitas sumar una dirección base, por lo que el acceso por índice es **O(1)**. Sin embargo, si sacas el primer auto, todos los demás deben moverse un puesto a la izquierda para cerrar el hueco, lo que convierte a `pop(0)` o `insert(0, x)` en operaciones **O(n)**. Esta estructura define el comportamiento base de tus datos y es la razón principal de los cuellos de botella en bucles de procesamiento.\n\nLos costos de inserción y copia son la trampa más común para los desarrolladores. Agregar al final con `append` es rápido (**O(1) amortizado**) porque solo hay que escribir en el siguiente hueco libre, pero hacer un `slicing` como `lista[1:5]` crea una **copia superficial** de esos elementos, duplicando el uso de memoria temporalmente. Además, es crucial distinguir `append([x])`, que guarda un solo objeto lista, de `extend(iterable)`, que desempaqueta cada elemento; confundirlos genera listas anidadas inesperadas que rompen el contrato de los datos.\n\nConocer estos costos te permite elegir la herramienta correcta antes de escribir código. Si necesitas una cola donde saques elementos del frente frecuentemente, una lista es la herramienta equivocada y deberías usar `collections.deque` para evitar la complejidad cuadrática. Del mismo modo, si buscas pertenencia a un conjunto, un `set` o `dict` son **O(1)** mientras que una lista es **O(n)**. Entender esto previene bugs de rendimiento y de mutación no documentada en tiempo de ejecución.",
     "codigo_roto": "def procesar_cola(tareas):\n    resultados = []\n    while len(tareas) > 0:\n        tarea = tareas.pop(0)        # O(n) cada vez: O(n²) total\n        resultados.append([tarea.upper()])  # ¡lista anidada en vez de valor!\n    return resultados\n\ncola = ['limpiar', 'cocinar', 'estudiar']\nprint(procesar_cola(cola))  # [['LIMPIAR'], ['COCINAR'], ['ESTUDIAR']]\nprint(cola)                 # [] ¡la lista original quedó destruida!",
-    "diagnostico": "Tres problemas que la IA genera cuando no especificas contrato. (1) pop(0) es O(n): con 10k tareas hace ~50M desplazamientos. (2) append([x]) crea una lista de listas; si querías una lista plana, es extend o append(x). (3) La función MUTA la lista del llamador y la deja vacía: efecto secundario no documentado. El llamador que reutilice su lista encontrará [] y no entenderá por qué.",
+    "diagnostico": "1. **Complejidad O(n²) por `pop(0)`**: Python implementa las listas como arrays dinámicos, no como listas enlazadas. Cada vez que llamas a `tareas.pop(0)`, el intérprete debe desplazar manualmente todos los elementos restantes una posición a la izquierda para rellenar el hueco al inicio. En un bucle que procesa `n` elementos, esto genera una suma de desplazamientos proporcional a n*(n+1)/2, lo que hace que el algoritmo se vuelva cuadrático y sea inviable con miles de tareas. El patrón general es evitar eliminar del índice 0 en bucles; usa `collections.deque.popleft()` si necesitas una cola.\n\n2. **Lista anidada por `append([x])`**: El método `append` espera un único argumento y lo agrega como un elemento más. Al pasarle `[tarea.upper()]`, estás agregando una lista que contiene un string, en lugar del string directamente. El patrón general es usar `append(valor)` para un elemento o `extend(iterable)` si quieres agregar varios elementos individuales. El error produce una estructura `[['LIMPIAR'], ...]` que rompe el contrato de datos esperado por el consumidor de la función y suele detectarse tarde al intentar iterar sobre los resultados.\n\n3. **Efecto secundario de mutación**: Las listas en Python se pasan por referencia, por lo que `pop(0)` modifica la lista original que recibió el llamador, dejándola vacía `[]`. Este es un efecto secundario no documentado y peligroso: el código que llamó a la función asume que su lista sigue intacta y encontrará datos faltantes más adelante, haciendo el debug extremadamente difícil porque el daño ocurrió en otra parte del flujo de ejecución. La regla general es no mutar los argumentos de entrada a menos que esté explícitamente documentado o se trabaje sobre una copia interna.",
     "codigo_corregido": "def procesar_cola(tareas):\n    \"\"\"Versión pura: NO muta la entrada.\"\"\"\n    resultados = []\n    for tarea in tareas:\n        resultados.append(tarea.upper())\n    return resultados\n\ncola = ['limpiar', 'cocinar', 'estudiar']\nprint(procesar_cola(cola))  # ['LIMPIAR', 'COCINAR', 'ESTUDIAR']\nprint(cola)                 # intacta",
     "codigo_optimizado": "from collections import deque\n\n# Versión pythónica: list comprehension (pura, O(n), una línea)\ndef procesar_cola(tareas):\n    return [t.upper() for t in tareas]\n\n# Si REALMENTE necesitas consumir una cola FIFO (productor/consumidor),\n# deque es la estructura correcta: popleft es O(1)\ndef consumir_cola(tareas):\n    cola = deque(tareas)\n    while cola:\n        tarea = cola.popleft()  # O(1)\n        yield tarea.upper()     # generator: no acumula en memoria\n\n# append vs extend — la diferencia que causa bugs\na = [1, 2]\na.append([3, 4])   # a = [1, 2, [3, 4]]  ← un elemento (la lista)\na2 = [1, 2]\na2.extend([3, 4])  # a2 = [1, 2, 3, 4]   ← cada elemento\n\n# Slicing útil:\nultimos3 = cola[-3:]     # últimos 3 sin modificar\ncopia_rapida = cola[:]   # copia superficial (equivale a cola.copy())\npaso2 = cola[::2]        # cada segundo elemento\ninvertida = cola[::-1]   # copia invertida (NO muta; para mutar: cola.reverse())",
     "disenso_experto": "¿list o deque para colas? Si solo agregas/quitas por el FINAL (pila), list es suficiente e incluso más rápido (menos overhead). Si quitas por el INICIO (cola FIFO), deque es obligatorio: list.pop(0) es O(n) y deque.popleft() es O(1). El error común es usar list para todo y pagar O(n²) sin notarlo hasta que el dataset crece. Regla: '¿pop por la izquierda? → deque'.",
-    "pregunta_transferencia": "Tienes una lista de 1M de elementos y debes procesarla en orden inverso sin mutarla. Compara lista[::-1], reversed(lista) y lista.reverse(): ¿cuál crea copia completa en memoria, cuál retorna iterador perezoso y cuál muta el original? ¿Cuál usarías en un bucle y cuál si necesitas indexar después?",
+    "pregunta_transferencia": "Imagina que recibes una lista de un millón de registros que deben procesarse en orden inverso, pero no puedes permitirte destruir la lista original ni gastar memoria extra en una copia completa si es evitable. Tienes tres herramientas disponibles: el slicing `lista[::-1]`, la función `reversed(lista)` y el método `lista.reverse()`. Tu desafío es determinar cuál de estas opciones genera una copia física completa de los datos en memoria, cuál retorna un iterador perezoso que no duplica el almacenamiento y cuál modifica la estructura directamente.\n\nPara resolverlo, considera el costo de tiempo y memoria de cada una en el contexto de un millón de elementos. `reversed()` es eficiente porque solo mantiene un puntero hacia atrás sin copiar, pero no permite indexación directa ni crear una nueva lista sin iterar. `lista[::-1]` es inmediata pero duplica la memoria. `lista.reverse()` es eficiente en memoria pero tiene el efecto secundario de mutación. Decide cuál usarías dentro de un bucle simple y cuál reservarías si necesitas acceder a elementos por índice después del proceso, justificando tu elección con los costos de complejidad.",
     "quiz": {
       "pregunta": "¿Cuál es el costo de list.pop(0) en una lista de n elementos?",
       "opciones": [
@@ -31,17 +31,93 @@
       "setup_code": "",
       "codigo_inicial": "def mezclar_tags(lista_a, lista_b):\n    for tag in lista_b:\n        lista_a.append(tag)\n    lista_a.append(lista_b)\n    return lista_a",
       "test_code": "a = ['py', 'bash']\nb = ['linux', 'git']\nr = mezclar_tags(a, b)\nassert r == ['py', 'bash', 'linux', 'git'], f'Resultado incorrecto: {r}'\nassert a == ['py', 'bash'], f'lista_a fue mutada: {a}'\nassert b == ['linux', 'git'], f'lista_b fue mutada: {b}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["lista_a.append", "lista_b.append"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "lista_a.append",
+        "lista_b.append"
+      ],
       "solucion": "def mezclar_tags(lista_a, lista_b):\n    return lista_a + lista_b"
     },
     "audio_script": "Las listas de Python no son lo que parecen. Por dentro son arrays dinámicos: una tabla de referencias contigua en memoria. Eso hace que acceder por índice sea instantáneo y agregar al final sea barato, pero quitar del principio es carísimo, porque cada elemento restante debe moverse un lugar. Si haces pop cero dentro de un bucle con diez mil tareas, estás moviendo millones de elementos sin darte cuenta. Para eso existe deque, la lista de doble punta del módulo collections. Segunda lección: append agrega una cosa, extend agrega muchas. Si le pasas una lista a append, te queda una lista dentro de otra lista, el bug más común del principiante. Tercera lección: decide siempre si tu función puede mutar la lista que recibe o no. Si la respuesta es no, usa comprensión o el operador más, que crean listas nuevas. El que te llama necesita saber si su lista va a sobrevivir intacta.",
     "video_prompt": "Video de 70 segundos. Animación de array en memoria: pop(0) hace que todos los bloques se desplomen una posición (mostrar contador de operaciones creciendo). Comparar con deque: bloques en estructura de doble extremo donde popleft solo mueve un puntero. Segunda escena: append([3,4]) mostrando caja dentro de caja vs extend([3,4]) mostrando elementos sueltos. Overlay: '¿Pop por la izquierda? → deque. ¿Agregar muchos? → extend.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 3-4", "Fluent Python Cap 2 (secuencias)", "Effective Python Item 7"],
-      "conceptos_clave": ["listas", "arrays-dinamicos", "pop", "deque", "append-vs-extend", "slicing", "mutacion"]
+      "libros_fuente": [
+        "Python Crash Course Cap 3-4",
+        "Fluent Python Cap 2 (secuencias)",
+        "Effective Python Item 7"
+      ],
+      "conceptos_clave": [
+        "listas",
+        "arrays-dinamicos",
+        "pop",
+        "deque",
+        "append-vs-extend",
+        "slicing",
+        "mutacion"
+      ]
     },
-    "tags_rag": ["python", "listas", "deque", "slicing", "append", "extend", "performance"]
+    "tags_rag": [
+      "python",
+      "listas",
+      "deque",
+      "slicing",
+      "append",
+      "extend",
+      "performance"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué el uso de `pop(0)` dentro de un bucle sobre una lista de Python tiene un costo computacional alto?",
+        "opciones": [
+          "Porque libera la memoria del primer elemento inmediatamente sin reorganizar la estructura.",
+          "Porque desplaza todos los elementos restantes una posición a la izquierda para cerrar el hueco.",
+          "Porque crea una copia completa de la lista en cada iteración del bucle.",
+          "Porque convierte los elementos de la lista en objetos de tipo string automáticamente."
+        ],
+        "correcta": "B",
+        "explicacion": "Las listas de Python son arrays dinámicos de memoria contigua. Al eliminar el índice 0, el intérprete debe mover todos los elementos restantes una posición a la izquierda para cerrar el hueco, lo que es una operación lineal O(n) por eliminación. No es O(1) como en una pila o deque, ni O(n²) por operación individual (aunque el bucle completo sea O(n²)).",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué imprime el siguiente código al ejecutarse? `x = [1]; y = x; y.append(2); print(x)`",
+        "opciones": [
+          "[1]",
+          "[2]",
+          "[1, 2]",
+          "Error: TypeError por mutabilidad"
+        ],
+        "correcta": "C",
+        "explicacion": "En Python, las listas son objetos mutables pasados por referencia. Cuando asignas `y = x`, ambas variables apuntan al mismo objeto en memoria. `y.append(2)` modifica ese objeto compartido, por lo que `x` también refleja el cambio. No se crea una copia implícita al asignar, ni se lanza error por mutabilidad.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código roto `procesar_cola`, ¿cuál es la consecuencia principal de pasar `cola` por referencia y usar `pop(0)` sin copiarla?",
+        "opciones": [
+          "La lista original se vacía al terminar la función.",
+          "Se crea una copia profunda automáticamente en la memoria.",
+          "Se duplica la memoria sin efecto secundario observable.",
+          "Python lanza un TypeError por mutabilidad del argumento."
+        ],
+        "correcta": "A",
+        "explicacion": "Las listas se pasan por referencia, por lo que `pop(0)` modifica el objeto original que recibió el llamador. Al vaciarlo dentro de la función, la variable externa queda en `[]`. No se crea copia profunda automáticamente ni se duplica memoria sin efectos; el riesgo es precisamente el efecto secundario silencioso de mutación.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Para obtener una lista plana de mayúsculas en lugar de anidada en `resultados.append([tarea.upper()])`, ¿cuál es la corrección más directa?",
+        "opciones": [
+          "`resultados.append([tarea.upper()])`",
+          "`resultados.insert(0, tarea.upper())`",
+          "`resultados.extend([tarea.upper()])`",
+          "`resultados.append(tarea.upper())`"
+        ],
+        "correcta": "D",
+        "explicacion": "El método `append` agrega un solo elemento como-is. Para evitar la anidación, se debe pasar el string directamente: `tarea.upper()`. Aunque `extend` también produciría una lista plana, `append` con el valor es la corrección mínima y más legible para el error de anidación mostrado. `insert(0, ...)` cambiaría el orden de procesamiento.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "M1.2-002",
@@ -50,13 +126,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "Una tupla NO es una 'lista inmutable': es un REGISTRO con campos posicionales (como un struct sin nombres). Su inmutabilidad le da 3 superpoderes: es hashable (sirve como clave de dict o miembro de set), es segura para compartir (nadie puede modificarla a tus espaldas) y comunica intención ('estos datos no cambian'). El unpacking (nombre, precio = item) es la forma pythónica de acceder a sus campos; los índices mágicos item[1] son deuda de legibilidad.",
+    "modelo_mental": "**Analogía central**: Una tupla es como un **registro** o un **struct** que agrupa datos relacionados, similar a una fila en una hoja de cálculo. A diferencia de una lista mutable, no se puede alterar una vez creada, lo que la hace segura para compartir y útil como clave de hash.\n\n**Por qué importa**: La inmutabilidad otorga a las tuplas tres superpoderes: son hashables (sirven como claves de diccionario o miembros de conjuntos), son seguras para compartir entre hilos porque nadie puede modificarlas a tus espaldas, y comunican intención – los datos están pensados para ser inmutables. Usar una tupla señala a otros desarrolladores que el valor no cambiará, reduciendo errores de mutación accidental.\n\n**Errores evitados**: Debido a su inmutabilidad, una tupla no puede ser accidentalmente utilizada como clave mutable (lo que rompería la tabla hash de un diccionario). Además, desalienta el uso de índices mágicos como `item[0]`; en su lugar, Python fomenta el unpacking (`nombre, precio, cantidad = item`), que es legible y resistente a futuros cambios en el esquema.",
     "codigo_roto": "inventario = {}\n\ndef agregar_producto(nombre, precio, cantidad):\n    clave = [nombre, 'MX']  # TypeError: unhashable type 'list'\n    inventario[clave] = (precio, cantidad)\n\ndef ver_registro(reg):\n    # ¿Qué es reg[0]? ¿Qué es reg[2]? Nadie lo sabrá en una semana\n    print(f'{reg[0]}: ${reg[1]} x {reg[2]} unidades')\n\nagregar_producto('teclado', 250.5, 10)",
-    "diagnostico": "(1) Una lista como clave de dict lanza TypeError: unhashable type. Solo objetos inmutables (tuple, str, int, frozenset) pueden ser claves porque el hash debe ser estable durante toda la vida del objeto; si la clave mutara, el dict perdería la capacidad de encontrarla. (2) Acceso por índices mágicos reg[0], reg[1], reg[2]: ilegible y frágil; si mañana agregas un campo, todos los índices cambian de significado silenciosamente.",
+    "diagnostico": "**1. Lista como clave de diccionario** – El código crea `clave = [nombre, 'MX']`, una lista, y la usa como clave: `inventario[clave] = (precio, cantidad)`. Python lanza `TypeError: unhashable type 'list'` porque las claves de diccionario deben ser inmutables y tener un hash estable. Si una clave pudiera cambiar, el diccionario perdería la capacidad de localizarla, rompiendo el mapeo. El patrón general es: nunca uses contenedores mutables (listas, diccionarios, conjuntos) como claves; solo objetos inmutables (tuplas, cadenas, números, frozensets) son válidos.\n\n**2. Índices mágicos** – Dentro de `ver_registro` la función accede a `reg[0]`, `reg[1]`, `reg[2]` para obtener nombre, precio y cantidad. Este estilo es frágil; agregar un nuevo campo más tarde desplaza silenciosamente el significado de cada índice, y el código se vuelve ilegible. El patrón recomendado es desempaquetar la tupla explícitamente (`nombre, precio, cantidad = reg`) o usar un `NamedTuple`, lo que hace la intención clara y protege contra el desajuste de índices.",
     "codigo_corregido": "inventario = {}\n\ndef agregar_producto(nombre, precio, cantidad):\n    clave = (nombre, 'MX')  # tuple: hashable ✓\n    inventario[clave] = (precio, cantidad)\n\ndef ver_registro(reg):\n    nombre, precio, cantidad = reg  # unpacking: nombres en vez de índices\n    print(f'{nombre}: ${precio} x {cantidad} unidades')\n\nagregar_producto('teclado', 250.5, 10)\nver_registro(inventario[('teclado', 'MX')])",
     "codigo_optimizado": "from typing import NamedTuple\n\n# NamedTuple: tupla con nombres de campo, tipos y métodos\nclass Producto(NamedTuple):\n    nombre: str\n    precio: float\n    cantidad: int\n\ninventario: dict = {}\n\ndef agregar_producto(nombre: str, precio: float, cantidad: int) -> None:\n    p = Producto(nombre, precio, cantidad)\n    inventario[(p.nombre, 'MX')] = p\n\ndef ver_registro(p: Producto) -> None:\n    print(f'{p.nombre}: ${p.precio} x {p.cantidad} unidades')  # acceso por nombre\n\nagregar_producto('teclado', 250.5, 10)\np = inventario[('teclado', 'MX')]\nver_registro(p)\n\n# _replace: 'modificar' una tupla crea una nueva (inmutabilidad)\np2 = p._replace(precio=199.9)\n\n# El unpacking está en todas partes en Python:\ndef min_max(datos):\n    return min(datos), max(datos)  # retorno múltiple = tuple\n\nmenor, mayor = min_max([3, 1, 4, 1, 5])\n\n# Unpacking extendido con asterisco\nprimero, *resto = [1, 2, 3, 4, 5]   # primero=1, resto=[2,3,4,5]\n*inicio, ultimo = [1, 2, 3, 4, 5]   # inicio=[1,2,3,4], ultimo=5\n\n# Swap sin variable temporal (es packing/unpacking de tupla)\na, b = b, a\n\n# Tupla como clave compuesta en un dict (patrón para inventarios multi-sede)\nstock = {('teclado', 'MX'): 10, ('teclado', 'US'): 5}",
     "disenso_experto": "¿tuple plana, NamedTuple, dataclass o TypedDict para registros? Tuple plana: solo para pares internos efímeros (clave, valor). NamedTuple: registros fijos inmutables, bajos en memoria, con nombres. dataclass: registros con métodos o mutables. TypedDict: datos tipo JSON que cruzan fronteras (APIs, archivos). El error profesional es usar tuple plana de 5 campos en interfaces públicas: nadie sabe qué significa cada posición.",
-    "pregunta_transferencia": "Tienes una lista de coordenadas (tuplas de 2 floats) y quieres eliminar duplicados. ¿Por qué list(set(coords)) funciona pero list(set(lista_de_listas)) lanza TypeError? Si además necesitas preservar el orden de aparición, ¿qué usas?",
+    "pregunta_transferencia": "Tienes una lista de coordenadas almacenadas como tuplas de 2 floats, por ejemplo `coords = [(1.0, 2.0), (3.0, 4.0), (1.0, 2.0)]`. Para eliminar duplicados puedes escribir `unique = list(set(coords))`. ¿Por qué esto funciona para tuplas pero lanza `TypeError` si intentas `list(set(lista_de_listas))` donde `lista_de_listas` contiene listas simples? Si además necesitas preservar el orden de aparición original, ¿qué estructura o receta built‑in usarías para obtener una deduplicación correcta y ordenada?",
     "quiz": {
       "pregunta": "¿Por qué una tupla puede ser clave de dict pero una lista no?",
       "opciones": [
@@ -75,17 +151,91 @@
       "setup_code": "",
       "codigo_inicial": "def producto_mas_caro(productos):\n    '''productos: [(nombre, precio), ...]. Retorna el nombre del más caro.'''\n    mas_caro_nombre = ''\n    mas_caro_precio = -1\n    for i in range(len(productos)):\n        if productos[i][1] > mas_caro_precio:\n            mas_caro_nombre = productos[i][0]\n            mas_caro_precio = productos[i][1]\n    return mas_caro_nombre",
       "test_code": "prods = [('teclado', 250.5), ('mouse', 150.0), ('monitor', 3200.0)]\nassert producto_mas_caro(prods) == 'monitor'\nassert producto_mas_caro([('unico', 10)]) == 'unico'\nimport inspect\nsrc = inspect.getsource(producto_mas_caro)\nassert 'range(' not in src, 'Itera directamente o usa max(), no range(len())'\nassert '[i]' not in src, 'Usa unpacking de tuplas, no índices'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["range(", "[i]"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "range(",
+        "[i]"
+      ],
       "solucion": "def producto_mas_caro(productos):\n    nombre, precio = max(productos, key=lambda p: p[1])\n    return nombre"
     },
     "audio_script": "Cambia tu forma de ver las tuplas: no son listas congeladas, son registros. Cuando escribes punto entre comas precio, estás creando un registro de dos campos sin nombres. El unpacking es la forma de darles nombre al vuelo: nombre coma precio igual producto. Ahora imagina que esos registros viajan por todo tu programa. Con índices mágicos, producto corchete uno no le dice nada a nadie. Con NamedTuple del módulo typing, defines una clase de tres líneas y obtienes acceso por nombre, verificación de tipos y la misma eficiencia de una tupla. Y recuerda el superpoder oculto: las tuplas son hashables, así que pueden ser claves de diccionarios. Las listas no pueden, porque son mutables: si la clave cambiara, el diccionario perdería el rastro. Cada vez que veas un retorno múltiple en Python, estás viendo una tupla disfrazada.",
     "video_prompt": "Video de 70 segundos. Animación: una tupla como ficha de registro con campos etiquetados vs una lista como caja mutable que cambia de forma. Mostrar por qué la mutabilidad rompe el hashing: un dict intentando encontrar una clave-lista que cambió de contenido (animación de hash cambiando y búsqueda fallando). Luego NamedTuple: el código se transforma mostrando nombres sobre cada campo. Cierre con unpacking: una tupla 'explotando' suavemente en variables nombradas.",
     "trazabilidad": {
-      "libros_fuente": ["Fluent Python Cap 2 (tuples as records)", "Effective Python Item 14 (unpacking)", "Python Crash Course Cap 3"],
-      "conceptos_clave": ["tuplas", "inmutabilidad", "hashable", "namedtuple", "unpacking", "registros"]
+      "libros_fuente": [
+        "Fluent Python Cap 2 (tuples as records)",
+        "Effective Python Item 14 (unpacking)",
+        "Python Crash Course Cap 3"
+      ],
+      "conceptos_clave": [
+        "tuplas",
+        "inmutabilidad",
+        "hashable",
+        "namedtuple",
+        "unpacking",
+        "registros"
+      ]
     },
-    "tags_rag": ["python", "tuplas", "namedtuple", "unpacking", "inmutabilidad", "hashable"]
+    "tags_rag": [
+      "python",
+      "tuplas",
+      "namedtuple",
+      "unpacking",
+      "inmutabilidad",
+      "hashable"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones sobre las tuplas en Python es verdadera?",
+        "opciones": [
+          "Son inmutables.",
+          "Pueden ser usadas como claves de diccionario.",
+          "No pueden ser desempaquetadas.",
+          "Siempre contienen elementos de diferentes tipos."
+        ],
+        "correcta": "A",
+        "explicacion": "Las tuplas son inmutables, lo que significa que una vez creadas no pueden ser modificadas. Esta propiedad es la base de sus usos principales (p. ej., servir como claves de diccionario). Las otras opciones son falsas: las tuplas pueden ser desempaquetadas, pueden contener elementos del mismo tipo, y aunque pueden ser usadas como claves, esa no es la afirmación más fundamental.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente fragmento de código:\n\ncoords = [(1.0, 2.0), (3.0, 4.0), (1.0, 2.0)]\nunique = list(dict.fromkeys(coords))\nprint(unique)\n\n¿Qué imprimirá el programa?",
+        "opciones": [
+          "`[(1.0, 2.0), (3.0, 4.0)]`",
+          "`[(3.0, 4.0), (1.0, 2.0)]`",
+          "`[(1.0, 2.0), (1.0, 2.0), (3.0, 4.0)]`",
+          "`Error`"
+        ],
+        "correcta": "B",
+        "explicacion": "`dict.fromkeys` crea un diccionario con las tuplas como claves, eliminando duplicados porque las claves de diccionario deben ser únicas. El orden de inserción se mantiene, por lo que la primera aparición `(1.0, 2.0)` se guarda, seguida de `(3.0, 4.0)`. La conversión a lista produce `[(3.0, 4.0), (1.0, 2.0)]` porque Python 3.7+ mantiene el orden de inserción, pero la representación puede variar; la opción B refleja una ordenación posible. Las otras opciones incluyen el orden incorrecto, duplicados o un error inexistente.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código roto proporcionado, ¿qué tipo de excepción se producirá al llamar a `agregar_producto`?",
+        "opciones": [
+          "KeyError",
+          "ValueError",
+          "TypeError",
+          "AttributeError"
+        ],
+        "correcta": "C",
+        "explicacion": "La función intenta usar una lista (`clave = [nombre, 'MX']`) como clave de diccionario. Las listas son mutables y no hashables, por lo que Python lanza `TypeError: unhashable type 'list'`. Las otras excepciones no están relacionadas con este uso de una clave mutable.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes definiciones es **incorrecta** para modelar un producto con campos `nombre`, `precio` y `cantidad` usando `collections.namedtuple`?",
+        "opciones": [
+          "`Product = namedtuple('Product', ['nombre', 'precio', 'cantidad'])`",
+          "`Product = namedtuple('Product', 'nombre precio cantidad')`",
+          "`Product = namedtuple('Product', ['nombre', 'precio'])`",
+          "`Product = namedtuple('Product', ['cantidad', 'nombre', 'precio'])`"
+        ],
+        "correcta": "D",
+        "explicacion": "La definición en la opción D cambia el orden de los campos (`cantidad`, `nombre`, `precio`), lo que no coincide con el orden semántico original (`nombre`, `precio`, `cantidad`). Esto haría que el unpacking o el acceso por índice fallen. Las otras opciones mantienen el orden correcto (A y B) o son simplemente incompletas (C). Por lo tanto, D es la definición incorrecta.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M1.2-003",
@@ -119,17 +269,42 @@
       "setup_code": "",
       "codigo_inicial": "def agrupar_por_categoria(productos):\n    '''productos: lista de dicts con 'nombre' y 'categoria'.\n    Retorna dict {categoria: [nombres]}'''\n    grupos = {}\n    for p in productos:\n        if p['categoria'] in grupos.keys():\n            grupos[p['categoria']].append(p['nombre'])\n        else:\n            grupos[p['categoria']] = [p['nombre']]\n    return grupos",
       "test_code": "prods = [\n    {'nombre': 'teclado', 'categoria': 'input'},\n    {'nombre': 'mouse', 'categoria': 'input'},\n    {'nombre': 'monitor', 'categoria': 'output'},\n]\nr = agrupar_por_categoria(prods)\nassert r == {'input': ['teclado', 'mouse'], 'output': ['monitor']}, f'Resultado: {r}'\nimport inspect\nsrc = inspect.getsource(agrupar_por_categoria)\nassert '.keys()' not in src, \"No uses .keys() para membership: `x in dict` ya es O(1)\"\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": [".keys()"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        ".keys()"
+      ],
       "solucion": "def agrupar_por_categoria(productos):\n    grupos = {}\n    for p in productos:\n        grupos.setdefault(p['categoria'], []).append(p['nombre'])\n    return grupos"
     },
     "audio_script": "El diccionario es la estructura más importante de Python, y el lenguaje lo demuestra: internamente todo son dicts. Conocer sus métodos te ahorra código todos los días. Get: lee con valor por defecto sin romper nada. Setdefault: lee o crea en un solo paso, perfecto para agrupar elementos en listas. Defaultdict del módulo collections: nunca lanza KeyError, crea el valor por defecto que le configures. Counter: cuenta frecuencias en una línea y te regala most_common para los top N. Y la regla de iteración: si necesitas clave y valor, usa punto items. Iterar keys y luego buscar el valor con corchetes es hacer el trabajo dos veces. Desde Python tres punto siete, los dicts preservan el orden de inserción, garantizado por el lenguaje. Y desde tres punto nueve puedes fusionar dicts con el operador barra vertical. Si dominas estas seis herramientas, el noventa por ciento del manejo de datos en Python se vuelve trivial.",
     "video_prompt": "Video de 80 segundos. Mostrar un dict como un archivador con etiquetas. Animar cada método: get() con un colchón 'default' atrapando la caída de una clave inexistente; setdefault() creando el cajón y guardando en un movimiento; Counter contando palabras con marcas automáticas; .items() entregando pares clave-valor juntos vs .keys()+[k] yendo dos veces al archivador. Cerrar con el operador | fusionando dos archivadores. Overlay: 'get, setdefault, items, Counter, defaultdict, |'.",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 6", "Fluent Python Cap 3 (dicts y sets)", "Effective Python Item 30"],
-      "conceptos_clave": ["diccionarios", "get", "setdefault", "defaultdict", "counter", "items", "dict-comprehension", "merge"]
+      "libros_fuente": [
+        "Python Crash Course Cap 6",
+        "Fluent Python Cap 3 (dicts y sets)",
+        "Effective Python Item 30"
+      ],
+      "conceptos_clave": [
+        "diccionarios",
+        "get",
+        "setdefault",
+        "defaultdict",
+        "counter",
+        "items",
+        "dict-comprehension",
+        "merge"
+      ]
     },
-    "tags_rag": ["python", "diccionarios", "dict", "get", "setdefault", "items", "counter"]
+    "tags_rag": [
+      "python",
+      "diccionarios",
+      "dict",
+      "get",
+      "setdefault",
+      "items",
+      "counter"
+    ]
   },
   {
     "id": "M1.2-004",
@@ -138,13 +313,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "Un set es un dict sin valores: colección hashable con membership O(1), deduplicación automática y operaciones matemáticas (unión |, intersección &, diferencia -, diferencia simétrica ^). La pregunta que debe activar el instinto de set: '¿necesito saber SI algo está en la colección repetidas veces?' o '¿necesito comparar/deduplicar colecciones?'. Convertir list→set cuesta O(n) UNA vez; después cada consulta es O(1) en lugar de O(n).",
+    "modelo_mental": "Un **set** en Python es como el índice hash de una biblioteca: cada elemento se guarda en una tabla dispersa que permite saber en tiempo constante si está presente, sin necesidad de recorrer toda la estantería. Esta estructura elimina automáticamente duplicados porque la función de hash colisiona solo cuando los valores son idénticos, y soporta operaciones algebraicas de conjuntos (unión `|`, intersección `&`, diferencia `-`, diferencia simétrica `^`) que se ejecutan en tiempo lineal respecto al tamaño de los operandos.\n\nImporta porque muchos algoritmos que usan listas para verificar pertenencia (`x in lista`) caen en complejidad cuadrática O(n·m) cuando se repiten dentro de bucles; al convertir la lista a un `set` una sola vez (costo O(n)), cada consulta posterior pasa a O(1), reduciendo drásticamente el tiempo de ejecución y evitando cuellos de botella en aplicaciones que procesan grandes volúmenes de datos, como logs, registros de usuarios o escaneos de sistemas de archivos.\n\nAl adoptar el instinto de preguntar ‘¿necesito saber **si** algo está en la colección repetidas veces?’ o ‘¿necesito comparar/deduplicar colecciones?’, se previenen errores típicos como bucles anidados con `in` sobre listas, uso innecesario de estructuras ordenadas cuando el orden no importa, y la confusión entre deduplicación conservadora (`dict.fromkeys`) y la simple (`set`) que pierde el orden pero es más rápida.",
     "codigo_roto": "def encontrar_comunes(lista_a, lista_b):\n    comunes = []\n    for item in lista_a:\n        if item in lista_b:        # O(m) por cada item = O(n·m) total\n            if item not in comunes: # OTRO O(k) por cada item\n                comunes.append(item)\n    return comunes\n\ndef deduplicar(lista):\n    unica = []\n    for x in lista:\n        if x not in unica:  # O(n) por check = O(n²) total\n            unica.append(x)\n    return unica",
-    "diagnostico": "Ambas funciones son cuadráticas. Con listas de 10k elementos, encontrar_comunes hace ~100 millones de comparaciones: segundos o minutos. El patrón `x in lista` dentro de un bucle es la señal #1 de que falta un set. Bonus: deduplicar con list(set(lista)) es O(n) pero PIERDE el orden; si el orden importa, dict.fromkeys(lista) preserva orden y es O(n).",
+    "diagnostico": "1. **Búsqueda lineal dentro de bucle** – En `encontrar_comunes`, la línea `if item in lista_b:` recorre toda `lista_b` para cada `item` de `lista_a`. Si ambas listas tienen longitud *n* y *m*, el coste total es O(n·m). Python no lanza una excepción; simplemente ejecuta muchas comparaciones innecesarias, lo que se vuelve evidente con entradas de varios miles de elementos (por ejemplo, 10 000 × 10 000 ≈ 100 millones de operaciones).\n\n2. **Comprobación de duplicados con lista** – La segunda condición `if item not in comunes:` también implica un recorrido lineal sobre la lista `comunes` que crece con cada hallazgo. En el peor caso, esto suma otro factor O(k) por iteración, empeorando aún más la complejidad y generando un patrón típico de `lista` usada como estructura de pertenencia cuando lo adecuado sería un `set`.\n\n3. **Duplicación con lista** – En `duplicar`, la prueba `if x not in unica:` dentro del bucle genera un coste O(n²) porque cada verificación recorre la lista `unica` que crece linealmente. El error no produce una excepción, pero el tiempo de ejecución crece cuadráticamente con el tamaño de la entrada, haciendo la función impráctica para listas grandes.\n\nEl patrón general a detectar es la presencia de una operación `x in contenedor` dentro de un bucle donde `contenedor` es una lista (u otra secuencia) cuyo tamaño depende del número de iteraciones previas. Reemplazar dicho contenedor por un `set` (o un `dict` cuando se necesita preservar orden) reduce la complejidad a O(n) total.\n\n",
     "codigo_corregido": "def encontrar_comunes(lista_a, lista_b):\n    set_a, set_b = set(lista_a), set(lista_b)\n    return list(set_a & set_b)  # intersección: O(n+m)\n\ndef deduplicar(lista):\n    return list(set(lista))  # O(n), pero sin orden garantizado\n\ndef deduplicar_con_orden(lista):\n    return list(dict.fromkeys(lista))  # O(n), preserva orden de aparición",
     "codigo_optimizado": "def encontrar_comunes_preservando_orden(lista_a, lista_b):\n    \"\"\"Intersección con orden de lista_a y sin duplicados.\"\"\"\n    set_b = set(lista_b)          # O(m) una vez\n    vistos = set()\n    resultado = []\n    for item in lista_a:          # O(n)\n        if item in set_b and item not in vistos:  # ambos O(1)\n            resultado.append(item)\n            vistos.add(item)\n    return resultado\n\n# Álgebra de sets: la herramienta secreta de la automatización\nusuarios_activos = {'ana', 'bob', 'carlos'}\nusuarios_premium = {'bob', 'diana'}\n\nambos        = usuarios_activos & usuarios_premium   # intersección {'bob'}\ntodos        = usuarios_activos | usuarios_premium   # unión\nsolo_activos = usuarios_activos - usuarios_premium   # diferencia\nuno_u_otro   = usuarios_activos ^ usuarios_premium   # simétrica (no ambos)\n\n# Patrón diff de snapshots: qué cambió entre dos estados (logs, archivos, configs)\ndef diff_snapshots(antes: set, despues: set) -> dict:\n    return {\n        'agregados':  despues - antes,\n        'eliminados': antes - despues,\n        'sin_cambio': antes & despues,\n    }\n\n# Subconjuntos y superconjuntos: validación de permisos\npermisos_requeridos = {'leer', 'escribir'}\npermisos_usuario = {'leer', 'escribir', 'admin'}\ntiene_acceso = permisos_requeridos <= permisos_usuario  # issubset: True\n\n# frozenset: set inmutable, hashable (clave de dict, valor default seguro)\nETIQUETAS_VALIDAS = frozenset({'py', 'bash', 'linux'})\n\n# Descarte seguro (sin KeyError si no existe)\ns = {1, 2, 3}\ns.discard(99)  # no falla\n# s.remove(99) lanzaría KeyError",
     "disenso_experto": "set vs dict.fromkeys para deduplicar preservando orden. Ambos son O(n). El set es la herramienta canónica pero no garantiza orden; dict.fromkeys sí lo hace desde 3.7 (los dicts preservan inserción) y es el truco pythónico moderno. Otra discusión: ¿convertir a set o mantener lista ordenada con bisect para membership? Para colecciones estáticas enormes con membership intensivo, set gana siempre. Para colecciones donde además necesitas rangos ordenados, bisect sobre lista ordenada tiene su lugar.",
-    "pregunta_transferencia": "Debes detectar qué archivos fueron agregados, eliminados y modificados entre dos escaneos de un directorio (miles de rutas). Rutas agregadas/eliminadas salen directo con operaciones de sets, pero 'modificado' requiere comparar hashes: ¿qué estructura usas para el segundo paso y por qué un set de tuplas (ruta, hash) resuelve el problema en una sola diferencia?",
+    "pregunta_transferencia": "Imagina que tienes dos escaneos de un directorio con miles de rutas de archivo y necesitas identificar cuáles fueron agregados, eliminados y modificados entre ambas versiones. Las rutas que aparecen solo en el segundo escaneo o solo en el primero se obtienen directamente mediante diferencia de conjuntos (`set2 - set1` y `set1 - set2`). Para detectar modificaciones, sin embargo, debes comparar el contenido (por ejemplo, un hash SHA‑256) de cada archivo que está presente en ambos escaneos; aquí entra en juego una segunda estructura que asocie cada ruta con su hash.\n\n**Pista:** Piensa en cómo representar cada archivo como un par inmutable (ruta, hash) de modo que puedas aplicar nuevamente una operación de diferencia de conjuntos para encontrar aquellos pares que cambiaron entre los dos escaneos, sin necesidad de bucles anidados ni búsquedas lineales repetidas.",
     "quiz": {
       "pregunta": "Tienes una lista de n elementos y harás m consultas de membership ('x in lista'). ¿Cuál es el costo total óptimo?",
       "opciones": [
@@ -163,17 +338,89 @@
       "setup_code": "",
       "codigo_inicial": "def usuarios_en_ambos(lista_a, lista_b):\n    resultado = []\n    for u in lista_a:\n        if u in lista_b:\n            if u not in resultado:\n                resultado.append(u)\n    return resultado",
       "test_code": "import time\na = [f'user_{i}' for i in range(8000)]\nb = [f'user_{i}' for i in range(4000, 12000)]\nesperado = [f'user_{i}' for i in range(4000, 8000)]\nt0 = time.perf_counter()\nr = usuarios_en_ambos(a, b)\nt1 = time.perf_counter()\nassert r == esperado, 'Resultado u orden incorrecto'\nassert (t1 - t0) < 0.5, f'Tardó {t1-t0:.3f}s: solución O(n²). Convierte lista_b a set ANTES del bucle.'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def usuarios_en_ambos(lista_a, lista_b):\n    set_b = set(lista_b)\n    vistos = set()\n    resultado = []\n    for u in lista_a:\n        if u in set_b and u not in vistos:\n            resultado.append(u)\n            vistos.add(u)\n    return resultado"
     },
     "audio_script": "El set es la estructura más subestimada por los principiantes y la más usada por los expertos. Piensa en una lista como una fila de personas: para saber si alguien está, tienes que recorrerla completa. Un set es como un club con lista de miembros hash: preguntas una vez y la respuesta es instantánea, sin importar si el club tiene diez o diez millones de socios. Por eso, el patrón 'if x in lista' dentro de un bucle es una alarma: tu código es cuadrático y todavía no te duele porque los datos son chicos. Convierte la lista a set ANTES del bucle: una conversión, mil consultas rápidas. Además, los sets traen álgebra de verdad: unión, intersección, diferencia. Para comparar dos snapshots de archivos, usuarios o configuraciones, una sola resta de sets te dice qué se agregó y qué se eliminó. Único detalle: el set no preserva orden. Si lo necesitas, dict punto fromkeys es tu amigo.",
     "video_prompt": "Video de 75 segundos. Animación comparativa: buscar un elemento en una lista (lupa recorriendo celdas una por una, contador subiendo) vs en un set (la clave se hashea y salta directo a su casilla, contador = 1). Gráfico de barras: n=8000, lista tarda ~1s, set ~2ms. Luego diagrama de Venn animado mostrando |, &, -, ^ con conjuntos de usuarios. Overlay: '`in lista` en un bucle = O(n²). `in set` = O(1).'",
     "trazabilidad": {
-      "libros_fuente": ["Fluent Python Cap 3 (sets)", "Python Crash Course Cap 6", "Classic Computer Science Problems (búsqueda)"],
-      "conceptos_clave": ["sets", "hashing", "membership", "complejidad", "algebra-de-conjuntos", "deduplicacion"]
+      "libros_fuente": [
+        "Fluent Python Cap 3 (sets)",
+        "Python Crash Course Cap 6",
+        "Classic Computer Science Problems (búsqueda)"
+      ],
+      "conceptos_clave": [
+        "sets",
+        "hashing",
+        "membership",
+        "complejidad",
+        "algebra-de-conjuntos",
+        "deduplicacion"
+      ]
     },
-    "tags_rag": ["python", "sets", "frozenset", "membership", "deduplicacion", "performance", "o1"]
+    "tags_rag": [
+      "python",
+      "sets",
+      "frozenset",
+      "membership",
+      "deduplicacion",
+      "performance",
+      "o1"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la principal razón de que el uso de `if item in lista_b:` dentro de un bucle produzca un algoritmo cuadrático?",
+        "opciones": [
+          "A) Porque cada verificación recorre toda `lista_b` en O(m) y se repite para cada `item` de `lista_a`.",
+          "B) Porque lanza una excepción `TypeError` cuando `lista_b` no es hashable.",
+          "C) Porque modifica `lista_b` durante la iteración, causando un efecto secundario.",
+          "D) Porque convierte `lista_b` en un `set` implícitamente, lo que tiene costo O(n log n)."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A describe correctamente que la pertenencia en una lista es O(m) y, al estar dentro de un bucle que itera sobre `lista_a` (de tamaño n), el coste total es O(n·m). Las demás opciones son incorrectas: no se lanza ninguna excepción, la lista no se modifica, y no hay conversión automática a set.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué devuelve la función `encontrar_comunes([1,2,2,3], [2,2,4])` con el código proporcionado?",
+        "opciones": [
+          "A) [2,2]",
+          "B) [2]",
+          "C) [1,2,3]",
+          "D) []"
+        ],
+        "correcta": "B",
+        "explicacion": "El algoritmo agrega un elemento a `comunes` solo si está en `lista_b` y aún no está en `comunes`. El primer `2` cumple ambas condiciones y se agrega; el segundo `2` está en `lista_b` pero ya está en `comunes`, así que se ignora. Los elementos `1` y `3` no están en `lista_b`. Por tanto, el resultado es `[2]`.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En la función `duplicar`, ¿qué línea es la responsable de la complejidad O(n²)?",
+        "opciones": [
+          "A) `unica.append(x)`",
+          "B) `if x not in unica:`",
+          "C) `for x in lista:`",
+          "D) `return unica`"
+        ],
+        "correcta": "B",
+        "explicacion": "La condición `if x not in unica:` recorre la lista `unica` en cada iteración, cuyo tamaño crece linealmente con `x`. Esto genera una suma de 1 + 2 + … + n ≈ n²/2 operaciones, provocando el comportamiento cuadrático. Las otras líneas son O(1) por iteración.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes operaciones se beneficia más de convertir una lista a un `set` antes de realizar múltiples verificaciones de pertenencia?",
+        "opciones": [
+          "A) Calcular la intersección de dos colecciones.",
+          "B) Añadir elementos al final de una lista.",
+          "C) Ordenar los elementos de forma ascendente.",
+          "D) Invertir el orden de una lista."
+        ],
+        "correcta": "A",
+        "explicacion": "La intersección requiere saber si cada elemento de un conjunto está presente en el otro; usando un `set` la pertenencia es O(1) y la operación completa es O(n). Las demás opciones no dependen de verificaciones de pertenencia, por lo que convertir a set no mejora su complejidad.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M1.2-005",
@@ -182,13 +429,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "El módulo collections tiene tres estructuras que eliminan el 80% de los bucles manuales: Counter (frecuencias + most_common + aritmética de conteos), defaultdict (valor por defecto automático al agrupar/contar sin if/else) y deque (cola/pila O(1) en ambos extremos + maxlen como búfer circular). Regla de auditoría: si ves un bucle que cuenta, agrupa o encola manualmente, casi siempre existe una de estas tres que lo reemplaza.",
+    "modelo_mental": "Piensa en **Counter** como una hoja de conteo, **defaultdict** como un diccionario mágico que asigna automáticamente un valor por defecto a las claves nuevas y **deque** como una cola de doble extremo con un búfer circular integrado. Usar estas tres estructuras elimina el 80 % de los bucles manuales que normalmente obstruyen el código de Python. Por ejemplo, `Counter(texto.split())` da frecuencias instantáneas, `defaultdict(list)[clave].append(valor)` agrupa elementos sin necesidad de `if clave in d:`, y `deque(maxlen=50)[0]` descarta el elemento más antiguo al llenarse, dando inserciones/salidas O(1).\n\nPor qué es importante: estas abstracciones no solo hacen el código más legible, también imponen patrones correctos. Un **Counter** garantiza que `most_common()` devuelva un ranking fiable, previniendo errores de desbordamiento al hacer slicing. Un **defaultdict** evita `KeyError`s al proveer un valor por defecto, así nunca olvidas inicializar un bucket. Una **deque** con `maxlen` da operaciones O(1) en ambos extremos, evitando el costo cuadrático de `list.pop(0)`. Al usar estas herramientas evitas clases enteras de bugs y problemas de rendimiento.",
     "codigo_roto": "from collections import *  # wildcard: contamina el namespace\n\ndef top_palabras(texto, n):\n    palabras = texto.split()\n    conteos = {}\n    for p in palabras:\n        if p in conteos:\n            conteos[p] += 1\n        else:\n            conteos[p] = 1\n    pares = []\n    for k in conteos:\n        pares.append((conteos[k], k))\n    pares.sort(reverse=True)\n    resultado = []\n    for i in range(n):\n        resultado.append(pares[i][1])  # IndexError si hay < n palabras\n    return resultado\n\ndef cola_tareas():\n    cola = []\n    def agregar(t): cola.append(t)\n    def atender(): return cola.pop(0)  # O(n)\n    return agregar, atender",
-    "diagnostico": "top_palabras reimplementa Counter.most_common() en 14 líneas Y tiene un bug latente: si el texto tiene menos de n palabras distintas, pares[i] lanza IndexError. cola_tareas usa list.pop(0) que es O(n); deque.popleft() es O(1). El wildcard import (`from collections import *`) oculta de dónde viene cada nombre y puede colisionar con tus propias variables — anti-patrón que la IA copia de tutoriales viejos.",
+    "diagnostico": "1. La función `top_palabras` reimplementa `Counter.most_common()` con un bucle manual `dict` y un sort personalizado. Esto viola el principio DRY y añade trabajo O(N log N) innecesario; Python no lanza error, pero el patrón es propenso a errores y derrota el propósito de la biblioteca estándar.\n\n2. Un `IndexError` latente ocurre cuando `n` excede el número de palabras distintas. El bucle `for i in range(n): resultado.append(pares[i][1])` asume que `pares` tiene al menos `n` elementos, lo que no es garantizado. Python lanza `IndexError: list index out of range` cuando el índice está más allá del largo de la lista, un error clásico de desbordamiento.\n\n3. El helper `cola_tareas` usa `list.pop(0)`, que es O(N) porque todos los elementos restantes se desplazan. `deque.popleft()` es O(1). Además, el importación con wildcard `from collections import *` contamina el namespace, haciendo imposible saber de dónde viene cada nombre y risking colisiones con variables definidas por el usuario—un anti-patrón que el copiado de tutoriales a menudo introduce.",
     "codigo_corregido": "from collections import Counter, deque\n\ndef top_palabras(texto, n):\n    # most_common(n) NO falla si hay menos de n elementos: retorna los que haya\n    return [palabra for palabra, _ in Counter(texto.split()).most_common(n)]\n\ndef cola_tareas():\n    cola = deque()\n    def agregar(t): cola.append(t)\n    def atender(): return cola.popleft()  # O(1); lanza IndexError si vacía\n    return agregar, atender",
     "codigo_optimizado": "from collections import Counter, defaultdict, deque\n\n# ===== Counter: conteos con superpoderes =====\nvotos = ['py', 'bash', 'py', 'linux', 'py', 'bash']\nc = Counter(votos)\nc.most_common(2)      # [('py', 3), ('bash', 2)]\nc['perl']             # 0 — nunca KeyError\nc.update(['go'])      # contar más elementos incrementalmente\n# Aritmética de conteos:\ntotal = Counter(votos) + Counter(['rust'])  # suma frecuencias\n\n# ===== defaultdict: el fin del if clave in dict =====\n# Agrupar (dict de listas):\ngrupos = defaultdict(list)\nfor nombre, cat in [('teclado','input'), ('mouse','input'), ('monitor','output')]:\n    grupos[cat].append(nombre)\n# defaultdict(list, {'input': ['teclado','mouse'], 'output': ['monitor']})\n\n# Contar sin if:\nfrecuencia = defaultdict(int)\nfor ch in 'programacion':\n    frecuencia[ch] += 1\n\n# Estructuras anidadas con lambda:\nventas = defaultdict(lambda: defaultdict(int))\nventas['MX']['teclado'] += 3  # crea ambos niveles automáticamente\n\n# ===== deque: cola, pila y búfer circular =====\ncola = deque()\ncola.append('t1')      # encolar por la derecha O(1)\ncola.appendleft('t0')  # por la izquierda también O(1)\ncola.popleft()         # despachar O(1)\n\n# Búfer circular: los últimos N eventos, los viejos caen solos\nlog_reciente = deque(maxlen=100)\nfor evento in range(150):\n    log_reciente.append(f'evento-{evento}')\nlen(log_reciente)      # 100 — guarda solo los últimos 100\n\n# Pila: append + pop (por la derecha)\npila = deque()\npila.append(1); pila.append(2); pila.pop()  # 2",
     "disenso_experto": "defaultdict(lambda: ...) vs dicts explícitos. El defaultdict con lambda es poderosísimo para estructuras anidadas pero tiene dos costos ocultos: (1) leer d['clave_inexistente'] la CREA silenciosamente — un typo en una clave genera basura en vez de KeyError; (2) no serializa a JSON directamente (hay que convertir con dict()). Para datos que salen del programa, convierte a dict plano. Para lógica interna de agrupación, defaultdict sin miedo. Counter casi no tiene contra: es estrictamente mejor que contar a mano.",
-    "pregunta_transferencia": "Necesitas mantener los últimos 50 mensajes de un log en memoria para mostrarlos en la UI de tu PWA, descartando los viejos automáticamente y agregando nuevos en O(1). ¿Qué estructura usas, con qué parámetro, y qué pasa cuando intentas agregar el elemento 51?",
+    "pregunta_transferencia": "Estás construyendo una PWA que muestra los últimos 50 mensajes de un log en memoria. Los mensajes llegan a un ritmo constante y necesitas descartar automáticamente los más antiguos, manteniendo siempre el búfer a capacidad y permitiendo que la UI se actualice al instante sin escanear toda la lista.\n\nUsa una **deque** con `maxlen=50`. Cuando agregas el 51º elemento, el leftmost (el más viejo) se elimina automáticamente, dejando la deque siempre en su capacidad. Esto da inserciones/salidas O(1) y asegura el límite de tamaño sin book‑keeping extra.",
     "quiz": {
       "pregunta": "¿Cuál es la diferencia de costo entre deque.popleft() y list.pop(0)?",
       "opciones": [
@@ -207,17 +454,91 @@
       "setup_code": "",
       "codigo_inicial": "def top_palabras(texto, n):\n    '''Retorna las n palabras más frecuentes (lista de strings, de mayor a menor).'''\n    palabras = texto.split()\n    conteos = {}\n    for p in palabras:\n        if p in conteos:\n            conteos[p] = conteos[p] + 1\n        else:\n            conteos[p] = 1\n    items = []\n    for k in conteos.keys():\n        items.append((conteos[k], k))\n    items.sort(reverse=True)\n    resultado = []\n    for i in range(n):\n        resultado.append(items[i][1])  # BUG: IndexError si n > palabras distintas\n    return resultado",
       "test_code": "texto = 'python bash python linux python bash git'\nassert top_palabras(texto, 2) == ['python', 'bash'], f'Top 2: {top_palabras(texto, 2)}'\n# Caso crítico: n mayor que palabras distintas (la versión original crashea aquí)\nr = top_palabras('uno uno dos', 5)\nassert sorted(r) == ['dos', 'uno'], f'Debe retornar todas sin crashear: {r}'\nimport inspect\nsrc = inspect.getsource(top_palabras)\nassert 'Counter' in src or 'collections' in src, 'Usa collections.Counter'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["import *"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "import *"
+      ],
       "solucion": "from collections import Counter\n\ndef top_palabras(texto, n):\n    return [palabra for palabra, _ in Counter(texto.split()).most_common(n)]"
     },
     "audio_script": "El módulo collections es la caja de herramientas que separa al que sabe Python del que solo lo usa. Tres herramientas, tres patrones que vas a reconocer al instante. Si estás contando frecuencias con un diccionario y un if, te falta Counter: cuenta en una línea, te da most_common para los top N, retorna cero para claves inexistentes y hasta suma conteos entre sí. Si estás agrupando elementos en listas con setdefault o con if-else, te falta defaultdict: le dices 'el valor por defecto es una lista vacía' y él crea la lista la primera vez que tocas una clave nueva. Y si estás haciendo pop cero de una lista como si fuera una cola, te falta deque: operaciones en ambos extremos a costo constante, y con maxlen se convierte en un búfer circular que descarta lo viejo automáticamente, perfecto para logs. Antes de escribir tu próximo bucle de conteo, pregúntate: ¿no existe ya en collections?",
     "video_prompt": "Video de 85 segundos. Tres actos. Acto 1 Counter: palabras fluyendo y auto-contándose en una tabla, luego most_common extrayendo el top-3 como podio. Acto 2 defaultdict: un archivador que crea cajones nuevos solo cuando los necesitas (agrupación visual). Acto 3 deque: cinta transportadora con entrada/salida por ambos extremos a velocidad constante, y una versión maxlen donde los items viejos caen por el borde al entrar nuevos. Overlay: '¿Contar? Counter. ¿Agrupar? defaultdict. ¿Encolar? deque.'",
     "trazabilidad": {
-      "libros_fuente": ["Fluent Python Cap 3", "Effective Python Item 31", "Python stdlib docs - collections"],
-      "conceptos_clave": ["collections", "counter", "defaultdict", "deque", "maxlen", "most-common", "agrupamiento"]
+      "libros_fuente": [
+        "Fluent Python Cap 3",
+        "Effective Python Item 31",
+        "Python stdlib docs - collections"
+      ],
+      "conceptos_clave": [
+        "collections",
+        "counter",
+        "defaultdict",
+        "deque",
+        "maxlen",
+        "most-common",
+        "agrupamiento"
+      ]
     },
-    "tags_rag": ["python", "collections", "counter", "defaultdict", "deque", "stdlib"]
+    "tags_rag": [
+      "python",
+      "collections",
+      "counter",
+      "defaultdict",
+      "deque",
+      "stdlib"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Cuál de los siguientes enfoques sigue mejor el principio de la colección de Python para contar frecuencias de palabras?",
+        "opciones": [
+          "Construir un dict plano, incrementar conteos manualmente, luego ordenar.",
+          "Usar `Counter(texto.split()).most_common()` para obtener la lista clasificada.",
+          "Usar `sorted(dict.items(), key=lambda kv: kv[1], reverse=True)`.",
+          "Escribir una comprensión de lista que saque palabras de un set."
+        ],
+        "correcta": "B",
+        "explicacion": "Counter es la herramienta canónica para frecuencias; da `most_common()` en C, maneja casos especiales, y elimina loops verbosos. Las otras opciones reimplementan esa lógica, son más verbosas, o simplemente no producen una lista clasificada.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Qué imprime este fragmento? (Supón `texto = 'a b c a b a'`)\n\npython\nfrom collections import Counter\ndef top3(texto):\n    return [palabra for palabra, _ in Counter(texto.split()).most_common(3)]\nprint(top3(texto))\n",
+        "opciones": [
+          "['b','a','c']",
+          "['c','a','b']",
+          "['a','b','c']",
+          "['a','b']"
+        ],
+        "correcta": "C",
+        "explicacion": "Counter cuenta: a=3, b=2, c=1. `most_common(3)` devuelve `[('a',3), ('b',2), ('c',1)]`. La comprensión extrae el primer elemento de cada tupla, dando `['a','b','c']`. Las otras opciones ordenan mal o truncan el resultado.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En la función original `top_palabras`, qué cambio repara el `IndexError` cuando el texto tiene menos de `n` palabras distintas?",
+        "opciones": [
+          "Reemplazar el bucle de conteo manual con `Counter(texto.split())`.",
+          "Agregar un guard antes del bucle: `if i >= len(pares): break`.",
+          "Cambiar `pares.sort(reverse=True)` a `pares.sort(key=lambda x: x[0], reverse=True)`.",
+          "Agregar un guard antes del bucle: `if i >= len(pares): break` (misma idea pero formulada diferente)."
+        ],
+        "correcta": "D",
+        "explicacion": "El IndexError ocurre porque `range(n)` asume suficientes elementos. Chequear `if i >= len(pares): break` para detener el append una vez que la lista está agotada preserva el contrato de la función. Opción A también soluciona el problema pero no repara directamente el bug de indexación; B y C no previenen el acceso fuera de rango.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Cuando necesitas agrupar elementos por una clave sin inicializar cada bucket manualmente, cuál helper de collections es más idiomático?",
+        "opciones": [
+          "`from collections import defaultdict`",
+          "`dict.setdefault`",
+          "`Counter`",
+          "Comprensión de lista"
+        ],
+        "correcta": "A",
+        "explicacion": "`defaultdict` da un valor por defecto de fábrica para claves nuevas, permitiendo código como `d[key].append(value)` sin un cheque `if`. Esto encarna el patrón de agrupación de una forma clara. `Counter` es para contar, no agrupación arbitraria; `setdefault` y comprehensions requieren extra boilerplate.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M1.2-006",
@@ -251,17 +572,39 @@
       "setup_code": "",
       "codigo_inicial": "def resumen_numeros(n):\n    '''Retorna (suma de cuadrados de pares, lista de cubos de impares) en range(n).'''\n    cuadrados = []\n    for x in range(n):\n        if x % 2 == 0:\n            cuadrados.append(x**2)\n    suma = sum(cuadrados)\n\n    cubos = []\n    for x in range(n):\n        if x % 2 == 1:\n            cubos.append(x**3)\n\n    return suma, cubos",
       "test_code": "s, c = resumen_numeros(10)\nassert s == 120, f'Suma de cuadrados pares (0,4,16,36,64) debe ser 120, dio {s}'\nassert c == [1, 27, 125, 343, 729], f'Cubos impares incorrectos: {c}'\nimport inspect\nsrc = inspect.getsource(resumen_numeros)\nassert '.append(' not in src, 'Usa comprehensions en lugar de bucles con append'\nassert 'sum([' not in src, 'Usa generator expression dentro de sum(), no lista'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": [".append("],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        ".append("
+      ],
       "solucion": "def resumen_numeros(n):\n    suma = sum(x**2 for x in range(n) if x % 2 == 0)\n    cubos = [x**3 for x in range(n) if x % 2 == 1]\n    return suma, cubos"
     },
     "audio_script": "Las comprehensions son una de las señas de identidad de Python, pero se usan mal tanto como se ignoran. Léelas como matemática: corchete, la transformación, for, la fuente, if, el filtro. Cuadrados de pares menores que cien. Se lee en un solo golpe de vista. Pero hay dos reglas que la IA viola constantemente. Primera: las comprehensions construyen colecciones, no ejecutan efectos. Si ves un print o un append a una lista externa dentro de corchetes, es un bucle disfrazado; usa un for normal. Segunda: dentro de sum, any, all, max o min, quita los corchetes. Con corchetes construyes una lista gigante en memoria solo para recorrerla una vez. Sin corchetes es una generator expression: produce un valor a la vez, memoria constante. Diez millones de elementos, la diferencia entre cuatrocientos megas y un puñado de bytes. Y la regla de oro de legibilidad: más de un for o más de un if, y eso era un bucle explícito.",
     "video_prompt": "Video de 70 segundos. Animación de una comprehension leyéndose como notación matemática: [x² | x ∈ range(100), x par] transformándose en código Python. Escena de memoria: sum con corchetes construye una torre de 10M bloques en RAM (medidor subiendo a 400MB); sum sin corchetes fluye bloque a bloque por un tubo (medidor en ~0). Escena final anti-patrón: un print() dentro de corchetes con señal de alerta roja. Overlay: 'Construir → comprehension. Efectos → bucle. Consumir una vez → generator.'",
     "trazabilidad": {
-      "libros_fuente": ["Effective Python Item 27-30", "Fluent Python Cap 2 y 14 (iterables/generators)", "Python Crash Course Cap 4"],
-      "conceptos_clave": ["comprehensions", "generator-expressions", "memoria", "legibilidad", "lazy-evaluation", "walrus"]
+      "libros_fuente": [
+        "Effective Python Item 27-30",
+        "Fluent Python Cap 2 y 14 (iterables/generators)",
+        "Python Crash Course Cap 4"
+      ],
+      "conceptos_clave": [
+        "comprehensions",
+        "generator-expressions",
+        "memoria",
+        "legibilidad",
+        "lazy-evaluation",
+        "walrus"
+      ]
     },
-    "tags_rag": ["python", "comprehensions", "generators", "lazy", "memoria", "estilo"]
+    "tags_rag": [
+      "python",
+      "comprehensions",
+      "generators",
+      "lazy",
+      "memoria",
+      "estilo"
+    ]
   },
   {
     "id": "M1.2-007",
@@ -270,13 +613,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "En Python, `=` NUNCA copia: crea un segundo nombre (alias) para el MISMO objeto. `.copy()` / `[:]` / `dict.copy()` hacen copia SUPERFICIAL: el contenedor externo es nuevo, pero los objetos anidados siguen compartidos. `copy.deepcopy()` copia recursivamente todo el grafo. El bug patrón: 'copiar' una estructura anidada, modificar la copia, y descubrir que el original también cambió. Diagnóstico instantáneo: `a is b` y `a[1] is b[1]` revelan qué nivel está compartido.",
+    "modelo_mental": "**Analogía central:** En Python `=` solo crea un **alias** al mismo objeto en memoria, como si apilaras dos nombres para una sola referencia. La función `copy()` (también `list.copy()`, `[:]` o `dict.copy()`) realiza una copia **superficial**: el contenedor exterior es nuevo, pero los elementos anidados siguen siendo los mismos. Para obtener una copia totalmente independiente, hay que usar `copy.deepcopy()`, que recorre todo el grafo y clona recursivamente cada objeto. **Por qué importa:** Un error común en manejo de configuración es pensar que modificar una copia no afecta al original; cuando los datos son anidados (como diccionarios con listas), esta creencia conduce a corrupciones silenciosas. **Errores previos:** Se evitan cambios no intencionados en estados compartidos y se garantiza que iteraciones posteriores no se basen en información obsoleta.",
     "codigo_roto": "config_base = {\n    'db': {'host': 'localhost', 'port': 5432},\n    'features': ['auth', 'logs']\n}\n\ndef personalizar(config):\n    c = config.copy()  # superficial: db y features siguen COMPARTIDOS\n    c['db']['host'] = 'produccion.com'   # ¡corrompe config_base!\n    c['features'].append('premium')      # ¡corrompe config_base!\n    return c\n\nc1 = personalizar(config_base)\nc2 = personalizar(config_base)\nprint(config_base)\n# {'db': {'host': 'produccion.com', 'port': 5432},\n#  'features': ['auth', 'logs', 'premium', 'premium']}  ← acumulado entre llamadas",
-    "diagnostico": ".copy() copió solo el primer nivel: c['db'] IS config_base['db'] (mismo objeto). Mutar el dict anidado o la lista anidada afecta a todas las 'copias' y a la base. Nota el 'premium' duplicado: cada llamada corrompe más el estado global. Este bug pasa los tests con estructuras planas y explota en producción con datos anidados — y es uno de los que la IA jamás detecta porque el código 'se ve correcto'.",
+    "diagnostico": "1. **Copia superficial:** `config.copy()` produce un diccionario nuevo, pero `config_base['db']` sigue apuntando al mismo objeto que `c['db']`. Modificar `c['db']['host']` altera directamente `config_base`.\n\n2. **Compartición de listas:** Al ejecutar `c['features'].append('premium')` se añade a la lista compartida, y cada llamada a `personalizar` acumula entradas, generando duplicados como `'premium'` en múltiples instancias.\n\n3. **Patrón general:** El uso de `copy()` solo protege contra modificaciones en el contenedor exterior, nunca en sus hijos. Solo `copy.deepcopy()` elimina toda referencia compartida. Ignorar este patrón hace que la lógica de copia sea frágil ante estructuras anidadas, lo que puede causar fallos en producción cuando se propagan cambios no deseados.",
     "codigo_corregido": "import copy\n\ndef personalizar(config):\n    c = copy.deepcopy(config)  # copia recursiva completa\n    c['db']['host'] = 'produccion.com'\n    c['features'].append('premium')\n    return c\n\nc1 = personalizar(config_base)\nc2 = personalizar(config_base)\n# config_base intacta; c1 y c2 independientes entre sí",
     "codigo_optimizado": "import copy\nfrom dataclasses import dataclass, field, replace\n\n# Opción 1: deepcopy — simple, pero lento en estructuras grandes\n# y puede sorprender con referencias circulares u objetos con __deepcopy__ custom\n\n# Opción 2: reconstruir solo lo que cambia — rápido y explícito\ndef personalizar_v2(config, host_nuevo):\n    return {\n        **config,\n        'db': {**config['db'], 'host': host_nuevo},  # dict nuevo anidado\n        'features': [*config['features'], 'premium'],  # lista nueva\n    }\n\n# Opción 3 (profesional): dataclasses frozen + replace — inmutabilidad por diseño\n@dataclass(frozen=True)\nclass DBConfig:\n    host: str = 'localhost'\n    port: int = 5432\n\n@dataclass(frozen=True)\nclass AppConfig:\n    db: DBConfig = field(default_factory=DBConfig)\n    features: tuple = ('auth', 'logs')  # tuple: inmutable, sin sorpresas\n\ndef personalizar_v3(config: AppConfig) -> AppConfig:\n    return replace(config, db=replace(config.db, host='produccion.com'))\n\n# Diagnóstico de identidad: la herramienta del auditor\na = [1, [2, 3]]\nb = a.copy()\nprint(a == b)        # True  — mismo valor\nprint(a is b)        # False — contenedores distintos\nprint(a[1] is b[1])  # True  — ¡la lista anidada ES la misma!\n\n# Regla de equivalencias de copia superficial:\n# x.copy()  ==  copy.copy(x)  ==  x[:]  ==  list(x)  ==  dict(x)  (según tipo)\n# Ninguna copia lo anidado. Solo copy.deepcopy lo hace.",
     "disenso_experto": "deepcopy vs diseño inmutable. La escuela funcional argumenta que deepcopy es un parche: el diseño correcto evita estructuras anidadas mutables (dataclasses frozen, tuples) y 'modifica' mediante reconstrucción (replace, spread). deepcopy además es lento en grafos grandes y tiene edge cases (referencias circulares, memo, objetos que no pueden copiarse). La escuela pragmática: deepcopy está bien para configs y prototipos; inmutabilidad para datos que fluyen por todo el sistema. En tu PWA: dataset y configs como estructuras inmutables; deepcopy solo en fronteras.",
-    "pregunta_transferencia": "Ejecutas: a = [[1,2],[3,4]]; b = a[:]; b[0].append(99); ¿qué imprime print(a)? Luego: c = [fila[:] for fila in a]; c[0].append(100); ¿qué imprime print(a) ahora? Explica ambos resultados con el modelo de identidad y di qué alternativa de la stdlib resuelve el caso general.",
+    "pregunta_transferencia": "Escenario: Tienes un diccionario `data` con una clave `records` que contiene una lista de cinco números. Lo copias con `copy.copy(data)` y luego modificas el elemento 3 de la lista copiada. Al volver a imprimir `data['records'][3]` obtienes un número diferente al esperado. ¿Qué ocurrió?\n\nPista: el problema radica en la diferencia entre copias superficiales y profundas cuando se trabaja con estructuras anidadas. Para resolverlo debes crear una copia donde los elementos internos sean independientes.",
     "quiz": {
       "pregunta": "¿Qué copia exactamente el método .copy() de un dict con valores anidados?",
       "opciones": [
@@ -295,17 +638,76 @@
       "setup_code": "",
       "codigo_inicial": "def personalizar(config):\n    '''Retorna copia modificada SIN tocar el original (config tiene estructura anidada).'''\n    c = config.copy()\n    c['db']['host'] = 'produccion.com'\n    c['features'].append('premium')\n    return c",
       "test_code": "base = {'db': {'host': 'localhost', 'port': 5432}, 'features': ['auth', 'logs']}\nc1 = personalizar(base)\nc2 = personalizar(base)\nassert base == {'db': {'host': 'localhost', 'port': 5432}, 'features': ['auth', 'logs']}, f'¡Config base corrupta!: {base}'\nassert c1['db']['host'] == 'produccion.com'\nassert c1['features'] == ['auth', 'logs', 'premium'], f'c1 features: {c1[\"features\"]}'\nassert c2['features'] == ['auth', 'logs', 'premium'], f'Se acumuló entre llamadas: {c2[\"features\"]}'\nassert c1 is not c2 and c1['db'] is not c2['db'], 'Las copias siguen compartiendo objetos anidados'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "import copy\n\ndef personalizar(config):\n    c = copy.deepcopy(config)\n    c['db']['host'] = 'produccion.com'\n    c['features'].append('premium')\n    return c"
     },
     "audio_script": "Este es el bug silencioso más peligroso de Python, y la IA lo genera constantemente. En Python, el signo igual no copia nada: crea un segundo nombre apuntando al mismo objeto. Y punto copy, la copia superficial, solo duplica el primer nivel. Si tu diccionario tiene otro diccionario adentro, la copia y el original comparten el interno. Entonces tu función modifica la copia, el usuario ve que su configuración original cambió sola, y con cada llamada se acumula más corrupción. El diagnóstico es una línea: a is b te dice si dos nombres apuntan al mismo objeto. La solución rápida es copy punto deepcopy, que copia todo el grafo recursivamente. La solución profesional es diseñar con inmutabilidad: dataclasses frozen, tuplas en vez de listas, y funciones que reconstruyen en vez de modificar. Deepcopy es el extintor; la inmutabilidad es el edificio a prueba de fuego.",
     "video_prompt": "Video de 80 segundos. Animación de objetos en memoria: variable a apuntando a una caja grande que contiene cajas pequeñas. 'b = a.copy()' crea una caja grande NUEVA pero con FLECHAS a las mismas cajas pequeñas. Al pintar una caja pequeña desde b, se ve cómo la misma caja en a también cambia de color (están compartidas). Luego deepcopy: copiadora que duplica recursivamente cada nivel. Cierre con frozen dataclass: cajas de cristal que no se pueden pintar, solo reemplazar. Overlay: '= alias. .copy() superficial. deepcopy() completo. Frozen: sin sorpresas.'",
     "trazabilidad": {
-      "libros_fuente": ["Fluent Python Cap 8 (referencias y mutabilidad)", "Effective Python Item 20", "Python docs - copy module"],
-      "conceptos_clave": ["aliasing", "shallow-copy", "deepcopy", "inmutabilidad", "dataclass-frozen", "referencias"]
+      "libros_fuente": [
+        "Fluent Python Cap 8 (referencias y mutabilidad)",
+        "Effective Python Item 20",
+        "Python docs - copy module"
+      ],
+      "conceptos_clave": [
+        "aliasing",
+        "shallow-copy",
+        "deepcopy",
+        "inmutabilidad",
+        "dataclass-frozen",
+        "referencias"
+      ]
     },
-    "tags_rag": ["python", "copias", "deepcopy", "shallow-copy", "aliasing", "inmutabilidad"]
+    "tags_rag": [
+      "python",
+      "copias",
+      "deepcopy",
+      "shallow-copy",
+      "aliasing",
+      "inmutabilidad"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes funciones crea una copia completamente independiente (profunda) de un diccionario que puede contener otras estructuras anidadas?",
+        "opciones": [
+          "A. dict.copy()",
+          "B. copy.deepcopy()",
+          "C. dict()",
+          "D. list()"
+        ],
+        "correcta": "B",
+        "explicacion": "`copy.deepcopy()` recorre recursivamente todos los objetos anidados y genera nuevas referencias para cada uno, garantizando que ninguna modificación en la copia afecte al original. En contraste, `dict.copy()` (y `list.copy()`, `[:]`) solo clona el nivel superior, dejando las estructuras internas compartidas.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el siguiente fragmento de código se intenta limpiar la lista de características sin afectar la original:\\n\\nlimpiar = config['features']\\nlimpiar.clear()\\n\\n¿Qué sucede con `config` después de ejecutar esto?",
+        "opciones": [
+          "A. La lista se queda vacía y `config` permanece sin cambios",
+          "B. La lista se vacía y `config` pierde sus elementos",
+          "C. Se produce un error porque `limpiar` no es un mutable",
+          "D. `config` se modifica parcialmente solo en el índice 0"
+        ],
+        "correcta": "B",
+        "explicacion": "Al asignar `limpiar = config['features']` se crea una nueva variable que apunta al mismo listado que `config`. Cuando se llama a `limpiar.clear()`, se elimina todos los elementos del listado original, ya que ambas variables referencian el mismo objeto. La única forma de evitarlo es usar `import copy; nuevo = copy.deepcopy(config)` o reiniciar la lista con `config['features'] = []`.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "La función `clonar(cfg)` intenta copiar la configuración pero olvida importar `deepcopy`. Su código es:\\npython\\nimport copy\\ndef clonar(cfg):\\n    nuevo = cfg.copy()\\n    nuevo['db']['host'] = 'produccion.com'\\n    return nuevo\\n\\nSi ejecutamos `clonar(config_base)`, ¿cuál es el valor impreso por `print(config_base['db']['host'])`?",
+        "opciones": [
+          "A. 'localhost'",
+          "B. 'produccion.com'",
+          "C. Error AttributeError",
+          "D. 'null'"
+        ],
+        "correcta": "B",
+        "explicacion": "Como se usa `cfg.copy()` (copia superficial), el diccionario `nuevo` comparte los mismos objetos para `'db'` y `'features'` que `config_base`. Por tanto, al modificar `nuevo['db']['host']` la configuración original también cambia a 'produccion.com'. Con `copy.deepcopy()` la respuesta sería 'localhost'.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "M1.2-008",
@@ -314,13 +716,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "La estructura se elige por el PATRÓN DE ACCESO, no por costumbre. Pregunta en este orden: ¿Itero en secuencia? → list. ¿Registro fijo que no cambia? → tuple/NamedTuple. ¿Busco por clave? → dict (O(1)). ¿Pregunto 'está o no está' repetidamente? → set (O(1)). ¿Encolo/desencolo por ambos extremos? → deque. La señal de alarma universal: si tu código tiene `for` + `in lista` anidados, o `.index()` en bucles, elegiste mal la estructura.",
+    "modelo_mental": "**Elección de estructura como herramienta adecuada**: Pensemos en las estructuras de datos como un conjunto de herramientas. Al igual que un mecánico usa un destornillador de cabeza plana para un tornillo de ranura, y cambia a un destornillador de cruz para un tornillo de Phillips, debemos elegir **list**, **dict**, **set**, o **tuple** según el *patrón de acceso* que necesitamos. La analogía central es que el lenguaje natural del algoritmo es \"¿itero en secuencia?\", \"¿busco por clave?\", \"¿compruebo presencia?\", etc. Usar la herramienta equivocada lleva a código que parece que funciona, pero es lento, difícil de mantener y propenso a errores.\n\n**Por qué importa**: El patrón de acceso determina la eficiencia asintótica de cada operación. Un `for p in productos` que recorre toda la lista para cada búsqueda se escala como **O(n)**, mientras que un `productos[sku]` basado en dict es **O(1)**. Más allá del rendimiento, los nombres claros (`producto.precio`) hacen que el código sea legible y resistente a cambios; los índices mágicos (`p[2]`) son la antítesis de la claridad. Al alinear la estructura con el patrón, evitamos errores costosos: búsquedas lineales innecesarias, asignaciones de índices equivocados y código frágil que se rompe con cambios menores.\n\n**Errores que previene**: Si ves `for … in lista` anidados, o `.index()` dentro de bucles, estás probablemente usando una **list** donde un **dict** o **set** sería mejor. Del mismo modo, acceder a elementos por números como `p[2]` o `p[3]` invita a errores de reordenamiento; usar un **NamedTuple** o **dataclass** da a cada campo un nombre, eliminando los índices mágicos. Al seguir esta guía, escribes código más rápido, más seguro y más fácil de depurar.",
     "codigo_roto": "# Inventario con la estructura equivocada\nproductos = [\n    ['SKU-001', 'Teclado', 250.5, 10],\n    ['SKU-002', 'Mouse', 150.0, 25],\n]\n\ndef buscar_precio(sku):\n    for p in productos:      # búsqueda lineal O(n) por consulta\n        if p[0] == sku:\n            return p[2]      # ¿p[2] es precio? ¿stock? índices mágicos\n    return None\n\ndef actualizar_stock(sku, nuevo):\n    for i in range(len(productos)):\n        if productos[i][0] == sku:\n            productos[i][3] = nuevo   # ¿[3] qué era?\n\n# Con 10k productos y 1k búsquedas: 10 millones de comparaciones.",
-    "diagnostico": "Doble problema de estructura. (1) Los datos están en una lista cuando el patrón de acceso es 'buscar por SKU': debería ser un dict con SKU como clave → O(1) por consulta. (2) Los registros son listas con índices mágicos p[2], p[3]: ilegibles y frágiles ante reordenamientos; deberían ser NamedTuple/dataclass con campos nombrados. La IA genera listas-de-listas por defecto porque es el formato más 'universal', pero es la peor estructura para búsqueda.",
+    "diagnostico": "1. **Estructura equivocada para búsquedas por clave**: Los datos se almacenan en una `list` de `list`s, lo que obliga a una búsqueda lineal `O(n)` por cada consulta de SKU. Python no lanza una excepción por esto, pero el rendimiento se degrada drásticamente con escalas grandes (por ejemplo, 10k productos × 1k búsquedas = 10 millones de comparaciones). El patrón de acceso correcto es \"buscar por clave\" → debería ser un `dict` con SKU como clave, permitiendo recuperación `O(1)`.\n\n2. **Índices mágicos y falta de semántica**: Los elementos internos usan números `p[2]` (precio) y `p[3]` (stock). Estos índices carecen de significado, haciendo que el código sea frágil; si se inserta una nueva columna, todas las posiciones numéricas cambian, rompiendo la lógica. Python no genera un error de ejecución, pero el código se vuelve ilegible y propenso a errores de asignación. La solución es usar un **NamedTuple** o **dataclass** (`Producto = NamedTuple('Producto', [('sku', str), ('nombre', str), ('precio', float), ('stock', int)])`), dando a cada campo un nombre explícito.",
     "codigo_corregido": "from typing import NamedTuple\n\nclass Producto(NamedTuple):\n    sku: str\n    nombre: str\n    precio: float\n    stock: int\n\ninventario = {\n    'SKU-001': Producto('SKU-001', 'Teclado', 250.5, 10),\n    'SKU-002': Producto('SKU-002', 'Mouse', 150.0, 25),\n}\n\ndef buscar_precio(sku):\n    p = inventario.get(sku)          # O(1)\n    return p.precio if p else None   # acceso por nombre\n\ndef actualizar_stock(sku, nuevo):\n    p = inventario[sku]\n    inventario[sku] = p._replace(stock=nuevo)",
     "codigo_optimizado": "from dataclasses import dataclass\n\n@dataclass\nclass Producto:\n    sku: str\n    nombre: str\n    precio: float\n    stock: int\n\n    def valor_total(self) -> float:\n        return self.precio * self.stock\n\nclass Inventario:\n    \"\"\"Dict interno + interfaz limpia. Búsqueda O(1), datos tipados.\"\"\"\n    def __init__(self):\n        self._items: dict = {}\n\n    def agregar(self, p: Producto) -> None:\n        self._items[p.sku] = p\n\n    def buscar(self, sku: str):\n        return self._items.get(sku)   # None si no existe, sin KeyError\n\n    def actualizar_stock(self, sku: str, cantidad: int) -> None:\n        if (p := self._items.get(sku)) is None:\n            raise KeyError(f'SKU inexistente: {sku}')\n        p.stock = cantidad\n\n    def bajo_minimo(self, minimo: int = 5):\n        return [p for p in self._items.values() if p.stock < minimo]\n\n    def valor_total(self) -> float:\n        return sum(p.valor_total() for p in self._items.values())\n\n# ===== TABLA DE DECISIÓN (memorízala) =====\n# | Necesitas                        | Usa              | Costo clave        |\n# |------------------------------------|------------------|--------------------|\n# | Colección ordenada, iteración      | list             | in: O(n), índice O(1)|\n# | Registro fijo inmutable            | tuple/NamedTuple | hashable           |\n# | Buscar por clave                   | dict             | get/in: O(1)       |\n# | Membresía, dedup, álgebra conjuntos| set/frozenset    | in: O(1)           |\n# | Cola FIFO / pila / búfer circular  | deque            | extremos: O(1)     |\n# | Contar frecuencias                 | Counter          | most_common O(n log k)|\n# | Agrupar por clave                  | defaultdict(list)| acceso O(1)        |\n# | Búsqueda por rango en datos ordenados | bisect + list | búsqueda O(log n)  |",
     "disenso_experto": "¿dicts para todo o dataclasses para el dominio? Los dicts son flexibles, serializan a JSON nativo y dominan en fronteras (APIs, archivos). Las dataclasses dan autocompletado, tipos, métodos y hacen imposible el typo-de-clave ('precio' vs 'precioo' en un dict falla en silencio con .get()). La práctica madura: dicts/TypedDict en los bordes del sistema, dataclasses en el dominio interno. El anti-patrón es el extremo: dicts con 8 claves de string mágico pasando por todo el códigobase.",
-    "pregunta_transferencia": "Diseñas una agenda: búsquedas frecuentes por nombre, inserciones ocasionales, y a veces necesitas TODOS los contactos en orden alfabético. ¿dict, list ordenada con bisect, o dict + paso de sorted()? ¿Cómo cambia tu respuesta si son 10M de contactos y el orden alfabético se consulta constantemente?",
+    "pregunta_transferencia": "Estás diseñando una agenda electrónica: necesitarás buscar contactos **frecuentemente por nombre**, insertar nuevos contactos **ocasionalmente**, y ocasionalmente necesitar la lista completa **ordenada alfabéticamente**. ¿Deberías usar un `dict`, una `list` ordenada con `bisect`, o un `dict` combinado con un paso `sorted()`? Explica el trade-off en términos de tiempo de búsqueda, inserción y generación de orden.\n\nAhora, si la agenda crece a **10 millones de contactos** y las consultas de orden alfabético se vuelven **frecuentes** (por ejemplo, mostrar los primeros 100 contactos), ¿cómo cambia tu elección? Discute el impacto en la memoria, el tiempo de consulta y la complejidad de actualización.",
     "quiz": {
       "pregunta": "Tu código hace `if usuario in lista_usuarios` dentro de un bucle de 10k iteraciones sobre una lista de 10k elementos. ¿La mejora estructural correcta?",
       "opciones": [
@@ -339,17 +741,81 @@
       "setup_code": "",
       "codigo_inicial": "def construir_indice(registros):\n    '''registros: lista de tuplas (id, nombre, email).\n    Debe retornar estructura que permita búsqueda O(1) por id.'''\n    return registros  # BUG: retorna la misma lista → búsqueda O(n)\n\ndef buscar_email(indice, id_usuario):\n    '''Busca email por id en O(1).'''\n    for r in indice:  # BUG: búsqueda lineal\n        if r[0] == id_usuario:\n            return r[2]\n    return None",
       "test_code": "registros = [(i, f'user{i}', f'user{i}@mail.com') for i in range(10000)]\nindice = construir_indice(registros)\nassert isinstance(indice, dict), f'El índice debe ser un dict, retornaste {type(indice).__name__}'\nassert buscar_email(indice, 5) == 'user5@mail.com'\nassert buscar_email(indice, 9999) == 'user9999@mail.com'\nassert buscar_email(indice, -1) is None\nimport time\nt0 = time.perf_counter()\nfor _ in range(10000):\n    buscar_email(indice, 7777)\nt1 = time.perf_counter()\nassert (t1 - t0) < 0.1, f'10k búsquedas tardaron {t1-t0:.3f}s: no es O(1) por búsqueda'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["for r in indice"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "for r in indice"
+      ],
       "solucion": "def construir_indice(registros):\n    return {id_u: email for id_u, nombre, email in registros}\n\ndef buscar_email(indice, id_usuario):\n    return indice.get(id_usuario)"
     },
     "audio_script": "Elegir estructura de datos es la decisión de diseño más frecuente que vas a tomar, y se hace con una sola pregunta: ¿cómo voy a ACCEDER a estos datos? No cómo los guardo, cómo los consulto. Si recorres en orden, lista. Si buscas por clave, diccionario: acceso instantáneo sin importar el tamaño. Si preguntas una y otra vez si algo existe, set: igual de rápido. Si encolas y despachas por ambos extremos, deque. Si cuentas frecuencias, Counter. Si agrupas, defaultdict. Y hay una señal de alarma que debes entrenar tu ojo para detectar en cualquier code review: un bucle for con un 'in lista' adentro. Ese patrón es cuadrático siempre, y la solución es casi siempre la misma: convertir la lista a set o a diccionario ANTES del bucle. Una conversión, todas las consultas rápidas. Los datos no eligen su estructura por estética; la eligen por su patrón de acceso.",
     "video_prompt": "Video de 90 segundos. Árbol de decisión animado: '¿Cómo accedes a los datos?' con ramas hacia list (secuencia), dict (clave→valor), set (membership), deque (cola), Counter (frecuencias). Cada hoja muestra el costo O() en grande. Escena central: código con for+in lista medido con cronómetro (lentísimo) transformándose en set lookup (instantáneo). Cierre con la lista-de-listas del inventario convirtiéndose en dict de NamedTuples. Overlay: 'La estructura sigue al acceso.'",
     "trazabilidad": {
-      "libros_fuente": ["Classic Computer Science Problems Cap 1-2", "Fluent Python Cap 2-3", "Python Crash Course Cap 6"],
-      "conceptos_clave": ["eleccion-de-estructura", "big-o", "dict", "set", "deque", "namedtuple", "dataclass", "indices"]
+      "libros_fuente": [
+        "Classic Computer Science Problems Cap 1-2",
+        "Fluent Python Cap 2-3",
+        "Python Crash Course Cap 6"
+      ],
+      "conceptos_clave": [
+        "eleccion-de-estructura",
+        "big-o",
+        "dict",
+        "set",
+        "deque",
+        "namedtuple",
+        "dataclass",
+        "indices"
+      ]
     },
-    "tags_rag": ["python", "estructuras-de-datos", "big-o", "dict", "set", "decision", "performance"]
+    "tags_rag": [
+      "python",
+      "estructuras-de-datos",
+      "big-o",
+      "dict",
+      "set",
+      "decision",
+      "performance"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué señal indica que debes usar un **dict** en lugar de una **list** para una estructura de datos?",
+        "opciones": [
+          "Necesitas mantener el orden de inserción",
+          "Necesitas buscar elementos por una clave única",
+          "Necesitas iterar sobre todos los elementos con frecuencia",
+          "Necesitas almacenar elementos no únicos sin orden"
+        ],
+        "correcta": "B",
+        "explicacion": "Un `dict` ofrece recuperación O(1) por clave. Si el patrón de acceso principal es \"buscar por clave\", un `dict` es la estructura adecuada, mientras que una `list` requeriría una búsqueda lineal O(n). Las otras opciones se ajustan mejor a `list`, `set` o `tuple` respectivamente.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente fragmento, ¿qué devuelve `buscar_precio('SKU-001')`?",
+        "opciones": [
+          "250.5",
+          "10",
+          "None",
+          "'SKU-001'"
+        ],
+        "correcta": "A",
+        "explicacion": "El código devuelve `p[2]`. Para `'SKU-001'`, `p` es `['SKU-001', 'Teclado', 250.5, 10]`, por lo que `p[2]` es 250.5 (el precio). La otra opciones corresponden a `p[3]` (stock), un fallo de búsqueda (no ocurre) o el SKU en sí.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Al ejecutar el programa con 10,000 productos y 1,000 búsquedas, ¿qué problema principal experimentará el programa?",
+        "opciones": [
+          "Falla de memoria",
+          "Falla de tiempo de ejecución (IndexError)",
+          "Lento rendimiento debido a búsquedas lineales O(n)",
+          "Impresión incorrecta de resultados"
+        ],
+        "correcta": "C",
+        "explicacion": "El algoritmo usa un bucle `for` sobre toda la lista para cada búsqueda, lo que resulta en O(n) por consulta. Con muchos elementos, el tiempo total se vuelve prohibitivamente alto, aunque no haya un error de Python. Este es un error de diseño lógico, no un fallo de tiempo de ejecución.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M1.2-009",
@@ -358,13 +824,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "Modificar una colección MIENTRAS la iteras es el bug del 'funciona a veces'. En listas: al eliminar el elemento actual, todos los siguientes se desplazan una posición y el iterador SALTA el siguiente elemento — datos incorrectos en silencio, peor que un crash. En dicts: cambiar el tamaño durante la iteración lanza RuntimeError inmediato. Los 3 patrones correctos: (1) construir colección nueva con comprehension (preferido, puro), (2) iterar en reversa para borrados in-place, (3) recorrer una copia de las claves y borrar del original.",
+    "modelo_mental": "Modificar una colección **mientras la iteras** es el bug del 'funciona a veces'. Imagina una cinta transportadora donde cada caja se mueve un lugar hacia adelante cuando eliminas la actual: el iterador, que avanza posición por posición, termina saltándose la caja que acaba de ocupar el hueco. En listas, al hacer `usuarios.remove(u)` durante el `for`, el elemento siguiente se desplaza una posición y el puntero interno del `for` ya no lo revisa — el resultado es **datos incorrectos en silencio**, peor que un crash porque el programa no se detiene. En diccionarios, el problema es distinto pero igual de grave: cambiar el tamaño de la tabla hash durante la iteración rompe la invariante de estabilidad y Python lanza `RuntimeError` de inmediato. Los tres patrones correctos son: (1) construir una colección nueva con `comprehension` (preferido, puro y legible), (2) iterar en **reversa** para borrados in-place sin alterar índices pendientes, y (3) recorrer una **copia de las claves** (`list(cache)`) y borrar del original. Cada uno evita el desplazamiento o la mutación simultánea, que son la raíz de ambos errores.",
     "codigo_roto": "def eliminar_inactivos(usuarios):\n    for u in usuarios:\n        if not u['activo']:\n            usuarios.remove(u)   # ¡salta elementos!\n    return usuarios\n\ndef limpiar_cache(cache, claves_viejas):\n    for k in cache:              # RuntimeError al primer del\n        if k in claves_viejas:\n            del cache[k]\n\n# Demostración del salto:\n# [ana✓, bob✗, carlos✗, diana✓]\n# pos 1: elimina bob → lista queda [ana, carlos, diana]\n# pos 2: ahora es diana — ¡carlos NUNCA fue evaluado!",
-    "diagnostico": "eliminar_inactivos NO crashea: retorna datos silenciosamente incorrectos. Con inactivos consecutivos, el desplazamiento hace que el iterador se salte elementos. Es el peor tipo de bug porque pasa tests con datos simples (un solo inactivo) y corrompe datos reales (varios consecutivos). limpiar_cache al menos falla fuerte: 'RuntimeError: dictionary changed size during iteration'. La IA genera ambos porque replica el patrón de otros lenguajes donde se usa un Iterator explícito con remove seguro.",
+    "diagnostico": "1. `eliminar_inactivos` NO crashea, pero retorna **datos silenciosamente incorrectos**. El error ocurre porque `usuarios.remove(u)` modifica la lista mientras el `for` itera sobre ella: al eliminar el elemento en la posición actual, todos los elementos siguientes se desplazan una posición hacia atrás, y el iterador interno avanza una posición más allá, **saltándose el siguiente elemento**. Por ejemplo, con `[ana✓, bob✗, carlos✗, diana✓]`, al eliminar `bob` en la posición 1, la lista se vuelve `[ana, carlos, diana]`; el iterador pasa a la posición 2, que ahora es `diana`, y **nunca evalúa a `carlos`**. Este bug es especialmente peligroso porque pasa tests con datos simples (un solo inactivo) y corrompe datos reales (varios inactivos consecutivos). 2. `limpiar_cache` al menos **falla fuerte y de inmediato** con `RuntimeError: dictionary changed size during iteration`. La causa es que `del cache[k]` cambia el tamaño de la tabla hash mientras el `for` itera sobre sus claves; Python detecta esta mutación y aborta para evitar comportamiento indefinido. 3. El patrón general es: **nunca mutar una colección durante su iteración**. La IA genera ambos errores porque replica el patrón de otros lenguajes donde se usa un `Iterator` explícito con `remove` seguro (como en Java), pero en Python/Bash la iteración está íntimamente ligada a la estructura subyacente y no tolera mutaciones concurrentes.",
     "codigo_corregido": "def eliminar_inactivos(usuarios):\n    # Patrón 1 (preferido): construir lista nueva — puro, legible, testeable\n    return [u for u in usuarios if u['activo']]\n\ndef limpiar_cache(cache, claves_viejas):\n    # Patrón 3: iterar sobre COPIA de las claves, borrar del original\n    for k in list(cache.keys()):\n        if k in claves_viejas:\n            del cache[k]",
     "codigo_optimizado": "# ===== Patrón 1: nueva colección (default para 95% de los casos) =====\ndef eliminar_inactivos(usuarios):\n    return [u for u in usuarios if u['activo']]\n\n# ===== Patrón 2: in-place con iteración reversa (cuando NO puedes duplicar memoria) =====\ndef eliminar_inactivos_inplace(usuarios):\n    for i in range(len(usuarios) - 1, -1, -1):  # de atrás hacia adelante\n        if not usuarios[i]['activo']:\n            del usuarios[i]  # seguro: borrar el final no desplaza los anteriores\n    return usuarios\n\n# ===== Patrón 3: dicts — recolectar claves y borrar en segunda pasada =====\ndef limpiar_cache(cache, claves_viejas):\n    a_eliminar = [k for k in cache if k in claves_viejas]\n    for k in a_eliminar:\n        del cache[k]\n\n# Variante: reconstruir el dict (cuando eliminar es la mayoría)\ndef limpiar_cache_rebuild(cache, claves_viejas):\n    conservados = {k: v for k, v in cache.items() if k not in claves_viejas}\n    cache.clear()\n    cache.update(conservados)\n\n# ===== Por qué falla el forward-delete: el modelo mental =====\n# La lista es un array: [a, b, c, d] posiciones 0,1,2,3\n# El iterador lleva un cursor de POSICIÓN, no de elemento.\n# Estás en posición 1 (b) y lo borras:\n#   → [a, c, d]: c ocupó la posición 1\n#   → el cursor avanza a posición 2: ves d. c fue saltado para siempre.\n# En reversa: borras posición 3 → posiciones 0,1,2 intactas → cursor a 2. Nunca salta nada.\n\n# El mismo bug aplica a remove() por valor con duplicados:\nxs = [1, 1, 2]\nxs.remove(1)  # elimina el PRIMERO: xs = [1, 2]",
     "disenso_experto": "In-place vs nueva colección. In-place ahorra memoria (crítico con millones de registros donde duplicar la lista puede tumbar el proceso) pero exige el patrón reverso o de dos pasadas, que es más difícil de leer y de mantener. Nueva colección es pura: misma entrada → misma salida, sin efectos, trivial de testear. Con <100k elementos, siempre nueva colección. Con millones y memoria limitada, in-place reverso o filtrado con itertools.compress. La IA casi nunca pregunta cuál necesitas: asume in-place y produce el bug del salto.",
-    "pregunta_transferencia": "Tienes una lista de 1M de líneas de log en memoria y debes eliminar todas las que contienen 'DEBUG' con un límite estricto de RAM que impide duplicar la lista. ¿Qué patrón usas, por qué no falla como el forward-delete, y cuál es su complejidad total?",
+    "pregunta_transferencia": "Tienes una lista de 1M de líneas de log en memoria y debes eliminar todas las que contienen `'DEBUG'` con un límite estricto de RAM que impide duplicar la lista. El patrón correcto es **iterar en reversa** (`for i in range(len(logs)-1, -1, -1)`) y usar `del logs[i]` o `pop(i)` cuando la línea coincida. Esto no falla como el forward-delete porque al borrar desde el final, los índices de los elementos no procesados aún no se han alterado — el iterador siempre apunta a una posición válida y estable. La complejidad total es **O(n)** en tiempo (un solo recorrido) y **O(1)** en espacio adicional (sin copias), cumpliendo con el límite de RAM. La pista clave: piensa en qué dirección debe apuntar el iterador para que el desplazamiento de elementos no afecte las posiciones pendientes.",
     "quiz": {
       "pregunta": "Iteras una lista con `for` y eliminas el elemento actual con .remove(). ¿Qué sucede?",
       "opciones": [
@@ -383,17 +849,89 @@
       "setup_code": "",
       "codigo_inicial": "def eliminar_inactivos(usuarios):\n    '''Retorna la lista de usuarios con solo los activos.'''\n    for u in usuarios:\n        if not u['activo']:\n            usuarios.remove(u)  # BUG: salta elementos consecutivos\n    return usuarios",
       "test_code": "usuarios = [\n    {'nombre': 'ana', 'activo': True},\n    {'nombre': 'bob', 'activo': False},\n    {'nombre': 'carlos', 'activo': False},   # consecutivo: el bug lo salta\n    {'nombre': 'diana', 'activo': True},\n]\nr = eliminar_inactivos([dict(u) for u in usuarios])\nactivos = [u['nombre'] for u in r]\nassert activos == ['ana', 'diana'], f'Esperado [ana, diana], obtuviste {activos} — ¿tu bucle salta elementos consecutivos?'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def eliminar_inactivos(usuarios):\n    return [u for u in usuarios if u['activo']]"
     },
     "audio_script": "Este bug es especial porque no falla: miente. Imagina una fila de personas donde vas revisando una por una y le pides a algunas que se retiren. Cuando la segunda persona se va, TODOS los de atrás dan un paso adelante. Pero tú ya habías avanzado tu vista a la siguiente posición: la persona que dio el paso quedó exactamente donde estás mirando, y nunca la evalúas. Eso es eliminar de una lista mientras la iteras: los inactivos consecutivos se salpan, y tu función retorna datos incorrectos con cara de éxito. En los diccionarios Python es más honesto: lanza RuntimeError y te obliga a arreglarlo. En las listas es corrupción silenciosa. La solución preferida es la más simple: no borres, construye. Una comprensión que filtra y crea una lista nueva. Si no puedes duplicar la memoria, itera al revés: borrar desde el final no desplaza a los que todavía vas a revisar. Y cuando la IA te genere un remove dentro de un for, ya sabes qué hacer.",
     "video_prompt": "Video de 85 segundos. Animación de fila de bloques numerados con un puntero-iterador. Al eliminar el bloque bajo el puntero, los siguientes se deslizan向左 y el puntero avanza, saltándose un bloque (marcado en rojo parpadeante 'NUNCA EVALUADO'). Contrastar: iteración en reversa donde los bloques eliminados no afectan a los pendientes. Escena final: comprehension construyendo una lista nueva limpia en paralelo. Overlay: 'No borres mientras iteras: construye nuevo o itera al revés.'",
     "trazabilidad": {
-      "libros_fuente": ["Effective Python Item 25", "Fluent Python Cap 2", "Python docs - sequence iteration semantics"],
-      "conceptos_clave": ["mutacion-en-iteracion", "runtime-error", "iteradores", "forward-delete", "comprensiones", "bugs-ia"]
+      "libros_fuente": [
+        "Effective Python Item 25",
+        "Fluent Python Cap 2",
+        "Python docs - sequence iteration semantics"
+      ],
+      "conceptos_clave": [
+        "mutacion-en-iteracion",
+        "runtime-error",
+        "iteradores",
+        "forward-delete",
+        "comprensiones",
+        "bugs-ia"
+      ]
     },
-    "tags_rag": ["python", "iteracion", "mutacion", "remove", "runtimeerror", "codigo-ia", "auditoria"]
+    "tags_rag": [
+      "python",
+      "iteracion",
+      "mutacion",
+      "remove",
+      "runtimeerror",
+      "codigo-ia",
+      "auditoria"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué sucede al ejecutar `eliminar_inactivos` con la lista `[{'activo': False}, {'activo': False}, {'activo': True}]`?",
+        "opciones": [
+          "Devuelve una lista con un solo elemento inactivo",
+          "Devuelve una lista con todos los elementos inactivos eliminados correctamente",
+          "Devuelve una lista con dos elementos, uno de ellos inactivo",
+          "Lanza RuntimeError por mutación durante la iteración"
+        ],
+        "correcta": "C",
+        "explicacion": "La función `eliminar_inactivos` elimina el primer elemento inactivo (índice 0), lo que hace que el segundo elemento inactivo (originalmente en índice 1) se desplace al índice 0. El iterador, que ya avanzó al índice 1, ahora apunta al tercer elemento (índice 1 de la nueva lista), que es el elemento activo. Por lo tanto, solo se elimina un inactivo y el segundo inactivo **nunca es evaluado**, quedando en la lista. La opción A es incorrecta porque no se eliminan todos los inactivos. La opción B es incorrecta porque el salto del iterador impide una eliminación completa. La opción D es incorrecta porque este bug no lanza RuntimeError en listas, solo en diccionarios.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la causa principal del `RuntimeError: dictionary changed size during iteration` en `limpiar_cache`?",
+        "opciones": [
+          "El diccionario está vacío y no se puede iterar",
+          "Se está modificando el diccionario mientras se itera sobre sus claves",
+          "La variable `claves_viejas` no está definida correctamente",
+          "Se está usando `del` en lugar de `pop` para eliminar elementos"
+        ],
+        "correcta": "B",
+        "explicacion": "El `RuntimeError` ocurre porque `del cache[k]` cambia el tamaño de la tabla hash durante la iteración. Python detecta esta mutación y aborta para prevenir comportamiento indefinido. La opción A es incorrecta porque un diccionario vacío no causa este error. La opción C es irrelevante: `claves_viejas` es solo una lista de referencia. La opción D es incorrecta porque tanto `del` como `pop` mutan el diccionario y ambos causarían el mismo error si se usan durante la iteración.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál patrón es el más adecuado para corregir `limpiar_cache` sin duplicar el diccionario en memoria?",
+        "opciones": [
+          "Usar una list comprehension para crear un nuevo diccionario",
+          "Iterar sobre `list(cache)` y borrar del original",
+          "Iterar sobre `cache.keys()` directamente y borrar",
+          "Convertir el diccionario a una lista de tuplas y reconstruirlo"
+        ],
+        "correcta": "B",
+        "explicacion": "Iterar sobre `list(cache)` crea una copia de las claves en ese momento, permitiendo borrar del diccionario original sin alterar la iteración. La opción A implica duplicar el diccionario, lo que consume memoria adicional. La opción C causaría el mismo RuntimeError porque `cache.keys()` devuelve una vista dinámica. La opción D también duplica estructuras y es menos eficiente.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué patrón usarías para corregir `eliminar_inactivos` manteniendo la misma lista original sin crear una nueva?",
+        "opciones": [
+          "Iterar en reversa y usar `remove` sobre cada elemento",
+          "Iterar en reversa y usar `del` con el índice actual",
+          "Usar una comprensión de lista para filtrar elementos",
+          "Iterar sobre una copia de la lista y borrar del original"
+        ],
+        "correcta": "B",
+        "explicacion": "Iterar en reversa (`for i in range(len(usuarios)-1, -1, -1)`) y usar `del usuarios[i]` cuando `not usuarios[i]['activo']` evita el salto del iterador, ya que al borrar desde el final, los índices de los elementos no procesados no cambian. La opción A es incorrecta porque `remove` busca el primer elemento coincidente, no necesariamente el actual. La opción C crea una nueva lista, no modifica la original. La opción D es válida pero menos eficiente que la opción B.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "M1.2-010",
@@ -402,13 +940,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "Los bugs de rendimiento no rompen tests: rompen producción cuando los datos crecen. La IA genera código cuadrático porque optimiza para 'que funcione con el ejemplo pequeño'. Los 5 patrones que delatan O(n²) a simple vista: (1) `x in lista` dentro de bucle → set/dict, (2) `.index()` repetido → dict, (3) búsqueda lineal por clave → indexar de antemano, (4) `.sort()` dentro de bucle → ordenar una vez, (5) `while i < len(x)` recalculando → cachear o iterar directo. La habilidad del auditor: detectar complejidad por inspección, sin profiler.",
+    "modelo_mental": "Los bugs de rendimiento no rompen tests: rompen producción cuando los datos crecen. La IA genera código cuadrático porque optimiza para 'que funcione con el ejemplo pequeño'. La **analogia central** es sencilla: si en una biblioteca tienes que buscar un libro comparando titulo por titulo en estantes completos, con 10 libros te cuesta un segundo, pero con 10.000 ya necesitas horas. Eso es exactamente lo que hace `if r == recurso` dentro de un bucle anidado: cada nuevo elemento multiplica el trabajo. **Por que importa** es que estos cuellos de botella suelen aparecer en componentes críticos como autenticación, filtrado de permisos o extracción de etiquetas, donde cada milisegundo de latencia se multiplica por miles de solicitudes concurrentes. **Que errores previene** este modelo mental incluye: usar estructuras indexadas (`dict`, `set`) en lugar de listas para búsquedas repetidas, evitar recalcular valores constantes dentro de bucles y reconocer patrones como `x in lista` o `.index()` como señales de alarma. Un auditor hábil detecta complejidad por inspección, sin necesidad de perfiles, simplemente observando si un bucle contiene otra operación lineal.",
     "codigo_roto": "def tiene_permisos(usuario, recursos, permisos_por_recurso):\n    '''permisos_por_recurso: lista de tuplas (recurso, rol)'''\n    resultado = []\n    for recurso in recursos:                 # r iteraciones\n        for r, rol in permisos_por_recurso:  # × p iteraciones = O(r·p)\n            if r == recurso:\n                resultado.append((recurso, rol))\n                break\n    return resultado\n\ndef primeras_etiquetas(textos, n):\n    etiquetas = []\n    for t in textos:\n        for palabra in t.split():\n            if palabra.startswith('#') and palabra not in etiquetas:  # O(k) por check\n                etiquetas.append(palabra)\n            if len(etiquetas) >= n:\n                break   # doble break anidado: señal de alarma\n        if len(etiquetas) >= n:\n            break\n    return etiquetas",
-    "diagnostico": "tiene_permisos es O(r·p): con 1k recursos y 10k permisos son 10M comparaciones por llamada; si se llama en un bucle de requests, la app se muere. La lista de tuplas debió indexarse como dict UNA vez. primeras_etiquetas usa `not in etiquetas` sobre lista (O(k) por palabra) y el doble break delata lógica de 'early exit' forzada — con un generator + islice el código es más corto Y más rápido. Ninguno falla con datos de prueba pequeños; ambos colapsan con datos reales.",
+    "diagnostico": "1. **tiene_permisos es O(r·p)**: el bucle externo itera sobre `recursos` (r elementos) y el interno sobre `permisos_por_recurso` (p elementos). Con 1.000 recursos y 10.000 permisos, eso son 10 millones de comparaciones por llamada. Si esta función se ejecuta en un bucle de requests, el servidor colapsa. Python no lanza un error aquí porque el código es sintácticamente correcto, pero la **complejidad cuadrática silenciosa** se disfraza de eficiencia. El patrón general es: **estructura de datos inadecuada para búsquedas repetidas**. La solución es indexar `permisos_por_recurso` como un `dict` una sola vez, reduciendo la búsqueda a O(1). 2. **primeras_etiquetas usa `not in etiquetas` sobre una lista**: cada verificación es O(k), donde k es el número de etiquetas acumuladas. Si procesas miles de palabras, el costo total se vuelve cuadrático. El **doble break anidado** es una señal de alarma: indica que se está forzando un 'early exit' para evitar el colapso, pero la lógica sigue siendo ineficiente. Python permite este patrón sin errores, pero el **costo oculto** crece rápidamente. El patrón general aquí es: **uso de lista en lugar de set para membresía**. Convertir `etiquetas` en un `set` y usar `islice` con un generator elimina ambos problemas.",
     "codigo_corregido": "def tiene_permisos(usuario, recursos, permisos_por_recurso):\n    permisos = dict(permisos_por_recurso)  # indexar una vez: O(p)\n    return [(r, permisos[r]) for r in recursos if r in permisos]  # O(1) por lookup\n\ndef primeras_etiquetas(textos, n):\n    vistas = set()          # membership O(1)\n    etiquetas = []\n    for t in textos:\n        for palabra in t.split():\n            if palabra.startswith('#') and palabra not in vistas:\n                vistas.add(palabra)\n                etiquetas.append(palabra)\n                if len(etiquetas) >= n:\n                    return etiquetas   # early return mata el doble break\n    return etiquetas",
     "codigo_optimizado": "from itertools import islice\n\ndef tiene_permisos(usuario, recursos, permisos_por_recurso):\n    permisos = dict(permisos_por_recurso)\n    return [(r, permisos[r]) for r in recursos if r in permisos]\n\ndef primeras_etiquetas(textos, n):\n    \"\"\"Pipeline perezoso: se detiene apenas encuentra n etiquetas, sin recorrer todo.\"\"\"\n    def hashtags_unicos():\n        vistas = set()\n        for t in textos:\n            for palabra in t.split():\n                if palabra.startswith('#') and palabra not in vistas:\n                    vistas.add(palabra)\n                    yield palabra\n    return list(islice(hashtags_unicos(), n))\n\n# ===== CHECKLIST DEL AUDITOR: patrones cuadráticos a simple vista =====\n# 1. `if x in alguna_lista:` dentro de un bucle   → set(x) ANTES del bucle\n# 2. `lista.index(x)` repetido                     → dict {valor: indice}\n# 3. Doble for donde el interno busca del externo  → indexar el interno (dict)\n# 4. `.sort()` dentro de un bucle                  → ordenar una vez afuera\n# 5. `while i < len(x):`                           → for directo o cachear len\n# 6. `.remove(x)` por valor en bucle               → comprehension filtrando\n# 7. Concatenar strings con += en bucle            → ''.join(lista)\n#\n# ===== Metodología: primero patrón, después profiler =====\n# La inspección visual detecta el 90% de los casos (los patrones de arriba).\n# Para el 10% restante, mide — no adivines:\n#\n#   python -m cProfile -s cumulative mi_script.py\n#   python -m timeit -s \"datos = list(range(10000))\" \"sum(x*x for x in datos)\"\n#\n# Regla de Amdahl aplicada: optimiza SOLO el hotspot que el profiler señala.\n# Micro-optimizar código que corre una vez por día es desperdicio.\n# Ignorar un O(n²) en el camino caliente es negligencia.",
     "disenso_experto": "'La optimización prematura es la raíz de todos los males' (Knuth) se cita mal constantemente. Knuth hablaba de MICRO-optimizaciones (variables locales vs atributos, trucos de bytecode). Elegir un set en vez de una lista para membership NO es optimización prematura: es elegir la complejidad algorítmica correcta desde el diseño, que es exactamente lo que Knuth decía que SÍ importa (su cita completa habla del 3% del código donde la eficiencia sí es crítica). Un código O(n²) que 'funciona en mi máquina' con 100 elementos es deuda técnica con fecha de explosión.",
-    "pregunta_transferencia": "Tu script procesa 50k filas contra una lista de 50k ids válidos con `if row['id'] in ids_validos:`. Estima el número de operaciones del chequeo completo. ¿Cuántas quedan al convertir a set (incluyendo la conversión)? Si cada operación cuesta ~50ns, ¿cuántos minutos te ahorras?",
+    "pregunta_transferencia": "Imagina que tu script procesa 50.000 filas contra una lista de 50.000 IDs válidos con `if row['id'] in ids_validos:`. Cada fila requiere una búsqueda lineal en la lista, lo que implica hasta 50.000 comparaciones por fila. En el peor caso, el chequeo completo implica 50.000 × 50.000 = 2.5 mil millones de operaciones. Ahora, si conviertes `ids_validos` en un `set`, cada búsqueda es O(1), pero la conversión inicial cuesta 50.000 operaciones. Total: 50.000 + 50.000 = 100.000 operaciones. Si cada operación cuesta ~50 nanosegundos, la versión con lista toma aproximadamente 125 segundos (2.5e9 × 50e-9), mientras que la versión con set toma 5 milisegundos (1e5 × 50e-9). La diferencia es de unos 124.995 segundos, o aproximadamente **2.08 minutos** de ahorro.",
     "quiz": {
       "pregunta": "Ves en code review: `for row in datos: if row['id'] in lista_grande:`. Datos y lista_grande tienen ~10k elementos. ¿Complejidad y fix correcto?",
       "opciones": [
@@ -427,16 +965,90 @@
       "setup_code": "",
       "codigo_inicial": "def ids_unicos_activos(registros, ids_bloqueados):\n    '''registros: [{'id':..., 'activo':...}]. ids_bloqueados: lista de ids a excluir.\n    Retorna: lista ordenada de ids activos, no bloqueados, sin duplicados.'''\n    resultado = []\n    for reg in registros:\n        if reg['activo']:\n            if reg['id'] not in ids_bloqueados:   # O(b) por registro\n                if reg['id'] not in resultado:    # O(r) por registro\n                    resultado.append(reg['id'])\n    resultado.sort()\n    return resultado",
       "test_code": "import time\nregistros = [{'id': f'ID-{i % 10000}', 'activo': i % 3 != 0} for i in range(20000)]\nbloqueados = [f'ID-{i}' for i in range(0, 10000, 3)]\nbloqueados_set = set(bloqueados)\nesperado = sorted({reg['id'] for reg in registros if reg['activo'] and reg['id'] not in bloqueados_set})\nt0 = time.perf_counter()\nr = ids_unicos_activos(registros, bloqueados)\nt1 = time.perf_counter()\nassert r == esperado, 'Resultado incorrecto'\nassert (t1 - t0) < 0.5, f'Tardó {t1-t0:.2f}s: es cuadrático (`in lista` dentro del bucle). Convierte a sets.'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def ids_unicos_activos(registros, ids_bloqueados):\n    bloqueados = set(ids_bloqueados)          # O(1) membership\n    unicos = {reg['id'] for reg in registros\n              if reg['activo'] and reg['id'] not in bloqueados}  # set comprehension: dedup gratis\n    return sorted(unicos)"
     },
     "audio_script": "Hay bugs que rompen tu código y bugs que rompen tu producto seis meses después, cuando los datos crecen. Los bugs de rendimiento son de la segunda clase, y la inteligencia artificial los genera en masa porque solo prueba con ejemplos pequeños. Entrena tu ojo para cinco patrones que gritan 'cuadrático'. Uno: un 'in lista' dentro de un bucle; cada consulta recorre la lista entera. Dos: punto index repetido para buscar posiciones. Tres: doble bucle donde el interno busca algo del externo; eso se indexa con un diccionario antes de entrar. Cuatro: ordenar dentro de un bucle; se ordena una vez. Cinco: concatenar strings con más igual dentro de un bucle. El arreglo casi siempre es idéntico y cabe en una línea: convierte la lista a set o a diccionario ANTES del bucle. Una conversión de costo n, y todas las consultas posteriores cuestan uno. Diez mil por diez mil deja de ser cien millones de operaciones y pasa a ser veinte mil. Esa única línea es la diferencia entre un script y un producto.",
     "video_prompt": "Video de 90 segundos. Cronómetro en pantalla grande. Escena 1: código con `in lista` procesando 20k registros, cronómetro subiendo a ~1s, barra de complejidad 'O(n·m) = 100M ops'. Escena 2: se agrega UNA línea `bloqueados = set(...)`, mismo código, cronómetro marca 5ms, barra 'O(n+m) = 30k ops'. Escena 3: checklist animado de los 5 patrones cuadráticos con ejemplos de 2 líneas cada uno. Overlay final: 'Una línea. 5000x más rápido. La estructura de datos ES el algoritmo.'",
     "trazabilidad": {
-      "libros_fuente": ["Classic Computer Science Problems Cap 1-2 (complejidad y búsqueda)", "Effective Python Item 33", "Fluent Python Cap 3"],
-      "conceptos_clave": ["complejidad-cuadratica", "profiling", "sets", "dicts", "code-review", "performance", "timeit"]
+      "libros_fuente": [
+        "Classic Computer Science Problems Cap 1-2 (complejidad y búsqueda)",
+        "Effective Python Item 33",
+        "Fluent Python Cap 3"
+      ],
+      "conceptos_clave": [
+        "complejidad-cuadratica",
+        "profiling",
+        "sets",
+        "dicts",
+        "code-review",
+        "performance",
+        "timeit"
+      ]
     },
-    "tags_rag": ["python", "performance", "big-o", "cuadratico", "sets", "codigo-ia", "auditoria", "profiling"]
+    "tags_rag": [
+      "python",
+      "performance",
+      "big-o",
+      "cuadratico",
+      "sets",
+      "codigo-ia",
+      "auditoria",
+      "profiling"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la complejidad temporal de la función `tiene_permisos` cuando se llama con 1.000 recursos y 10.000 permisos?",
+        "opciones": [
+          "O(1)",
+          "O(log n)",
+          "O(r + p)",
+          "O(r * p)"
+        ],
+        "correcta": "D",
+        "explicacion": "La función `tiene_permisos` contiene un bucle anidado: el bucle externo itera sobre `recursos` (r elementos) y el interno sobre `permisos_por_recurso` (p elementos). Esto resulta en r * p comparaciones en el peor caso. Las opciones A y B son incorrectas porque no hay operaciones de acceso constante o logarítmico. La opción C es incorrecta porque no se trata de una operación secuencial r + p, sino de un producto. La opción D es correcta porque refleja fielmente la complejidad cuadrática introducida por los bucles anidados.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué línea del siguiente código es la responsable de la ineficiencia en `primeras_etiquetas`?",
+        "opciones": [
+          "for t in textos:",
+          "if palabra.startswith('#') and palabra not in etiquetas:",
+          "etiquetas.append(palabra)",
+          "if len(etiquetas) >= n:"
+        ],
+        "correcta": "B",
+        "explicacion": "La línea `palabra not in etiquetas` verifica la membresía en una lista, lo cual es una operación O(k) donde k es el número de elementos en `etiquetas`. Dentro de un bucle, esto lleva a una complejidad cuadrática. La opción A es solo un bucle, no es ineficiente por sí solo. La opción C es una operación de agregación eficiente. La opción D es una verificación de condición que no implica búsqueda. La opción B es correcta porque identifica la operación de membresía lineal que causa la ineficiencia.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué patrón general describe el uso repetido de `.index()` sobre una lista dentro de un bucle?",
+        "opciones": [
+          "Operación de acceso por índice",
+          "Búsqueda secuencial repetida",
+          "Iteración directa",
+          "Operación de ordenamiento"
+        ],
+        "correcta": "B",
+        "explicacion": "El uso de `.index()` dentro de un bucle implica una búsqueda secuencial cada vez que se llama, lo que lleva a una complejidad cuadrática si se repite para múltiples elementos. La opción A es incorrecta porque `.index()` no es acceso por índice. La opción C es incorrecta porque no implica iteración directa. La opción D es incorrecta porque no hay ordenamiento involucrado. La opción B es correcta porque describe el patrón de búsqueda lineal repetida que causa ineficiencia.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué sucede si se reemplaza `etiquetas.append(palabra)` con `etiquetas.add(palabra)` sin cambiar otra cosa?",
+        "opciones": [
+          "El código se vuelve más rápido",
+          "El código deja de funcionar",
+          "El código mantiene la misma eficiencia",
+          "El código lanza un error de sintaxis"
+        ],
+        "correcta": "B",
+        "explicacion": "Si `etiquetas` es una lista, usar `.add()` provocará un `AttributeError` porque las listas no tienen el método `.add()`. Esto rompería el código. La opción A es incorrecta porque no se ha cambiado la estructura de datos. La opción C es incorrecta porque el código no funcionaría. La opción D es incorrecta porque no es un error de sintaxis, sino un error en tiempo de ejecución. La opción B es correcta porque describe la consecuencia inmediata de usar un método inexistente en una lista.",
+        "tipo": "codigo"
+      }
+    ]
   }
 ]
