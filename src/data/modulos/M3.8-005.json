@@ -406,6 +406,44 @@
       "code-review",
       "integrador"
     ],
-    "_enriched": true
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes acciones mitiga mejor la inconsistencia en un pipeline de IA descrito en el flujo manual?",
+        "opciones": [
+          "Reducir el tiempo de cada etapa para acelerar el desarrollo.",
+          "Implementar revisiones de código por pares (Code Review).",
+          "Priorizar la velocidad del paso 1 sobre la calidad del modelo.",
+          "Eliminar la fase de testing para ahorrar tiempo."
+        ],
+        "correcta": "B",
+        "explicacion": "Las revisiones de código por pares son fundamentales para garantizar la consistencia y calidad. Ignorar esto o acelerar otros pasos a costa de la calidad empeora la situación. La opción A y C son contraproducentes ya que sacrifican la calidad por velocidad.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el contexto del workflow manual, ¿qué factor principal explica la presencia de \"tests superficiales\"?",
+        "opciones": [
+          "El alto costo computacional de las pruebas exhaustivas.",
+          "La falta de una auditoría sistemática que verifique la cobertura y profundidad de los tests.",
+          "La necesidad de optimizar el tiempo de compilación.",
+          "Que el pipeline depende exclusivamente de hardware de bajo rendimiento."
+        ],
+        "correcta": "B",
+        "explicacion": "La ausencia de una auditoría sistemática permite que los tests sean superficiales, ignorando aspectos críticos. Esto es directamente mencionado como un problema en la lección (Sin auditoría sistemática), mientras que las otras opciones sugieren causas técnicas o de hardware inexistentes en el contexto del problema de calidad humana.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cómo afecta la lenta escritura inicial del código al ciclo de vida general del proyecto según el módulo 3.8-008?",
+        "opciones": [
+          "Permite terminar el proyecto más rápido porque se evitan las fases de debug.",
+          "Genera deuda técnica que incrementa el tiempo total de desarrollo y la complejidad de los tests.",
+          "No tiene impacto negativo ya que la fase de debug compensa todo.",
+          "Reduce la necesidad de revisión de pares debido a la brevedad del código."
+        ],
+        "correcta": "C",
+        "explicacion": "Escribir código rápido y luego pasar muchas horas en debugging y refactorización resulta en un tiempo total mayor (4-5 horas + 2 días) y menor calidad. La opción A es falsa porque la velocidad inicial no compensa la deuda acumulada. La opción D es incorrecta porque la lentitud no reduce necesariamente la necesidad de pares, sino que agrava la necesidad de ellos.",
+        "tipo": "concepto"
+      }
+    ]
   }
 ]

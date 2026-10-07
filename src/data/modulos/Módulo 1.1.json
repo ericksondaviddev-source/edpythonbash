@@ -365,13 +365,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "Las funciones en Python son **ciudadanos de primera clase**: puedes pasarlas como argumentos, guardarlas en variables, retornarlas. Los parámetros tienen 4 tipos en orden estricto: posicionales → con default → *args → **kwargs. Los defaults se evalúan UNA SOLA VEZ al definir la función, no en cada llamada (trampa clásica con mutables). Los type hints son documentación ejecutable: no cambian el runtime pero habilitan herramientas como mypy, autocompletado en IDEs y validación con Pydantic.",
+    "modelo_mental": "Las funciones en Python son **ciudadanos de primera clase**: puedes pasarlas como argumentos, guardarlas en variables, retornarlas, lo que permite un diseño de software muy flexible y funcional. Los parámetros siguen un orden estricto: primero los posicionales, luego los con valor default, después `*args` (para argumentos variables posicionales) y finalmente `**kwargs` (para argumentos variables por nombre). Esta estructura es crucial porque determina cómo se empaquetan y desempaquetan los argumentos en cada llamada. Los valores default se evalúan **una sola vez** en el momento de la definición de la función, no en cada invocación. Esto es la raíz de un error subtil pero común: al usar un mutable (lista, diccionario) como default, todas las llamadas comparten la misma instance, corrompiendo el estado entre llamadas. Los `type hints` no afectan la ejecución pero son documentación ejecutable que permite a herramientas estáticas como `mypy` o los IDEs detectar inconsistencias de tipo antes de que el código se ejecute, previniendo errores en producción. Este modelo mental previene dos grandes categorías de bugs: la compartición inadvertida de estado mutable y la ilegibilidad que conduce a errores de orden en argumentos.",
     "codigo_roto": "# Trampa del default mutable\ndef agregar_tarea(tarea, lista=[]):\n    lista.append(tarea)\n    return lista\n\nprint(agregar_tarea('Comprar pan'))  # ['Comprar pan']\nprint(agregar_tarea('Pagar luz'))   # ['Comprar pan', 'Pagar luz'] ¡Sorpresa!\nprint(agregar_tarea('Llamar médico'))  # ['Comprar pan', 'Pagar luz', 'Llamar médico']\n\n# Anti-patrón: demasiados parámetros posicionales\ndef crear_usuario(nombre, apellido, edad, email, telefono, direccion, ciudad, pais):\n    return {'nombre': nombre, 'apellido': apellido, 'edad': edad, ...}\n\n# Uso confuso: ¿qué es cada argumento?\nusuario = crear_usuario('Juan', 'Pérez', 25, 'jp@mail.com', '555-1234', 'Calle 1', 'CDMX', 'MX')",
-    "diagnostico": "Dos bugs clásicos que la IA comete constantemente. (1) **Default mutable**: `lista=[]` crea UN SOLO objeto lista compartido entre TODAS las llamadas. Cada llamada agrega al mismo objeto. Este bug es tan ubicuo que se enseña como 'el bug del default mutable' en todos los cursos de Python. (2) **Parámetros posicionales excesivos**: 8 parámetros posicionales hacen que las llamadas sean ilegibles y propensas a errores de orden. El que llama no sabe si el 5to argumento es teléfono o email. La solución es kwargs o dataclasses.",
+    "diagnostico": "1. **Default mutable**: El código `def agregar_tarea(tarea, lista=[])` crea una única lista en el momento de definir la función. Cada vez que se llama a `agregar_tarea` sin proveer `lista`, se utiliza ese mismo objeto. Python no crea una nueva lista por defecto; comparte la referencia. Esto explica por qué las llamadas sucesivas acumulan elementos: el estado persiste entre llamadas. El patrón general es: cualquier valor default que sea mutable (lista, dict, set, objeto) creará un efecto colateral no deseado. La corrección es usar `None` como default y crear el mutable dentro de la función si es necesario.\n2. **Exceso de parámetros posicionales**: La función ` crear usuario` con 8 parámetros posicionales hace que la llamada sea altamente dependiente del orden. Un error de escritura o un cambio en la firma de la función rompe todas las llamadas existentes. El problema subyacente es la falta de abstracción: los datos relacionados (como la información de contacto) deberían agruparse en un objeto (por ejemplo, usando `**kwargs`, un `dataclass`, o un `NamedTuple`). Esto mejora la legibilidad, reduce la probabilidad de errores de transposición y facilita la extensión de la función con nuevos parámetros sin romper el código existente.",
     "codigo_corregido": "# Fix del default mutable: usar None como sentinel\ndef agregar_tarea(tarea, lista=None):\n    if lista is None:\n        lista = []  # Se crea una NUEVA lista en cada llamada\n    lista.append(tarea)\n    return lista\n\nprint(agregar_tarea('Comprar pan'))  # ['Comprar pan']\nprint(agregar_tarea('Pagar luz'))   # ['Pagar luz'] ¡Correcto!\n\n# Fix: kwargs para parámetros con nombre\ndef crear_usuario(nombre, apellido, edad, *, email=None, telefono=None, direccion=None, ciudad=None, pais='MX'):\n    return {\n        'nombre': nombre,\n        'apellido': apellido,\n        'edad': edad,\n        'contacto': {'email': email, 'telefono': telefono},\n        'ubicacion': {'direccion': direccion, 'ciudad': ciudad, 'pais': pais}\n    }\n\n# Ahora la llamada es auto-explicativa\nusuario = crear_usuario(\n    nombre='Juan',\n    apellido='Pérez', \n    edad=25,\n    email='jp@mail.com',\n    telefono='555-1234'\n)",
     "codigo_optimizado": "from dataclasses import dataclass, field\nfrom typing import Optional, List, Any\n\n# Patrón profesional: dataclass para structs de datos\n@dataclass\nclass Direccion:\n    calle: str\n    ciudad: str\n    pais: str = 'MX'\n\n@dataclass\nclass Usuario:\n    nombre: str\n    apellido: str\n    edad: int\n    email: Optional[str] = None\n    telefono: Optional[str] = None\n    direccion: Optional[Direccion] = None\n    tareas: List[str] = field(default_factory=list)  # FIX correcto del default mutable\n\n# Función con type hints completos y documentación\ndef procesar_datos(\n    datos: List[Any],\n    *,  # Todo lo después de * es keyword-only\n    transformador: callable = None,\n    filtro: callable = None,\n    limite: int = 100,\n    incluir_vacios: bool = False\n) -> List[Any]:\n    \"\"\"\n    Procesa una lista de datos con transformaciones opcionales.\n    \n    Args:\n        datos: Lista de elementos a procesar\n        transformador: Función que transforma cada elemento\n        filtro: Función que decide qué elementos incluir\n        limite: Máximo de elementos a retornar\n        incluir_vacios: Si True, incluye elementos None/vacíos\n    \n    Returns:\n        Lista procesada de máximo 'limite' elementos\n    \"\"\"\n    resultado = []\n    for item in datos:\n        if not incluir_vacios and not item:\n            continue\n        if filtro and not filtro(item):\n            continue\n        if transformador:\n            item = transformador(item)\n        resultado.append(item)\n        if len(resultado) >= limite:\n            break\n    return resultado\n\n# *args y **kwargs: recibir argumentos arbitrarios\ndef log_event(evento: str, *args, **kwargs):\n    \"\"\"Log flexible que acepta cualquier metadata.\"\"\"\n    extras = ', '.join(f'{k}={v}' for k, v in kwargs.items())\n    posicional = ', '.join(map(str, args))\n    print(f'[{evento}] args={posicional} kwargs={extras}')\n\n# Uso\nlog_event('login', 'user123', ip='192.168.1.1', intentos=3)\n# Output: [login] args=user123 kwargs=ip=192.168.1.1, intentos=3",
     "disenso_experto": "Hay dos escuelas sobre type hints. Escuela 1 (tradicional): 'Python es dinámico, los type hints son ruido, usa duck typing'. Escuela 2 (moderna): 'los type hints son documentación ejecutable, mejoran autocompletado, detectan bugs en CI con mypy'. Desde Python 3.5+ y especialmente con Python 3.10+, la Escuela 2 ha ganado en proyectos profesionales. La regla pragmática: **type hints en boundaries** (funciones públicas, APIs, interfaces) y en código complejo; no los necesitas en funciones privadas de 2 líneas.",
-    "pregunta_transferencia": "Tienes una función con default `cache={}` para memoizar resultados. El código funciona perfecto en pruebas unitarias pero en producción ves resultados duplicados entre requests. ¿Por qué y cómo lo arreglas manteniendo la funcionalidad de cacheo?",
+    "pregunta_transferencia": "Tienes una función que utiliza un diccionario `cache={}` como parámetro default para memoizar resultados de operaciones costosas. En tu entorno de pruebas unitarias, cada prueba se ejecuta de forma aislada y el cache se reinicia naturalmente, por lo que todo parece funcionar correctamente. Sin embargo, en producción, donde la función se llama múltiples veces a lo largo del tiempo (por ejemplo, en un entorno web con múltiples requests), observas que los resultados se duplican o se devuelven valores obsoletos. El problema radica en que el default mutable `cache` se crea una sola vez y se comparte entre todas las llamadas, acumulando estado de sesiones anteriores. Para arreglarlo manteniendo la funcionalidad de cacheo, debes mover la creación del cache fuera de la función (por ejemplo, usando un decorador como `functools.lru_cache`) o inicializar el cache dentro de la función usando un patron como `if cache is None: cache = {}`, asegurando que cada llamada independiente tenga su propio espacio de cacheo si no se provee explícitamente.",
     "quiz": {
       "pregunta": "¿Por qué este código muestra la misma lista creciendo en cada llamada?\n```python\ndef f(x, lista=[]):\n    lista.append(x)\n    return lista\nprint(f(1))  # [1]\nprint(f(2))  # [1, 2] en vez de [2]\n```",
       "opciones": [
@@ -422,6 +422,57 @@
       "args",
       "kwargs",
       "type-hints"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el orden correcto de los parámetros en una función de Python?",
+        "opciones": [
+          "posicionales, con default, *args, **kwargs",
+          "con default, posicionales, *args, **kwargs",
+          "posicionales, *args, con default, **kwargs",
+          "*args, posicionales, con default, **kwargs"
+        ],
+        "correcta": "A",
+        "explicacion": "El orden correcto es: primero los parámetros posicionales (obligatorios), luego los que tienen valor default (opcional), después `*args` para recoger argumentos posicionales adicionales, y finalmente `**kwargs` para argumentos por nombre. Cualquier otro orden causará un error de sintaxis o comportamiento inesperado. Las opciones B, C y D violan esta regla e incluso podrían generar errores al definir la función.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué salida produce el siguiente código?",
+        "opciones": [
+          "[1] [2] [3]",
+          "[1, 2, 3] [1, 2, 3] [1, 2, 3]",
+          "[1] [1, 2] [1, 2, 3]",
+          "[1] [2] [3] (pero cada lista es independiente)"
+        ],
+        "correcta": "D",
+        "explicacion": "La función usa `target=None` como default y crea una nueva lista dentro de la función si `target` es `None`. Por lo tanto, cada llamada sin argumento genera una lista independiente. La opción D describe correctamente este comportamiento. Las opciones A, B y C asumen que se comparte la misma lista default, lo cual no ocurre aquí porque se evita el default mutable.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué problema tiene el siguiente código?",
+        "opciones": [
+          "No hay problema, el código funciona correctamente.",
+          "El parámetro `items` es inmutable.",
+          "El valor default de `items` es una lista mutable, por lo que se comparte entre llamadas.",
+          "La función no permite agregar más de un elemento."
+        ],
+        "correcta": "C",
+        "explicacion": "El código usa una lista mutable como default (`items=[]`). Esto significa que todas las llamadas a la función sin proveer `items` usarán la misma lista, acumulando elementos de manera inesperada. La opción C identifica correctamente este problema. Las opciones A y B son incorrectas porque sí hay un problema y la lista es mutable. La opción D es falsa porque la función sí permite agregar múltiples elementos, pero de forma incorrecta debido al default compartido.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué error se comete en el siguiente código?",
+        "opciones": [
+          "No hay error, el código funciona.",
+          "El orden de los parámetros es incorrecto.",
+          "El parámetro `default` no puede tener un valor default después de `*args`.",
+          "El código funciona, pero el parámetro `default` no se puede establecer por nombre."
+        ],
+        "correcta": "B",
+        "explicacion": "La función declara los parámetros en el orden incorrecto: `*args` antes de un parámetro con default. En Python, los parámetros con default deben ir antes de `*args`. Esto causa un error de sintaxis porque el intérprete no puede determinar cómo empaquetar los argumentos. La opción B es la correcta. Las opciones A y C son incorrectas porque el código no funciona y el problema es de orden, no de valor default. La opción D es irrelevante porque el código ni siquiera se ejecuta.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
@@ -536,13 +587,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "Las excepciones en Python son una herramienta de **control de flujo para casos excepcionales**, no para lógica normal. Tienen 4 bloques: `try` (código que puede fallar), `except` (maneja errores específicos), `else` (se ejecuta si NO hubo error), `finally` (se ejecuta SIEMPRE, ideal para limpieza). La regla de oro: NUNCA uses `except:` sin especificar excepción (bare except), porque atrapa hasta Ctrl+C. Siempre captura excepciones específicas. Crea tus propias excepciones con clases que hereden de Exception cuando necesites distinguir errores de dominio.",
+    "modelo_mental": "**Las excepciones en Python son como una red de seguridad para tu código.** Imagina que estás escribiendo un programa y algo inesperado ocurre (un archivo no encontrado, una división por cero, una interrupción del usuario). El bloque `try` es el código que podría fallar, mientras que `except`, `else` y `finally` actúan como las diferentes formas de responder: `except` maneja errores específicos, `else` ejecuta código solo si todo salió bien, y `finally` siempre se ejecuta para limpiar recursos. Esta estructura convierte errores que podrían abortar el programa en parte del flujo de control, haciendo que el código sea más robusto y fácil de depurar.\n\nEl modelo es importante porque proporciona un **control de flujo** claro para situaciones excepcionales, permitiendo que el programa continúe en lugar de terminar abruptamente. Al tratar los errores como parte del diseño, evitas que el programa se comporte de manera no determinista. Usar `except ValueError` en lugar de un genérico `except:` te da información precisa sobre qué salió mal, lo que acelera el diagnóstico y el mantenimiento.\n\nEste enfoque previene tres problemas críticos: (1) un `except:` sin especificar (bare except) atrapa incluso interrupciones como `KeyboardInterrupt` (Ctrl+C) y `SystemExit`, silenciando señales de apagado importantes; (2) capturar una excepción genérica `Exception` oculta el tipo exacto de error, dificultando la depuración; y (3) olvidar un bloque `finally` deja recursos como archivos o conexiones de base de datos abiertos, causando fugas de memoria y corrupción de datos.",
     "codigo_roto": "# Bare except: el pecado capital\ndef leer_archivo(ruta):\n    try:\n        with open(ruta) as f:\n            return f.read()\n    except:  # ATRAPA TODO: IOError, KeyboardInterrupt, SystemExit, TODO\n        return 'Error'\n\n# Capturar una excepción genérica y perder información\ndef dividir(a, b):\n    try:\n        return a / b\n    except Exception as e:\n        print('Error')\n        return 0\n\n# No usar finally para limpiar recursos\nconexion = None\ntry:\n    conexion = conectar_bd()\n    datos = conexion.query('SELECT *')\nexcept IOError:\n    print('Error')\n# Si hubo error diferente, conexion queda abierta",
-    "diagnostico": "Tres malas prácticas críticas que la IA genera constantemente. (1) **Bare except** (`except:`) es considerado uno de los peores anti-patrones de Python: atrapa KeyboardInterrupt (Ctrl+C), SystemExit (cuando quieres cerrar la app), y oculta bugs de programación. (2) Capturar `Exception` genérico es casi tan malo: pierdes la información de qué tipo de error ocurrió. (3) No usar `finally` para limpieza (cerrar archivos, conexiones, liberar locks) causa fugas de recursos. El código 'funciona' pero se degrada con el tiempo.",
+    "diagnostico": "1. **Bare except (`except:`)**: Python lanza `KeyboardInterrupt` cuando el usuario presiona Ctrl+C y `SystemExit` cuando `sys.exit()` es llamado. Un bare except los atrapará silenciosamente, impidiendo un cierre adecuado. El patrón anti es atrapar *todo* sin intención, ocultando errores graves.\n\n2. **Captura genérica de `Exception`**: Cuando se usa `except Exception as e`, se pierden detalles sobre la excepción original (por ejemplo, `ZeroDivisionError` vs `ValueError`). Python still raises the exception, but the generic handler discards la traza completa, dificultando identificar la causa raíz. El patrón común es capturar solo las excepciones que realmente se esperan.\n\n3. **Falta de `finally` para limpieza**: Si ocurre un error no anticipado (como un `IOError`), el código que abre una conexión de base de datos o un archivo puede quedar sin cerrar porque no hay un bloque `finally` que garantice su liberación. Python no cierra automáticamente recursos no administrados; el patrón correcto es envolver la limpieza en `finally` o, mejor aún, usar un contexto (`with`) que maneje automáticamente los recursos.",
     "codigo_corregido": "# Buena práctica: capturar excepciones específicas\ndef leer_archivo(ruta):\n    try:\n        with open(ruta) as f:\n            return f.read()\n    except FileNotFoundError:\n        return f'Archivo no encontrado: {ruta}'\n    except PermissionError:\n        return f'Sin permisos para leer: {ruta}'\n    # NO capturar otras excepciones: dejar que propaguen\n\n# Excepciones específicas con logging\ndef dividir(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        print(f'Error: división por cero en {a}/{b}')\n        raise  # Re-lanzar la excepción después de loguear\n    except TypeError as e:\n        print(f'Error de tipos: {e}')\n        raise ValueError(f'Argumentos deben ser numéricos, recibidos: {type(a)}, {type(b)}') from e\n\n# finally para limpieza garantizada\nconexion = None\ntry:\n    conexion = conectar_bd()\n    datos = conexion.query('SELECT *')\nexcept IOError as e:\n    print(f'Error de IO: {e}')\n    raise\nfinally:\n    if conexion:\n        conexion.cerrar()  # Se ejecuta SIEMPRE, haya error o no",
     "codigo_optimizado": "import logging\nfrom typing import Optional, Any\n\n# Configurar logger una vez\nlogger = logging.getLogger(__name__)\n\n# Excepciones custom para dominio específico\nclass ErrorDeNegocio(Exception):\n    \"\"\"Base para errores de lógica de negocio.\"\"\"\n    pass\n\nclass SaldoInsuficiente(ErrorDeNegocio):\n    def __init__(self, saldo_actual: float, monto_pedido: float):\n        self.saldo_actual = saldo_actual\n        self.monto_pedido = monto_pedido\n        super().__init__(f'Saldo insuficiente: {saldo_actual} < {monto_pedido}')\n\nclass UsuarioNoEncontrado(ErrorDeNegocio):\n    pass\n\n# Patrón profesional completo: try/except/else/finally\ndef procesar_pago(usuario_id: str, monto: float) -> dict:\n    \"\"\"\n    Procesa un pago con manejo robusto de errores.\n    \n    Returns:\n        Dict con status y datos de la transacción\n    \n    Raises:\n        SaldoInsuficiente: si el usuario no tiene saldo\n        UsuarioNoEncontrado: si el usuario no existe\n        IOError: si falla la conexión con el banco\n    \"\"\"\n    conexion = None\n    try:\n        # Intentar operación principal\n        conexion = conectar_bd()\n        usuario = obtener_usuario(conexion, usuario_id)\n        \n        if usuario is None:\n            raise UsuarioNoEncontrado(f'Usuario {usuario_id} no existe')\n        \n        if usuario.saldo < monto:\n            raise SaldoInsuficiente(usuario.saldo, monto)\n        \n        # Si llegamos aquí, todo bien: procesar\n        usuario.saldo -= monto\n        transaccion_id = registrar_transaccion(conexion, usuario_id, monto)\n        \n    except (UsuarioNoEncontrado, SaldoInsuficiente):\n        # Errores de negocio: log y re-lanzar\n        logger.warning(f'Error de negocio en pago: usuario={usuario_id}, monto={monto}')\n        raise\n    except IOError as e:\n        # Error de IO: envolver en excepción de dominio\n        logger.error(f'Error de IO en pago: {e}')\n        raise IOError(f'No se pudo procesar pago: {e}') from e\n    \n    else:\n        # Solo se ejecuta si NO hubo excepción\n        logger.info(f'Pago exitoso: {transaccion_id} para {usuario_id}')\n        return {\n            'status': 'ok',\n            'transaccion_id': transaccion_id,\n            'saldo_restante': usuario.saldo\n        }\n    \n    finally:\n        # SIEMPRE se ejecuta, haya o no error\n        if conexion:\n            try:\n                conexion.cerrar()\n            except Exception as e:\n                logger.error(f'Error cerrando conexión: {e}')\n\n# Context manager custom (la forma más pythónica de manejar recursos)\nclass ConexionBD:\n    def __enter__(self):\n        self._conn = conectar_bd()\n        return self._conn\n    \n    def __exit__(self, exc_type, exc_val, exc_tb):\n        self._conn.cerrar()\n        return False  # No suprimir excepciones\n\n# Uso limpio sin finally manual\nwith ConexionBD() as conn:\n    datos = conn.query('SELECT *')\n    # La conexión se cierra automáticamente al salir del with",
     "disenso_experto": "Hay un debate sobre si usar excepciones para control de flujo (EAFP: 'Easier to Ask Forgiveness than Permission') o verificar condiciones antes (LBYL: 'Look Before You Leap'). Python oficialmente prefiere EAFP: es más pythónico hacer `try/except` que `if 'key' in dict`. Pero para lógica normal (no errores), usa if/else. La línea: excepciones son para lo **excepcional**, no para flujos normales de negocio.",
-    "pregunta_transferencia": "Tienes una API que retorna JSON. El código hace `json.loads(response)` dentro de un try/except JSONDecodeError. Pero en producción ves crashes porque a veces response es None. ¿Cómo lo arreglas sin cambiar el contrato de la función (sigue lanzando excepciones)?",
+    "pregunta_transferencia": "Tienes una API que retorna una cadena JSON. El código actual envuelve `json.loads(response)` en un `try/except json.JSONDecodeError` para manejar respuestas malformadas. Sin embargo, en producción, a veces `response` es `None`, lo que hace que el programa se bloquee con un `TypeError`. ¿Cómo puedes modificar el manejo de excepciones para permitir que `response` sea `None` sin cambiar el contrato de la función (es decir, sigue lanzando una excepción en caso de error) y manteniendo el mismo comportamiento para cadenas JSON válidas o inválidas?\n\n(Pista: considera agregar una verificación previa al bloque `try` o un `except` adicional que capture el tipo de error adecuado, forzando un camino de error controlado.)",
     "quiz": {
       "pregunta": "¿Por qué este código es peligroso?\n```python\ntry:\n    procesar_datos()\nexcept:\n    pass\n```",
       "opciones": [
@@ -594,6 +645,45 @@
       "finally",
       "errores",
       "context-managers"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Por qué un bare except (`except:`) se considera un anti-patrón en Python?",
+        "opciones": [
+          "Solo captura excepciones de E/S.",
+          "Atrapa *todas* las excepciones, incluyendo interrupciones del sistema como Ctrl+C.",
+          "Es la forma más eficiente de manejar errores.",
+          "Se recomienda para depuración rápida."
+        ],
+        "correcta": "B",
+        "explicacion": "Un bare except es peligroso porque captura *cualquier* excección, incluso aquellas que se usan para señales de control importantes como `KeyboardInterrupt` (Ctrl+C) y `SystemExit`. Al atraparlas, el programa puede ser detenido inesperadamente o no cerrarse limpiamente. El resto de las opciones describen usos incorrectos o recomendados de los manejadores de excepciones.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente fragmento de código, qué se imprime cuando se ejecuta `dividir(5, 0)`?",
+        "opciones": [
+          "Nada.",
+          "La palabra 'Error'.",
+          "Un traceback de ZeroDivisionError.",
+          "El número 0."
+        ],
+        "correcta": "B",
+        "explicacion": "La función `dividir` captura cualquier `Exception` (incluyendo `ZeroDivisionError`) y ejecuta `print('Error')` antes de retornar 0. Por lo tanto, al dividir por cero, se imprime 'Error' y se retorna 0.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué falta en este fragmento para garantizar que la conexión de la base de datos se cierre incluso si ocurre un error inesperado?",
+        "opciones": [
+          "Agregar un bloque `else:` después del `except`.",
+          "Usar `finally:` para llamar `conexion.close()`.",
+          "Reemplazar `except IOError` con `except Exception`.",
+          "Eliminar la variable `conexion`."
+        ],
+        "correcta": "B",
+        "explicacion": "Sin un bloque `finally`, si ocurre un error que no es `IOError`, la conexión permanece abierta. Agregar `finally:` con `conexion.close()` asegura la limpieza independientemente de cómo termine el `try`.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
@@ -603,13 +693,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Script que valida y formatea datos de entrada (contactos, tareas)",
-    "modelo_mental": "La IA genera código que 'funciona' pero tiene bugs sutiles que aparecen meses después. Los 3 más peligrosos en Python: (1) usar `is` en lugar de `==` para comparar valores (is compara identidad de objeto, no valor), (2) comparar floats con `==` (0.1 + 0.2 != 0.3 por precisión IEEE 754), (3) mutación accidental de argumentos (modificar un dict/lista pasado por el llamador). Detectar estos bugs requiere leer el código con ojos de auditor, no solo ejecutarlo.",
+    "modelo_mental": "Imagina que tienes dos sellos: uno que es el mismo objeto físico y otro que solo tiene el mismo diseño. En Python, `is` verifica si son el **mismo objeto** (identidad), mientras que `==` compara si sus **valores** son equivalentes.\n\n¿Por qué importa? Porque la IA puede generar código que parece funcionar en pruebas simples, pero en producción aparecen fallos sutiles: usar `is` para comparar números fuera del rango caché (-5 a 256) da resultados inesperados; comparar floats con `==` ignora la precisión IEEE 754; mutar un argumento modificable afecta al llamador sin que lo note.\n\nEstos errores previenen: (1) usar `==` para comparar valores de tipos inmutables como enteros, cadenas o floats; (2) emplear `math.isclose()` o una tolerante para comparaciones de punto flotante; (3) tratar los argumentos mutables como de solo‑lectura o crear una copia explícita (`datos.copy()`) antes de modificarlos.",
     "codigo_roto": "# Bug 1: is vs ==\nusuario = {'id': 1, 'nombre': 'Ana'}\nif usuario['id'] is 1:  # ¡PELIGROSO! Funciona por coincidencia\n    print('Usuario encontrado')\n\n# Bug 2: comparación de floats\ndef calcular_descuento(precio, porcentaje):\n    descuento = precio * porcentaje\n    precio_final = precio - descuento\n    if precio_final == 0:  # NUNCA falla... hasta que falla\n        return 'GRATIS'\n    return precio_final\n\nprint(calcular_descuento(100, 1.0))  # Debería ser 'GRATIS'\n\n# Bug 3: mutación accidental de argumentos\ndef normalizar_datos(datos):\n    datos['status'] = datos['status'].lower()\n    datos['count'] = int(datos['count'])\n    return datos\n\noriginal = {'status': 'ACTIVO', 'count': '5'}\nresultado = normalizar_datos(original)\nprint(original)  # {'status': 'activo', 'count': 5} ¡MUTADO!",
-    "diagnostico": "Tres bugs que pasan pruebas pero fallan en producción. (1) `is 1`: Python cachea enteros pequeños (-5 a 256) así que `x is 1` funciona por accidente. Pero `x is 300` falla aunque x valga 300. `is` es para comparar con None, True, False, y singletones. Para valores usa `==`. (2) `0.1 + 0.2` da `0.30000000000000004`, no `0.3`. La comparación `== 0` con floats es peligrosa; usa `math.isclose()` o un epsilon. (3) La función modifica el dict original porque los dicts son mutables y se pasan por referencia. Si el llamador reusa el dict, tendrá datos modificados sin saberlo.",
+    "diagnostico": "1. **Uso de `is` con enteros**: Python almacena en caché los enteros del -5 al 256, de modo que `x is 1` resulta verdadero por coincidencia cuando x vale 1. Sin embargo, para valores fuera de ese rango (por ejemplo, 300) se crean objetos distintos, así que `x is 300` es falso aunque `x == 300` sea verdadero. `is` debe reservarse para comparar con `None`, `True`, `False` y otros singletones; para igualdad de valor siempre usar `==`.\n\n2. **Comparación de floats con `==`**: Los números de punto flotante se representan en binario según el estándar IEEE 754, lo que hace que operaciones como `0.1 + 0.2` produzcan `0.30000000000000004` en lugar de exactamente `0.3`. La comparación `precio_final == 0` (o cualquier igualdad exacta) rara vez es cierta cuando el resultado proviene de operaciones aritméticas, y Python no lanza una excepción; simplemente devuelve `False`. El patrón seguro es usar una tolerancia, por ejemplo `math.isclose(a, b)` o comparar la diferencia absoluta con un épsilon.\n\n3. **Mutación accidental de argumentos**: En Python los argumentos se pasan por referencia. Cuando la función recibe un diccionario (o lista) y lo modifica dentro de su cuerpo, está cambiando el mismo objeto que el llamador posee. No se genera ningún error, pero el estado del llamador se altera inesperadamente, lo que provoca bugs difíciles de rastrear. La solución general es tratar los argumentos mutables como de solo‑lectura o trabajar con una copia explícita (`datos = datos.copy()` o `datos = dict(datos)`) antes de modificarlos.",
     "codigo_corregido": "# Fix 1: usar == para valores\nusuario = {'id': 1, 'nombre': 'Ana'}\nif usuario['id'] == 1:  # Correcto: compara valor\n    print('Usuario encontrado')\n\n# Para None SÍ usar is (None es singleton)\nif usuario.get('deleted_at') is None:\n    print('Usuario activo')\n\n# Fix 2: math.isclose() para floats\nimport math\n\ndef calcular_descuento(precio, porcentaje):\n    descuento = precio * porcentaje\n    precio_final = precio - descuento\n    if math.isclose(precio_final, 0, abs_tol=1e-9):  # Comparación tolerante\n        return 'GRATIS'\n    return round(precio_final, 2)  # Redondear para UI\n\n# Fix 3: copiar el dict si vas a modificarlo\ndef normalizar_datos(datos):\n    # Hacer una copia superficial para no mutar el original\n    resultado = datos.copy()\n    resultado['status'] = resultado['status'].lower()\n    resultado['count'] = int(resultado['count'])\n    return resultado\n\noriginal = {'status': 'ACTIVO', 'count': '5'}\nresultado = normalizar_datos(original)\nprint(original)   # {'status': 'ACTIVO', 'count': '5'} intacto\nprint(resultado)  # {'status': 'activo', 'count': 5}",
     "codigo_optimizado": "import math\nfrom dataclasses import dataclass\nfrom decimal import Decimal\nfrom typing import Dict, Any, Optional\n\n# Fix 1 robusto: helper de comparación\ndef es_nulo(valor: Any) -> bool:\n    \"\"\"Comparación segura con None.\"\"\"\n    return valor is None\n\ndef es_igual(a: Any, b: Any) -> bool:\n    \"\"\"Comparación por valor, nunca por identidad.\"\"\"\n    return a == b\n\n# Fix 2 profesional: usar Decimal para dinero (evita float por completo)\ndef calcular_descuento_dinero(precio: str, porcentaje: str) -> Decimal:\n    \"\"\"\n    Calcula descuento con precisión exacta.\n    Usar strings como input para evitar pérdida de precisión al construir Decimal.\n    \"\"\"\n    precio_d = Decimal(precio)\n    porcentaje_d = Decimal(porcentaje)\n    descuento = precio_d * porcentaje_d\n    return precio_d - descuento\n\n# Uso correcto con Decimal\nprecio_final = calcular_descuento_dinero('100', '1.0')\nif precio_final == Decimal('0'):\n    print('GRATIS')\n\n# Fix 3 profesional: inmutabilidad por defecto\n@dataclass(frozen=True)  # frozen = inmutable\nclass DatosUsuario:\n    status: str\n    count: int\n\ndef normalizar_datos_inmutable(datos_raw: Dict[str, Any]) -> DatosUsuario:\n    \"\"\"Retorna NUEVO objeto, no muta el original.\"\"\"\n    return DatosUsuario(\n        status=datos_raw['status'].lower(),\n        count=int(datos_raw['count'])\n    )\n\n# Patrón para copias profundas (cuando hay dicts anidados)\nimport copy\n\ndef normalizar_profundo(datos: Dict[str, Any]) -> Dict[str, Any]:\n    resultado = copy.deepcopy(datos)\n    # Modificaciones seguras\n    if 'user' in resultado:\n        resultado['user']['status'] = resultado['user']['status'].lower()\n    return resultado\n\n# Test robusto de estos fixes\ndef test_sutilezas():\n    # is vs ==\n    a = 300\n    b = 300\n    assert a == b        # True\n    # assert a is b     # False en muchos casos!\n    \n    # Floats\n    assert not (0.1 + 0.2 == 0.3)  # ¡Es False!\n    assert math.isclose(0.1 + 0.2, 0.3)  # True\n    \n    # Decimal\n    assert Decimal('0.1') + Decimal('0.2') == Decimal('0.3')  # True\n    \n    # Inmutabilidad\n    datos = {'status': 'OK', 'count': '5'}\n    nuevo = normalizar_datos_inmutable(datos)\n    assert datos['status'] == 'OK'  # Original intacto\n    assert nuevo.status == 'ok'      # Nuevo transformado",
     "disenso_experto": "¿Decimal vs float para dinero? Float es más rápido pero pierde precisión (0.1 + 0.2 = 0.30000000000000004). Decimal es exacto pero ~100x más lento. Para e-commerce, facturación, contabilidad: SIEMPRE Decimal. Para cálculos científicos, ML, gráficos: float está bien. La IA suele usar float por defecto y esto causa bugs de centavos que se acumulan. Otro debate: `copy.deepcopy()` vs reescribir sin mutación. Deepcopy es fácil pero lento y consume memoria; preferir inmutabilidad con dataclasses frozen.",
-    "pregunta_transferencia": "Revisas código de la IA y ves: `if user.email is not None and user.age is 25:`. ¿Qué bug tiene esta línea y cómo debería escribirse? ¿Qué pasa si user.age es un entero grande como 1000?",
+    "pregunta_transferencia": "Mientras revisas un módulo generado por la IA, encuentras la siguiente línea: `if user.email is not None and user.age is 25:`. El código parece correcto a primera vista, pero sospechas que puede contener un bug sutil relacionado con el uso de `is`.\n\nRecuerda que `is` compara identidad de objeto, no valor, y que Python solo garantiza un único objeto para ciertos enteros pequeños (por ejemplo, del -5 al 256). Piensa en qué sucedería si `user.age` fuera un entero fuera de ese rango o si el valor proviene de una operación que crea un nuevo objeto.",
     "quiz": {
       "pregunta": "¿Cuál es el resultado de `0.1 + 0.2 == 0.3` en Python?",
       "opciones": [
@@ -662,6 +752,57 @@
       "mutabilidad",
       "code-review",
       "ia"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes explicaciones describe correctamente por qué `x is 1000` puede evaluarse a `False` incluso cuando `x == 1000` es `True`?",
+        "opciones": [
+          "Porque `is` compara la identidad de los objetos y los enteros mayores a 256 no están garantizados como el mismo objeto en memoria.",
+          "Porque `is` compara los valores y 1000 está fuera del caché de enteros pequeños.",
+          "Porque `is` solo funciona con tipos inmutables como cadenas.",
+          "Porque `is` lanza una excepción cuando los operandos son de tipos diferentes."
+        ],
+        "correcta": "A",
+        "explicacion": "El operador `is` verifica si dos variables apuntan al mismo objeto en memoria (identidad). Python solo garantiza que los enteros en el rango -5 a 256 sean objetos únicos; fuera de ese rango pueden crearse objetos distintos con el mismo valor, entonces `is` da `False` aunque `==` sea `True`. Las otras opciones confunden `is` con `==`, limitan su uso a cadenas o mencionan excepciones que no ocurren.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué imprimirá el siguiente fragmento de código?\\n\\nresultado = 0.1 + 0.2\\nprint(resultado == 0.3)",
+        "opciones": [
+          "True",
+          "False",
+          "None",
+          "Error de sintaxis"
+        ],
+        "correcta": "B",
+        "explicacion": "Debido a la representación binaria de punto flotante, `0.1 + 0.2` produce `0.30000000000000004`, que no es exactamente igual a `0.3`. La comparación `==` portanto devuelve `False`. No se lanza ninguna excepción; el resultado es un booleano.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la mejor forma de evitar que la función `normalizar_datos` modifique el diccionario original pasado por el llamador?",
+        "opciones": [
+          "Declarar el parámetro como `datos: dict = {}`.",
+          "Convertir el diccionario a una tupla antes de modificarlo.",
+          "Trabajar con una copia del diccionario, por ejemplo `datos = datos.copy()`, y modificar la copia.",
+          "Usar la palabra clave `global` dentro de la función."
+        ],
+        "correcta": "C",
+        "explicacion": "Al crear una copia explícita del diccionario (`datos.copy()`) se obtiene un nuevo objeto independiente; cualquier cambio realizado en la copia no afecta al diccionario original del llamador. Las otras opciones либо no evitan la mutación (A y D) либо cambian el tipo de dato (B) lo cual no es lo que se pretende.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones es la forma recomendada de comparar dos números de punto flotante para determinar si son prácticamente iguales?",
+        "opciones": [
+          "Usar `a == b` directamente.",
+          "Usar `abs(a - b) < 0.001` con un valor fijo de tolerancia.",
+          "Usar `a is b`.",
+          "Usar `math.isclose(a, b)` con tolerancias relativas y absolutas apropiadas."
+        ],
+        "correcta": "D",
+        "explicacion": "La función `math.isclose` implementa una comparación robusta que considera tanto el error relativo como el absoluto, evitando los problemas de igualdad exacta de punto flotante. Las opciones A y B pueden fallar en casos extremos o requerir una tolerancia ad hoc; la opción C compara identidad, no valor.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
