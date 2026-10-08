@@ -244,13 +244,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "El dict es LA estructura de Python: el lenguaje mismo está construido sobre dicts (atributos, globales, módulos). Desde 3.7 preserva el orden de inserción (garantía del lenguaje, no implementación). Jerarquía de acceso: d[clave] lanza KeyError si falta; d.get(clave, default) retorna default; d.setdefault(clave, default) retorna Y crea si falta; d[clave] += 1 con defaultdict nunca falla. Iteración: .items() SIEMPRE que necesites clave y valor; .keys() es redundante en `for k in d` y en `x in d` (el `in` sobre dict ya usa las claves, O(1)).",
+    "modelo_mental": "El diccionario en Python es **la estructura de datos por excelencia**, una analogía perfecta a un diccionario real donde cada clave está asociada a un valor. Esto es fundamental porque el propio lenguaje está construido sobre dicts: los atributos de los objetos, las variables globales y hasta los módulos se almacenan en dicts internos. Desde Python 3.7, los dicts **preservan el orden de inserción** como garantía del lenguaje, lo que los hace predecibles para iteración. Este comportamiento evita errores comunes como la dependencia del orden en versiones anteriores.\n\nEs crucial entender la jerarquía de acceso: `d[clave]` lanza un `KeyError` si la clave no existe, lo que puede romper el flujo del programa. En cambio, `d.get(clave, default)` retorna un valor por defecto sin error, y `d.setdefault(clave, default)` no solo sino que crea la clave si falta. Para patrones como contar elementos, `defaultdict` o `Counter` son más elegantes. La iteración es otra clave: `.items()` es **la opción recomendada** cuando necesitas tanto clave como valor, ya que los entrega en un solo paso, mientras que `.keys()` es redundante en un bucle `for k in d` porque iterar un dict ya itera sus claves.",
     "codigo_roto": "def contar_palabras(texto):\n    conteo = {}\n    for p in texto.split():\n        try:\n            conteo[p] = conteo[p] + 1\n        except KeyError:\n            conteo[p] = 1\n    return conteo\n\ndef mostrar_conteo(conteo):\n    for k in conteo.keys():   # .keys() redundante\n        print(k, conteo[k])   # doble trabajo: clave y luego búsqueda del valor",
-    "diagnostico": "Funciona, pero ignora todas las herramientas que Python ofrece para este patrón exacto. (1) try/except KeyError para contar es el patrón EAFP histórico, pero existe get(), setdefault(), defaultdict y Counter que lo expresan mejor. (2) for k in conteo.keys() es redundante: iterar un dict ya itera sus claves. (3) conteo[k] dentro del bucle hace una búsqueda extra por iteración cuando .items() entrega clave Y valor en un solo paso. (4) Todo esto es collections.Counter en una línea.",
+    "diagnostico": "El código proporcionado funciona, pero ignora herramientas modernas de Python. (1) El uso de `try/except KeyError` para contar palabras es el patrón EAFP (Easier to Ask Forgiveness than Permission), histórico pero subóptimo. Python lanza `KeyError` cuando se accede a una clave inexistente, y aunque es válido, existen alternativas como `get()`, `setdefault()` o `defaultdict` que expresan la intención más claramente con mejor rendimiento.\n\n(2) En `mostrar_conteo`, el bucle `for k in conteo.keys()` es redundante: iterar directamente el dict `for k in conteo` ya itera las claves, y `.keys()` añade una capa innecesaria. Además, `conteo[k]` dentro del bucle realiza una búsqueda extra por iteración, cuando `.items()` permitiría acceder a clave y valor simultáneamente, optimizando el código.\n\n(3) Patrón general: en Python, se prefiere el uso de métodos del lenguaje que manejan casos edge, evitando excepciones para flujo normal. La depuración del código revela que todo esto podría resumirse en `collections.Counter`, que maneja la conteo de manera eficiente y idiomática.",
     "codigo_corregido": "def contar_palabras(texto):\n    conteo = {}\n    for p in texto.split():\n        conteo[p] = conteo.get(p, 0) + 1  # una línea, sin excepciones\n    return conteo\n\ndef mostrar_conteo(conteo):\n    for palabra, cantidad in conteo.items():  # clave y valor juntos\n        print(palabra, cantidad)",
     "codigo_optimizado": "from collections import Counter, defaultdict\n\n# Lo que realmente deberías escribir:\ndef contar_palabras(texto):\n    return Counter(texto.split())\n\nconteo = contar_palabras('a b a c a b')\nconteo.most_common(2)   # [('a', 3), ('b', 2)]\nconteo['inexistente']   # 0 — Counter no lanza KeyError\n\n# get vs setdefault vs defaultdict — cuándo cada uno:\nconfig = {'puerto': 8080}\npuerto = config.get('puerto', 3000)          # leer con default SIN modificar\nhost = config.get('host', 'localhost')       # host NO queda en config\n\ngrupos = {}\ngrupos.setdefault('input', []).append('teclado')  # leer-o-crear en un paso\n\nvisitas = defaultdict(int)\nvisitas['/home'] += 1   # si no existe, crea 0 automáticamente\n\n# Dict comprehension para transformar valores\nprecios = {'teclado': 250, 'mouse': 150}\ncon_iva = {k: round(v * 1.16, 2) for k, v in precios.items()}\n\n# Filtrar un dict\nbaratos = {k: v for k, v in precios.items() if v < 200}\n\n# Invertir clave-valor (si los valores son hashables y únicos)\npor_precio = {v: k for k, v in precios.items()}\n\n# Merge de dicts (Python 3.9+): operador |\ndefaults = {'theme': 'dark', 'lang': 'es'}\nusuario = {'lang': 'en'}\nconfig_final = defaults | usuario   # {'theme': 'dark', 'lang': 'en'}\n# Para versiones anteriores: {**defaults, **usuario}\n\n# Eliminar clave de forma segura\nvalor = config.pop('puerto', None)  # None si no existía, sin KeyError",
     "disenso_experto": "EAFP (try/except KeyError) vs .get() vs defaultdict. El zen de Python favorece EAFP, y en código de alto rendimiento el try/except es más rápido en el camino feliz (una sola búsqueda). Pero para contar y agrupar, las herramientas de collections son superiores en legibilidad Y velocidad (Counter está en C). Regla práctica: lectura puntual con posible ausencia → get(); agrupación → defaultdict(list); conteo → Counter; try/except solo cuando la ausencia es genuinamente excepcional.",
-    "pregunta_transferencia": "Recibes un JSON de una API con estructura anidada config['a']['b']['c'] donde cualquier nivel puede faltar. ¿Qué pasa con .get() encadenado y por qué config.get('a', {}).get('b', {}).get('c') es el patrón seguro? ¿Qué limitación tiene si necesitas DISTINGUIR 'falta el valor' de 'el valor es None'?",
+    "pregunta_transferencia": "Imagina que recibes un JSON de una API con una estructura anidada como `config['a']['b']['c']`, donde cualquier nivel puede estar ausente. Al usar `.get()` encadenado, como `config.get('a', {}).get('b', {}).get('c')`, se crea un patrón seguro porque cada `.get()` retorna un dict vacío si la clave no existe, evitando que el siguiente `.get()` falle por `KeyError`. Esto es útil para navegar datos optionales sin lanzar excepciones.\n\nSin embargo, esta aproximación tiene una limitación: no permite distinguir entre 'la clave no existe' y 'la clave existe con valor `None`', ya que ambos casos retornan el valor por defecto. Si necesitas differentiar, podrías usar `in` para verificar existencia primero, o manejar `None` explícitamente.",
     "quiz": {
       "pregunta": "¿Qué retorna d.setdefault('x', []) si la clave 'x' YA existe en d con valor [1, 2]?",
       "opciones": [
@@ -304,6 +304,57 @@
       "setdefault",
       "items",
       "counter"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la diferencia clave entre `d.get(clave)` y `d.setdefault(clave, default)`?",
+        "opciones": [
+          "A) get siempre lanza error",
+          "B) setdefault no modifica el dict",
+          "C) get no modifica el dict, setdefault sí si la clave falta",
+          "D) ambos son iguales"
+        ],
+        "correcta": "C",
+        "explicacion": "get solo lee el valor, mientras que setdefault, si la clave no existe, la crea con el valor por defecto y lo retorna.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué salida produce el siguiente código?\n\ndef contar_palabras(texto):\n    conteo = {}\n    for p in texto.split():\n        conteo[p] = conteo.get(p, 0) + 1\n    return conteo\n\nprint(contar_palabras('hola mundo hola'))",
+        "opciones": [
+          "A) {'hola': 2, 'mundo': 1}",
+          "B) {'hola': 1, 'mundo': 1}",
+          "C) Error de sintaxis",
+          "D) {'hola': 2, 'mundo': 2}"
+        ],
+        "correcta": "A",
+        "explicacion": "La función usa get(p, 0) que retorna 0 si la clave no está, luego incrementa, así que cuenta correctamente las frecuencias.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En la función original `mostrar_conteo`, ¿qué problema hay con el uso de `.keys()` y `conteo[k]`?",
+        "opciones": [
+          "A) Redundancia y búsqueda extra",
+          "B) Lanza KeyError siempre",
+          "C) No hay problema",
+          "D) Es más eficiente que .items()"
+        ],
+        "correcta": "A",
+        "explicacion": "Usar .keys() es redundante porque iterar un dict ya itera las claves. Además, conteo[k] hace una búsqueda de valor por iteración, mientras que .items() lo haría en un solo paso.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes es la forma más idiomática para contar frecuencias en Python?",
+        "opciones": [
+          "A) Usar un dict con try/except",
+          "B) Usar un dict con get",
+          "C) Usar collections.Counter",
+          "D) Usar una lista"
+        ],
+        "correcta": "C",
+        "explicacion": "collections.Counter es una clase especializada que cuenta elementos de manera eficiente y forma parte de la biblioteca estándar, siendo la opción preferida.",
+        "tipo": "concepto"
+      }
     ]
   },
   {

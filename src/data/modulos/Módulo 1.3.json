@@ -827,13 +827,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "El código de procesamiento de archivos generado por IA acumula sistemáticamente los mismos 6 defectos porque optimiza para 'que el ejemplo funcione': sin with (leak), sin encoding (portabilidad), readlines() (memoria), split frágil (parseo), sin validación de líneas malformadas (crash), y escritura sin flush/cierre garantizado (datos perdidos). Aprender a detectar los 6 de un vistazo convierte tu code review de 30 minutos en 30 segundos. Este chunk entrena exactamente eso: una sola función con todos los bugs juntos.",
+    "modelo_mental": "El procesamiento de logs es como leer un libro de registro donde cada línea es una entrada; si usas un marcador roto (open sin with) y olvidas cerrar el libro, la página puede quedar atrapada y el siguiente lector no pueda acceder. El **patrón** que la IA tiende a reproducir es optimizar solo para que el ejemplo de prueba funcione, dejando de lado aspectos como la liberación de recursos, la codificación y el manejo de errores.\n\nPor eso es fundamental reconocer los **seis defectos clásicos**: falta de `with`, omisión de `encoding`, uso de `readlines()` que agota la memoria, `split(' ')` sin `maxsplit` que trunca silenciosamente mensajes, ausencia de validación de longitud que provoca `IndexError`, y cierre no garantizado del archivo de salida que puede dejar datos en el buffer. Detectarlos de un vistazo transforma una revisión de 30 minutos en una inspección de 30 segundos y previene fugas de descriptores, errores Unicode, OOM, pérdida de datos y caídas inesperadas.",
     "codigo_roto": "def resumir_log(ruta_entrada, ruta_salida):\n    f = open(ruta_entrada)\n    lineas = f.readlines()\n    errores = []\n    for linea in lineas:\n        partes = linea.split(' ')\n        if partes[1] == 'ERROR':\n            errores.append(partes[2])\n    g = open(ruta_salida, 'w')\n    g.write('Total errores: ' + str(len(errores)))\n    for e in errores:\n        g.write('\\n' + e)",
-    "diagnostico": "Auditoría completa — 6 defectos: (1) `open` sin with × 2: si algo lanza entre la apertura y el final, ambos descriptors quedan abiertos. (2) Sin `encoding`: UnicodeDecodeError con el primer log que tenga acentos o un byte corrupto (ver M1.3-002). (3) `readlines()`: log de 2GB = proceso muerto (ver M1.3-006). (4) `split(' ')` sin maxsplit: el mensaje 'disco lleno' se parte y `partes[2]` captura solo 'disco' — dato truncado EN SILENCIO. (5) Sin validación de longitud: la línea 'PING' produce una lista de 1 elemento y `partes[1]` lanza IndexError — una sola línea rara tumba todo el procesamiento. (6) `g` nunca se cierra: el buffer puede no volcarse al disco; el archivo de salida queda incompleto o vacío según el timing del GC.",
+    "diagnostico": "Al auditar la función se revelan seis defectos recurrentes que la IA suele introducir al priorizar la rapidez sobre la robustez. Cada uno tiene una causa clara en el modelo de ejecución de Python y un patrón de fallo que se repite en muchos scripts.\n\n1. `open` sin `with` (dos veces): si una excepción ocurre entre la apertura y el cierre explícito, los descriptores de archivo permanecen abiertos, provocando fugas de recursos que el SO eventualmente reclama.\n2. Ausencia de `encoding`: Python usa la codificación predeterminada del entorno; ante un byte que no pertenece a esa tabla (por ejemplo, un carácter UTF‑8 en un entorno Latin‑1) se lanza `UnicodeDecodeError`.\n3. Uso de `readlines()`: carga todo el archivo en memoria; con logs de varios gigabytes el proceso puede ser terminado por el OOM killer.\n4. `split(' ')` sin `maxsplit`: divide cada espacio, de modo que un mensaje como \"disco lleno\" se vuelve ['disco','lleno']; al tomar `partes[2]` se obtiene solo la primera palabra, truncando el dato sin aviso.\n5. Falta de validación de longitud: una línea como \"PING\" produce una lista de un solo elemento; acceder a `partes[1]` o `partes[2]` genera `IndexError` y detiene todo el procesamiento.\n6. El archivo de salida `g` nunca se cierra ni se hace `flush`: el buffer interno puede no volcarse al disco antes de que termine el programa, dejando el archivo incompleto o vacío según el momento del recolector de basura.",
     "codigo_corregido": "def resumir_log(ruta_entrada, ruta_salida):\n    codigos = []\n    with open(ruta_entrada, encoding='utf-8') as f:\n        for linea in f:\n            campos = linea.split(maxsplit=2)\n            if len(campos) >= 3 and campos[1] == 'ERROR':\n                codigos.append(campos[2].strip())\n    with open(ruta_salida, 'w', encoding='utf-8') as g:\n        g.write(f'Total errores: {len(codigos)}')\n        for c in codigos:\n            g.write('\\n' + c)",
     "codigo_optimizado": "from collections import Counter\nfrom pathlib import Path\n\n# Versión streaming completa: memoria O(1) en entrada Y en salida\ndef resumir_log(ruta_entrada, ruta_salida):\n    contador = 0\n    with open(ruta_entrada, encoding='utf-8', errors='replace') as f, \\\n         open(ruta_salida, 'w', encoding='utf-8') as g:\n        g.write('Errores:\\n')  # reescribimos el total al final... no: mejor 2 pasadas o buffer\n        # Patrón real: escribir detalle primero, total al final con seek,\n        # o acumular solo el contador (un int) y escribir todo al final:\n        pass\n    # Solución limpia: contar y coleccionar códigos es O(k) donde k = errores,\n    # aceptable si los errores son minoría. Si el log es 90% errores, 2 pasadas:\n    pass\n\ndef resumir_log_dos_pasadas(ruta_entrada, ruta_salida):\n    \"\"\"Memoria O(1) real: primera pasada cuenta, segunda extrae.\"\"\"\n    total = 0\n    with open(ruta_entrada, encoding='utf-8', errors='replace') as f:\n        for linea in f:\n            campos = linea.split(maxsplit=2)\n            if len(campos) >= 3 and campos[1] == 'ERROR':\n                total += 1\n    with open(ruta_entrada, encoding='utf-8', errors='replace') as f, \\\n         open(ruta_salida, 'w', encoding='utf-8') as g:\n        g.write(f'Total errores: {total}\\n')\n        for linea in f:\n            campos = linea.split(maxsplit=2)\n            if len(campos) >= 3 and campos[1] == 'ERROR':\n                g.write(campos[2].strip() + '\\n')\n\n# Checklist de auditoría de I/O (los 6 puntos, para usar SIEMPRE):\n# □ ¿Cada open() está dentro de un with?\n# □ ¿encoding explícito en TODO open de texto?\n# □ ¿Iteración perezosa en vez de readlines()/read()?\n# □ ¿El parseo sobrevive a líneas malformadas (len, try, guardas)?\n# □ ¿split con maxsplit cuando los mensajes contienen el delimitador?\n# □ ¿Los datos de salida se vuelcan garantizado (with lo asegura)?",
     "disenso_experto": "¿Una pasada acumulando en memoria o dos pasadas con memoria O(1)? Con logs donde los errores son una minoría (< 5% de las líneas), acumular los mensajes de error en una lista es perfectamente aceptable y más simple. Con logs donde la mayoría son errores (una caída en cascada genera millones), la lista te come la RAM igual que readlines — y entonces dos pasadas sobre el archivo es la respuesta correcta. El ingeniero senior pregunta '¿cuál es la proporción esperada de errores?' antes de elegir. La IA nunca hace esa pregunta.",
-    "pregunta_transferencia": "Este resumen corre cada noche vía cron sobre el log del día (10GB en días de incidentes). En un día normal tarda 40 segundos; el día del incidente, el proceso fue killed por el OOM killer del sistema. Identifica qué línea del código 'corregido' sigue siendo vulnerable en días de incidente y propón la versión que sobrevive a cualquier proporción de errores.",
+    "pregunta_transferencia": "Este resumen corre cada noche vía cron sobre el log del día (10GB en días de incidentes). En un día normal tarda 40 segundos; el día del incidente, el proceso fue killed por el OOM killer del sistema.\n\nIdentifica qué línea del código 'corregido' sigue siendo vulnerable en días de incidente y propón la versión que sobrevive a cualquier proporción de errores.",
     "quiz": {
       "pregunta": "En el código roto, ¿qué pasa con la línea de log 'PING\\n' (un solo campo)?",
       "opciones": [
@@ -885,6 +885,57 @@
       "logs",
       "archivos",
       "code-review"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la principal ventaja de usar la sentencia `with open(...) as f:` en lugar de abrir y cerrar manualmente el archivo?",
+        "opciones": [
+          "A) Garantiza que el archivo se cierre automáticamente, incluso si ocurre una excepción.",
+          "B) Fuerza la apertura del archivo en modo binario.",
+          "C) Permite leer el archivo varias veces sin necesidad de hacer seek.",
+          "D) Comprime automáticamente el contenido del archivo."
+        ],
+        "correcta": "A",
+        "explicacion": "La sentencia `with` crea un contexto que llama al método __exit__ del objeto file, que ejecuta `close()` independientemente de si el bloque termina normalmente o por una excepción. Esto elimina fugas de descriptores. Las otras opciones describen comportamientos que no están relacionados con `with`.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Suponga la versión corregida de la función que usa `with`, `encoding='utf-8'`, itera línea a línea, utiliza `split(' ', 2)`, verifica que la lista tenga al menos 3 elementos antes de comparar `partes[1]` con `'ERROR'` y escribe los resultados con `flush()`. Si el archivo de entrada contiene exactamente las líneas:\n`2023-01-01 INFO Sistema iniciado\n2023-01-01 ERROR Disco lleno\n2023-01-01 WARN Carga alta`\n¿Qué se escribirá en el archivo de salida?",
+        "opciones": [
+          "A) Total errores: 1\\nDisco lleno",
+          "B) Total errores: 0",
+          "C) Total errores: 1\\nDisco",
+          "D) Total errores: 2\\nDisco lleno\\nCarga alta"
+        ],
+        "correcta": "A",
+        "explicacion": "La primera línea no tiene ERROR, por lo que se ignora. La segunda línea se divide en ['2023-01-01','ERROR','Disco lleno']; `partes[1]` es 'ERROR' y `partes[2]` es 'Disco lleno', que se agrega a la lista. La tercera línea no contiene ERROR. Al final se escribe el conteo (1) seguido de cada mensaje completo, por lo que la salida es 'Total errores: 1\\nDisco lleno'.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código original (codigo_roto), ¿qué línea provoca una `IndexError` al procesar una línea como 'PING' que solo contiene un token?",
+        "opciones": [
+          "A) `lineas = f.readlines()`",
+          "B) `partes = linea.split(' ')`",
+          "C) `if partes[1] == 'ERROR':`",
+          "D) `errores.append(partes[2])`"
+        ],
+        "correcta": "C",
+        "explicacion": "Con la entrada 'PING', `linea.split(' ')` produce la lista ['PING'], que tiene longitud 1. Al intentar acceder a `partes[1]` se lanza `IndexError` porque no existe un segundo elemento. Las otras líneas no lanzan esa excepción en esta situación.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué ocurre si se omite el argumento `encoding` al abrir un archivo de texto en Python y el archivo contiene bytes que no son representables en la codificación predeterminada del sistema?",
+        "opciones": [
+          "A) El archivo se abre automáticamente en modo binario.",
+          "B) Python lanza un `SyntaxError` al intentar leer el archivo.",
+          "C) El contenido se convierte a ASCII sustituyendo los caracteres no representables por '?'.",
+          "D) Python usa la codificación predeterminada del entorno, lo que puede provocar un `UnicodeDecodeError` cuando encuentra bytes fuera de esa tabla."
+        ],
+        "correcta": "D",
+        "explicacion": "Cuando no se especifica `encoding`, Python emplea la codificación retornada por `locale.getpreferredencoding(False)`. Si el archivo contiene secuencias de bytes que no pertenecen a esa tabla (por ejemplo, UTF‑8 en un entorno cuyo default es cp1252), la fase de decodificación falla y se lanza `UnicodeDecodeError`. Las demás opciones describen comportamientos que no ocurren en esta situación.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
