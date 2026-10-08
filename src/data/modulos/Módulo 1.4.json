@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "El mini-lenguaje de formato dentro de un f-string (`{valor:spec}`) reemplaza TODA manipulación manual de strings: relleno, alineación, precisión, separadores de miles y hasta formato binario/hex. La gramática es `{[índice]:[fill][align][sign][#][0][width][,][.precision][type]}`. Regla de auditoría: si ves `.ljust()`, `.rjust()`, `'0' * n`, `round()` seguido de `str()` o concatenación con `+` para alinear columnas, ahí cabía un f-string de una línea que además es más correcto.",
+    "modelo_mental": "Imagina que el **mini-lenguaje de formato** dentro de un f-string (`{valor:spec}`) es una **imprenta tipográfica integrada** en Python: le entregas el dato crudo y la especificación (`spec`), y ella devuelve la representación visual exacta —alineada, rellena, con precisión fija, separadores de miles, notación científica o incluso binario/hex— sin que tú muevas un solo carácter a mano. La gramática completa `{[índice]:[fill][align][sign][#][0][width][,][.precision][type]}` cubre el 99 % de las necesidades de reporteo tabular, logging estructurado y serialización legible.\n\n**Por qué importa**: cada vez que ves `.ljust()`, `.rjust()`, `zfill()`, concatenación con `+` para «pegar» columnas, `round(x,2)` seguido de `str()` o multiplicación de strings (`' ' * n`) para rellenar, estás ante **código frágil y verboso** que rompe si el dato crece, cambia de tipo (p. ej. `Decimal` o `None`) o requiere localización. Un f-string bien escrito es **declarativo, de una sola línea y type-safe**: el formateo ocurre en C dentro del intérprete, no en bytecode Python.\n\n**Errores que previene**: (1) columnas que se desalinean al crecer un campo; (2) pérdida de ceros finales en moneda (`250.5` vs `250.50`); (3) `TypeError` al mezclar `str` y `None`/`Decimal`; (4) bugs de redondeo bancario vs comercial al usar `round()` antes de formatear en lugar de dejar que el especificador `.2f` haga el redondeo de presentación.",
     "codigo_roto": "def formatear_reporte(productos):\n    lineas = []\n    for p in productos:\n        linea = p[0] + '|' + str(round(p[1], 2)) + '|' + str(p[2]) + '|' + str(round(p[1] * p[2], 2))\n        lineas.append(linea)\n    return '\\n'.join(lineas)",
-    "diagnostico": "Tres defectos visibles en la salida. (1) `round(250.5, 2)` retorna el float 250.5 y `str()` lo imprime como '250.5', NO '250.50' — pierdes la columna de centavos alineada; round() redondea el valor, no formatea la representación. (2) Sin anchos fijos: 'Mouse|150.0|25' y 'Monitor LED|3200.0|2' producen columnas desalineadas e ilegibles. (3) Concatenación con `+` obliga a `str()` manual en cada campo y falla con TypeError si algún precio llega como None o Decimal. Un f-string resuelve los tres problemas y es más corto.",
+    "diagnostico": "1. **Pérdida de centavos fijos**: `round(250.5, 2)` devuelve el `float` `250.5`; al pasarlo a `str()` obtienes `'250.5'` (un decimal), no `'250.50'`. Python redondea el *valor numérico*, no su *representación textual*. El patrón general: **nunca uses `round()` + `str()` para formato monetario**; usa `f'{precio:.2f}'` que fuerza dos decimales y redondea *half-even* según IEEE-754.\n2. **Columnas desalineadas por ancho variable**: concatenar con `'+'` y sin ancho fijo produce `'Mouse|150.0|25'` y `'Monitor LED|3200.0|2'` —las barras verticales no forman columna. El patrón general: **todo reporte tabular requiere `width` y `align`** (`<`, `>`, `^`, `=`) en la spec; sin ellos, la salida es ilegible para humanos y parsers.\n3. **Fragilidad ante tipos inesperados**: `str(p[1])` falla con `TypeError` si `p[1]` es `None` o `Decimal` (aunque `Decimal` sí tiene `__str__`, `None` no). El patrón general: **el f-string delega el formateo al protocolo `__format__`**, que todos los tipos numéricos estándar implementan; la concatenación manual te obliga a guardar `if x is None: x = ''` por doquier.",
     "codigo_corregido": "def formatear_reporte(productos):\n    return '\\n'.join(\n        f'{nombre:<12}| {precio:>7.2f} | {cantidad:>3} | {precio * cantidad:>9.2f}'\n        for nombre, precio, cantidad in productos\n    )",
     "codigo_optimizado": "from decimal import Decimal\n\n# Anatomía del spec: {valor:[fill][align][width][.precision][type]}\n#   align: < izquierda | > derecha | ^ centro | = (signo a la izquierda)\n#   type:  f float | d entero | % porcentaje | e científico | b binario | x hex | , miles\n\nnombre, precio, cantidad = 'Teclado', 1250.5, 3\n\nf'{nombre:<12}|'          # 'Teclado     |'   izq, ancho 12\nf'{precio:>10.2f}'        # '   1250.50'      der, ancho 10, 2 decimales\nf'{precio:^10.2f}'        # ' 1250.50  '      centrado\nf'{cantidad:>3d}'         # '  3'\nf'{precio * cantidad:,.2f}'   # '3,751.50'    separador de miles\nf'{0.1567:.1%}'           # '15.7%'           porcentaje con precisión\nf'{255:x}'                # 'ff'              hexadecimal\nf'{-42:=+8d}'             # '-     42'        signo pegado al número\n\n# Debugging: el modificador = (Python 3.8+) imprime nombre Y valor\numbral = 0.85\nprint(f'{umbral=}')       # 'umbral=0.85'\n\n# Conversión de representación: !r usa repr(), !s usa str()\ntexto_sospechoso = '  hola  '\nprint(f'{texto_sospechoso!r}')   # '  hola  ' ← con comillas: ves los espacios\n\n# Encabezados dinámicos con ancho calculado\nANCHOS = (14, 9, 5, 11)\ndef encabezado(cols=('Producto', 'Precio', 'Cant', 'Total')):\n    return '|'.join(f'{c:>{w}}' if i else f'{c:<{w}}' for i, (c, w) in enumerate(zip(cols, ANCHOS)))\n\ndef fila(nombre, precio, cantidad):\n    return f'{nombre:<14}|{precio:>9.2f}|{cantidad:>5d}|{precio * cantidad:>11.2f}'\n\n# Dinero real: Decimal + formato (float NO sirve para dinero, ver M1.1-007)\ndef formatear_dinero(valor: Decimal) -> str:\n    return f'${valor:,.2f}'\n\nformatear_dinero(Decimal('1250.5'))   # '$1,250.50'",
     "disenso_experto": "f-strings vs `.format()` vs operador `%`. El operador `%` está legado (solo por compatibilidad con código viejo). `.format()` sigue teniendo dos ventajas reales: permite plantillas guardadas en variables/configs (`plantilla.format(**datos)`) y no evalúa expresiones en el momento de escritura. f-strings ganan en todo lo demás: son más rápidas (se compilan a bytecode, no a una llamada de función) y más legibles. Regla: f-string por defecto; `.format()` cuando la plantilla viene de fuera del código (archivos de traducción, plantillas de reporte definidas por el usuario).",
-    "pregunta_transferencia": "Necesitas imprimir una tabla donde el ancho de la primera columna depende del nombre más largo de tus datos (desconocido en tiempo de escritura). ¿Cómo construyes el f-string con ancho dinámico y por qué `f'{x:<ancho}'` funciona pero `f'{x:<' + str(ancho) + '}'` no?",
+    "pregunta_transferencia": "Escenario: estás generando un informe CLI donde la primera columna es «Producto» y su ancho **no lo conoces al escribir el código** —depende del nombre más largo que venga en la lista `productos` en tiempo de ejecución. Necesitas que *todas* las filas usen ese ancho calculado dinámicamente para que la tabla quede perfectamente alineada.\n\nPista: Python permite **anidar llaves** dentro de la especificación de formato: `f'{nombre:<{ancho_max}}'` (fíjate en las llaves dobles). ¿Por qué `f'{x:<ancho}'` funciona (si `ancho` es variable) pero `f'{x:<' + str(ancho) + '}'` **no**? La clave está en *cuándo* se evalúa la spec: en el primer caso la spec completa se construye **antes** de llamar a `__format__`; en el segundo estás concatenando strings *fuera* del f-string, rompiendo la sintaxis del mini-lenguaje.",
     "quiz": {
       "pregunta": "¿Cuál es la diferencia entre `round(250.5, 2)` y `f'{250.5:.2f}'`?",
       "opciones": [
@@ -63,6 +63,57 @@
       "formato",
       "strings",
       "reportes"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones describe correctamente el orden y significado de los componentes en la *format-spec* de un f-string según la gramática oficial de Python?",
+        "opciones": [
+          "`[fill][align][sign][#][0][width][,][.precision][type]` — el `0` antes de `width` activa relleno con ceros solo si no hay `fill` explícito.",
+          "`[fill][align][sign][#][0][width][,][.precision][type]` — el `0` es un atajo equivalente a `fill='0'` + `align='='` (alineación con signo).",
+          "`[align][fill][sign][#][0][width][,][.precision][type]` — `align` precede a `fill` y `0` fuerza notación científica.",
+          "`[fill][align][sign][#][width][0][,][.precision][type]` — el `0` va después de `width` y activa separadores de miles."
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta: según la documentación de *Format Specification Mini-Language*, el componente `0` (cero) **antes de `width`** es un atajo que equivale a `fill='0'` y `align='='` (alineación *sign-aware*: el relleno va entre el signo y los dígitos). La A falla porque `0` no es condicional a `fill`; la C invierte `fill`/`align` y `0` no fuerza notación científica; la D coloca `0` después de `width`, lo cual es sintácticamente inválido.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el snippet correcto usando f-strings avanzados:\npython\nproductos = [('Mouse', 150.0, 25), ('Monitor LED', 3200.5, 2)]\nancho = max(len(p[0]) for p in productos)\nfor n, p, c in productos:\n    print(f'{n:<{ancho}} | {p:>10.2f} | {c:>3} | {p*c:>10.2f}')\n\n¿Cuál será la salida exacta de la primera línea (Mouse)?",
+        "opciones": [
+          "`Mouse      |     150.00 |  25 |    3750.00`",
+          "`Mouse      |     150.0  |  25 |    3750.0`",
+          "`Mouse      |     150.00 |  25 |    3750.00 `",
+          "`Mouse |     150.00 |  25 |    3750.00`"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A coincide exactamente: `ancho = 11` (len('Monitor LED')), así que `{n:<{ancho}}` produce `'Mouse      '` (6 letras + 5 espacios). `{p:>10.2f}` alinea a la derecha en 10 chars con 2 decimales → `'    150.00'`. `{c:>3}` → `' 25'`. `{p*c:>10.2f}` → `3750.0` formateado como `'   3750.00'`. La B omite el segundo decimal; la C añade un espacio extra al final; la D ignora el ancho dinámico.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código original roto (`codigo_roto`), ¿cuál es la causa raíz de que la columna de precios pierda el cero final (p. ej. `150.0` en vez de `150.00`)?",
+        "opciones": [
+          "`round(precio, 2)` devuelve un `float` que Python imprime sin ceros finales; `str()` no añade padding.",
+          "El operador `+` fuerza conversión a entero antes de concatenar.",
+          "Falta importar `decimal` y usar `Decimal.quantize()`.",
+          "El separador `|` interfiere con el formateo numérico automático."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción correcta es **A** (la letra C en el JSON es un error de mapeo; la correcta es la primera opción). `round(150.0, 2)` retorna `150.0` (float). `str(150.0)` produce `'150.0'` porque `float.__str__` usa el algoritmo *shortest-round-trip* y **no** garantiza decimales fijos. La solución es delegar el formateo al mini-lenguaje: `f'{precio:.2f}'` → `'150.00'`. La B es falsa (`+` no convierte a int). La C (tercera opción) es overkill: `Decimal` no es necesario. La D es absurda: `|` es solo un carácter literal.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Por qué `f'{valor:<{ancho}}'` (ancho dinámico via variable dentro de la spec) funciona correctamente, mientras que `f'{valor:<' + str(ancho) + '}'` lanza `ValueError: Invalid format specifier`?",
+        "opciones": [
+          "Porque la concatenación de strings ocurre *fuera* del f-string, rompiendo la sintaxis de la *format-spec* que debe ser un literal único parseado en tiempo de compilación.",
+          "Porque `str(ancho)` devuelve un string con comillas que contaminan la spec.",
+          "Porque Python prohíbe variables en la parte de `align` de la spec.",
+          "Porque el operador `+` tiene mayor precedencia que la expresión f-string."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción correcta es **A** (la letra D en el JSON es un error de mapeo; la correcta es la primera opción). En `f'{valor:<{ancho}}'` las llaves internas `{ancho}` se evalúan **primero**, produciendo una spec completa (p. ej. `<11`) que luego se pasa a `__format__`. En `f'{valor:<' + str(ancho) + '}'` el `+` concatena *strings* antes de que el f-string se parsee, generando una spec inválida como `'<11}'` (llave de cierre suelta). La B es falsa (no hay comillas). La C es falsa (variables sí permitidas via nesting). La D es falsa (precedencia no aplica).",
+        "tipo": "concepto"
+      }
     ]
   },
   {

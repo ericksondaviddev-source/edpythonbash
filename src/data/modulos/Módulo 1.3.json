@@ -645,13 +645,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "Guardar datos es la operación más peligrosa de tu app: es la única que puede DESTRUIR lo que ya existe. Con `open(ruta, 'w')` el archivo se trunca al ABRIR; si algo falla después (excepción serializando, disco lleno, el usuario mata la app), lo que quedó es un archivo vacío o parcial — y tus datos anteriores ya no existen. La escritura atómica separa las dos fases: (1) escribir completo a un archivo temporal en el MISMO directorio, (2) `os.replace(tmp, final)` — una operación que el sistema de archivos garantiza atómica: o ves el archivo viejo completo, o el nuevo completo, jamás una mezcla.",
+    "modelo_mental": "**Analogía**: Imagina que guardar una configuración es como hacer una copia exacta de un libro antes de actualizarlo. Solo cuando la copia está lista, la reemplazas por la nueva versión. **Escritura atómica**: Si ocurre un error durante la sustitución, el sistema de archivos nunca muestra el estado intermedio; o bien el archivo viejo completo existe, o bien el nuevo completo. **Importancia**: Evita corromper datos al truncar un archivo parcial y asegura que la aplicación siempre lea una configuración válida.",
     "codigo_roto": "import json\n\ndef guardar_config(ruta, config):\n    with open(ruta, 'w', encoding='utf-8') as f:\n        json.dump(config, f)",
-    "diagnostico": "Escenario real: la app guarda la configuración en cada cambio. Un día, el objeto incluye un dato no serializable (un set, un datetime sin default), o el móvil se queda sin espacio, o el usuario fuerza el cierre justo durante el guardado. Secuencia: open('w') trunca la config anterior → json.dump escribe 5000 caracteres → TypeError a mitad → archivo final: JSON truncado e ilegible. Al reabrir la app: JSONDecodeError y el usuario perdió TODO. Este bug no aparece en los tests porque en los tests nada falla a mitad del guardado.",
+    "diagnostico": "1. El uso de `open(ruta, 'w')` elimina todo el contenido existente del archivo al abrirlo. Si durante `json.dump` se produce una excepción (por ejemplo, un tipo no serializable o falta espacio en disco), el archivo quedará truncado y será ilegible.\n\n2. La falta de un paso previo de escritura en un archivo temporal significa que, en caso de fallo, no hay respaldo. Cuando se intenta renombrar (`os.replace`) el sistema ve el archivo nuevo con el nombre correcto pero el contenido sigue siendo el antiguo (vacío o incompleto), causando pérdida de datos.\n\n3. Patrón general: En lugar de escribir directamente con modo 'w', se debe crear primero un archivo temporal (ej. `temp = NamedTemporaryFile(delete=False)`), escribir allí, y luego `os.replace(temp.name, ruta)`. Esto garantiza atomicidad y protege contra errores intermedios.",
     "codigo_corregido": "import json, os, tempfile\n\ndef guardar_config(ruta, config):\n    dirn = os.path.dirname(os.path.abspath(ruta))\n    fd, tmp = tempfile.mkstemp(dir=dirn, suffix='.tmp')\n    try:\n        with os.fdopen(fd, 'w', encoding='utf-8') as f:\n            json.dump(config, f)\n        os.replace(tmp, ruta)   # atómico: el archivo viejo vive hasta este instante\n    except BaseException:\n        try:\n            os.unlink(tmp)\n        except OSError:\n            pass\n        raise",
     "codigo_optimizado": "import json, os, tempfile\nfrom pathlib import Path\n\ndef guardar_atomico(ruta, escribir):\n    \"\"\"\n    Helper genérico de escritura atómica.\n    `escribir` recibe un file object listo para escribir.\n    \"\"\"\n    ruta = os.path.abspath(ruta)\n    dirn = os.path.dirname(ruta)\n    fd, tmp = tempfile.mkstemp(dir=dirn, suffix='.tmp')\n    try:\n        with os.fdopen(fd, 'w', encoding='utf-8') as f:\n            escribir(f)\n            f.flush()\n            os.fsync(f.fileno())   # fuerza la escritura física antes del rename\n        os.replace(tmp, ruta)\n    except BaseException:\n        try:\n            os.unlink(tmp)\n        except OSError:\n            pass\n        raise\n\ndef guardar_config(ruta, config):\n    guardar_atomico(ruta, lambda f: json.dump(config, f, ensure_ascii=False, indent=2))\n\n# Por qué el temporal debe estar en el MISMO directorio:\n# os.replace entre sistemas de archivos distintos NO es atómico\n# (de hecho puede fallar con OSError). Mismo dir = mismo filesystem = garantía.\n\n# Por qué fsync importa en servidores (opcional en móvil):\n# sin fsync, el 'replace' puede llegar al disco ANTES que el contenido\n# del temporal (reordenamiento del SO) → archivo final vacío tras un apagón.\n\n# Nota Pyodide/PWA: en el FS virtual del navegador os.replace funciona\n# y la atomicidad protege de crashes de JS/pestañas cerradas; fsync es no-op.\n\n# Patrón completo de persistencia segura (el que usará tu app):\n# 1. leer con tolerancia a corrupción (backup .corrupto, ver M1.3-010)\n# 2. modificar en memoria\n# 3. guardar con escritura atómica\n# 4. NUNCA escribir directo al archivo final",
     "disenso_experto": "¿Atomicidad siempre o solo para datos críticos? Escribir a temp + replace cuesta el doble de operaciones de disco y un fsync puede añadir decenas de milisegundos. Para un log de debug que se puede perder, es overkill: append directo y listo. Para TODO lo que el usuario consideraría una pérdida (configuración, notas, progreso de estudio, datos financieros), es obligatorio. La regla la dicta el costo de la corrupción para el usuario, no la elegancia técnica. En tu app de aprendizaje: el progreso del usuario (qué módulos completó) es sagrado → atómico siempre.",
-    "pregunta_transferencia": "Tu app de notas guarda con escritura atómica pero los usuarios de un servidor Linux reportan que tras un corte de energía el archivo nuevo existe con tamaño 0 bytes. El rename funcionó, el contenido no llegó. ¿Qué paso falta en la secuencia de guardado y por qué el sistema operativo reordena las escrituras?",
+    "pregunta_transferencia": "Tu aplicación de notas guarda la configuración en cada cambio usando escritura atómica, pero tras un cortocircuito el archivo nuevo existe con tamaño 0 bytes. ¿Qué paso falta en la secuencia de guardado y por qué el sistema operativo reordena las escrituras?\n*Pista*: El sistema operativo puede mover el marcador de escritura antes de que la escritura sea visible a otros procesos que necesitan el archivo.",
     "quiz": {
       "pregunta": "¿Por qué la escritura atómica usa un archivo temporal en el MISMO directorio y no en /tmp?",
       "opciones": [
@@ -700,6 +700,45 @@
       "tempfile",
       "persistencia",
       "datos-seguros"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la forma correcta de realizar una escritura atómica en Python para evitar corrupción de datos?",
+        "opciones": [
+          "Crear un archivo temporal en el mismo directorio y luego usar `os.replace` para renombrarlo sobre el destino",
+          "Abrir el archivo con modo 'a' para que se appends y no sobrescriba",
+          "Confiar en que `open(ruta, 'w')` garantiza atomicidad sin necesidad de pasos adicionales",
+          "Copia manualmente el dict con `pickle.load` y vuelve a escribir"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B describe el patrón recomendado: escribir en un archivo temporal (que persiste) y luego reemplazar el archivo original de forma atómica con `os.replace`. Las otras opciones son incorrectas: el modo 'a' solo agrega al final sin sobrescribir, y depender de `open('w')` no ofrece protección contra errores de escritura.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En la función `guardar_config`, ¿qué error se produciría si se cambia el modo de apertura a 'a' en lugar de 'w'?",
+        "opciones": [
+          "Se añadirán líneas nuevas al final del archivo sin borrar las existentes",
+          "El archivo se sobrescribirá completamente, pero podría fallar si el disco está lleno",
+          "No habrá ningún efecto y la configuración se guardará correctamente",
+          "Python lanzará un TypeError porque el modo 'a' no acepta diccionarios"
+        ],
+        "correcta": "A",
+        "explicacion": "Cambiar a modo 'a' hace que la función abra el archivo en modo append, lo que no sobrescribe el contenido existente sino que añade al final. Además, si se intenta escribir con un objeto no serializable, se obtendrá un TypeError al intentar guardar en un archivo abierto en modo append. Por eso es necesario usar 'w' para escritura atómica.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si ocurre un error durante `json.dump`, ¿cuál es el resultado probable al reabrir el archivo y por qué?",
+        "opciones": [
+          "El archivo se recreará vacío automáticamente",
+          "Se generará un JSONDecodeError porque contiene datos parciales",
+          "La aplicación ignorará el error y continuará con la configuración anterior",
+          "Se creará un nuevo archivo con el mensaje de error en lugar de los datos"
+        ],
+        "correcta": "B",
+        "explicacion": "Cuando el `json.dump` falla a mitad de su ejecución, el archivo queda con contenido incompleto (por ejemplo, un JSON truncado de 5000 caracteres). Al leerlo posteriormente se obtiene un JSONDecodeError porque el formato no es válido. Esto demuestra cómo no tener un paso de escritura atómica protege los datos de corrupción.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
