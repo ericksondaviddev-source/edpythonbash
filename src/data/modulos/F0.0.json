@@ -1,0 +1,260 @@
+[
+  {
+    "id": "F0.0-001",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "competencia": "Símbolos y convenciones básicas",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Crear un flowchart para un proceso simple",
+    "modelo_mental": "Un diagrama de flujo es un lenguaje visual estandarizado para representar algoritmos y procesos. Los cuatro símbolos fundamentales son: **Start/Finish** (ícono de óvalo, indica el inicio o fin de un proceso), **Process** (ícono de rectángulo, representa una acción o cálculo), **Decision** (ícono de rombo, hace una rama basada en una condición booleana), y **Flow Line** (flechas que conectan los símbolos y dirección del flujo). El patrón clave es que todo flujo debe comenzar en un símbolo Start, atravesar una secuencia de procesos y decisiones, y terminar en un símbolo Finish. Los errores más comunes incluyen omitir el símbolo Start, tener múltiples finales sin conexión lógica, o flechas que apuntan a símbolos incorrectos.",
+    "codigo_roto": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='symbol end' title='End'>○</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Error: flecha que apunta al símbolo wrong, y falta el símbolo Finish -->\n</div>",
+    "diagnostico": "1. **Falta el símbolo Finish**: El diagrama no tiene un nodo final, por lo que el proceso nunca termina formalmente. 2. **Flecha incorrecte**: La flecha del proceso apunta al símbolo de decisión en lugar de fluir hacia el final. 3. **Sin entrada del usuario**: No hay claridad sobre cuándo el proceso debe detenerse. El patrón a aprender es siempre terminar un flowchart con un símbolo Finish y asegurarse de que todas las flechas apunten a símbolos válidos.",
+    "codigo_corregido": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='symbol end' title='End'>○</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Flujo corregido: todos los símbolos conectados en secuencia Start → Process → Decision → Finish -->\n</div>",
+    "disenso_experto": "Algunos desarrolladores prefieren usar diagramas de flujo solo en la fase de planeación, mientras que otros los emplean durante toda la etapa de implementación. La realidad: para proyectos complejos, los flowcharts ayudan a visualizar la lógica antes de codificar, reduciendo errores y facilitando la colaboración. Para proyectos pequeños, pueden ser overhead innecesario. El patrón pragmático es: usarlos para procesos con más de 5 pasos o decisiones anidadas, y confiar en el código limpio para lo restante.",
+    "pregunta_transferencia": "Si estás escribiendo un bucle `for` en Python y necesitas decidir si continúa o sale, ¿cómo representarías esa lógica en un diagrama de flujo? Explica los nodos y conexiones que usarías.",
+    "quiz": {
+      "pregunta": "¿Cuál es el símbolo fundamental que debe aparecer obligatoriamente al inicio de cualquier flowchart?",
+      "opciones": [
+        "Process (rectángulo)",
+        "Decision (rombo)",
+        "Start (óvalo)",
+        "Flow Line (flecha)"
+      ],
+      "correcta": "C",
+      "explicacion": "La opción C es correcta porque todo flowchart debe comenzar obligatoriamente con un símbolo Start (óvalo). Sin un nodo de inicio, el algoritmo no tiene un punto de entrada definido y su lógica queda ambiguos. Las otras opciones son elementos del flowchart pero no son el punto de entrada obligatorio.",
+      "tipo": "concepto"
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "instruccion": "Completa el flowchart arrastrando los símbolos correctos para formar un proceso completo.",
+      "solucion": "Start → Process → Decision → End",
+      "validacion": "Debe tener los 4 símbolos conectados en secuencia: Start → Process → Decision → End. Falta el símbolo Finish o flechas incorrectas invalidan el diagrama.",
+      "codigo_inicial": "<!-- Flowchart incompleto -->\n<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n</div>",
+      "engine": "none"
+    },
+    "audio_script": "Hoy vamos a aprender los cuatro símbolos que todo flowchart necesita. Imagina que un flowchart es como un mapa: necesitas saber dónde empiezas, qué caminos tienes en medio y dónde terminates. El símbolo de Start (círculo) es tu punto de partida. El símbolo de Process (cuadrado) son las acciones que realizas. El símbolo de Decision (rombo) es donde tomas decisiones basadas en condiciones. Y el símbolo End (círculo) es dónde terminas. Los cuatro juntos forman un camino completo y comprensible.",
+    "video_prompt": "Video de 60 segundos. animación que muestra cada símbolo uno por uno: el óvalo Start (●), el cuadrado Process (□), el rombo Decision (◘) y el círculo End (○). Cada símbolo se conecta con una flecha verde. Al final, los cuatro forman un cuadrón completo con la etiqueta 'Process completed'. Overlay: '4 símbolos. 1 camino. Tu flujo de trabajo visualizado.'",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO)",
+        "Diseño de algoritmos visuales"
+      ],
+      "conceptos_clave": [
+        "start",
+        "process",
+        "decision",
+        "end",
+        "flow line"
+      ]
+    },
+    "tags_rag": [
+      "flowchart",
+      "algoritmo",
+      "visual",
+      "símbolos",
+      "proceso"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué símbolo representa una condición booleana en un flowchart?",
+        "opciones": [
+          "Start (círculo)",
+          "Process (cuadrado)",
+          "Decision (rombo)",
+          "Flow Line (flecha)"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque el rombo (Decision) es el símbolo estandarizado para representar una condición booleana que determina ramificaciones en el flujo. Las otras opciones representan inicio, acción y conexión respectivamente.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es el error más común al crear un flowchart desde cero?",
+        "opciones": [
+          "Usar muchos colores diferentes",
+          "Omite el símbolo Start o Finish",
+          "Conectar flechas en direcciones aleatorias",
+          "Usar muchos símbolos Process"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque omitir el símbolo Start o Finish rompe la estructura lógica del diagrama: sin un punto de inicio, no se sabe por dónde comienza el proceso, y sin un punto final, no se sabe cuándo termina. Las otras opciones son decisiones de diseño, pero faltar símbolos fundamentales es un error de estructura.",
+        "tipo": "concepto"
+      }
+    ]
+  },
+  {
+    "id": "F0.0-002",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "competencia": "Interpretar flowcharts existentes",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Analizar un flowchart ajeno y explicar su comportamiento",
+    "modelo_mental": "Leer un flowchart ajeno requiere seguir el hilo de ejecución de arriba a abajo, de izquierda a derecha, siguiendo las flechas y tomando las ramificaciones en los nodos de decisión. El patrón clave es rastrear el valor de las variables y la dirección del flujo en cada paso. Los errores más comunes al interpretar incluyen: perder una rama en un nodo de decisión, asumir el valor por defecto en una flecha no etiquetada, o contar incorrectamente las iteraciones en un bucle implícito. El patrón a aprender es: identifica el símbolo Start, rastrea cada símbolo Process actualizando el estado, evalúa cada decisión siguiéndote por la flecha correcta, y confirma que llegaste al símbolo End.",
+    "codigo_roto": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Error: la flecha desde el nodo de decisión no tiene etiqueta y el estudiante podría tomar la rama incorrecta -->\n</div>",
+    "diagnostico": "1. **Flecha sin etiquetar desde el nodo de decisión**: Al no tener una etiqueta ('Sí' o 'No'), el estudiante puede confundir qué rama seguir. 2. **Pérdida del hilo de ejecución**: Si el estudiante no rastrea cuidadosamente el valor de la variable en cada paso, puede perder el control de cuál es el valor actual. 3. **Asumir la rama por defecto**: Asumir que la flecha de la derecha es 'Sí' y la izquierda es 'No' sin confirmar. El patrón a aprender es: siempre etiquetar las flechas de decisión y rastrear el estado en cada paso.",
+    "codigo_corregido": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-text' style='left:120;top:0;font-size:12px;color:#6b7280'>Sí</div>\n  <div class='flow-text' style='left:160;top:0;font-size:12px;color:#6b7280'>No</div>\n  <!-- Flujo corregido: flechas etiquetadas y clara dirección de ejecución -->\n</div>",
+    "disenso_experto": "Algunos textbooks antiguos usan flechas sin etiquetar, asumiendo que la dirección obvia es 'derecha = Sí, izquierda = No'. En la práctica moderna, siempre se recomienda etiquetar explícitamente para evitar ambigüidades, especialmente en flowcharts compartidos entre varios colaboradores. El patrón recomendado es: todo nodo de decisión debe tener al menos dos flechas salientes con etiquetas claras ('Sí', 'No', 'Verdadero', 'Falso', etc.).",
+    "pregunta_transferencia": "Si estás leyendo un flowchart en un código Python con un `if/else`, ¿cómo mapeas los nodos y flechas del flowchart a la estructura del código? Explica el mapeo entre símbolos y constructos del lenguaje.",
+    "quiz": {
+      "pregunta": "Al interpretar un flowchart, ¿cuál es el error más común relacionado con las flechas de decisión?",
+      "opciones": [
+        "Asumir que la flecha de la derecha siempre es 'Sí'",
+        "Perder el rastreo del valor de la variable en los nodos de proceso",
+        "No identificar el símbolo Start al final",
+        "Confundir el símbolo Process con un rombo Decision"
+      ],
+      "correcta": "A",
+      "explicacion": "La opción A es correcta porque al no tener etiquetas en las flechas de decisión, es fácil confundir cuál rama representa 'Sí' y cuál 'No', especialmente en flowcharts complejos con múltiples ramificaciones. Las otras opciones son errores comunes también, pero el faltar etiquetas es el más frecuente y evitable.",
+      "tipo": "concepto"
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "instruccion": "Completa el flowchart etiquetando las flechas de decisión como 'Sí' y 'No'.",
+      "solucion": "Sí / No",
+      "validacion": "Las dos flechas salientes del nodo de decisión deben tener las etiquetas 'Sí' y 'No' respectivamente.",
+      "codigo_inicial": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n</div>",
+      "engine": "none"
+    },
+    "audio_script": "Al interpretar un flowchart, el siguiente paso después de un símbolo de decisión es seguir la flecha correcta. Las flechas deben estar siempre etiquetadas: la típica es 'Sí' a la derecha y 'No' a la izquierda, o 'Verdadero' e 'Inexperto'. Esto elimina cualquier ambigüedad y asegura que cualquiera que lea el flowchart pueda seguir el hilo de ejecución sin confusiones. El patrón de oro es: toda flecha saliente de un rombo debe tener una etiqueta.",
+    "video_prompt": "Video de 50 segundos. Un flowchart simple con un nodo de decisión en el medio. Una flecha sale hacia la derecha con la etiqueta 'Sí' que lleva a un nodo de proceso, y otra flecha sale hacia la izquierda con la etiqueta 'No' que lleva a otro proceso. El narrador explica: 'Al leer un flowchart, siempre seguimos la flecha etiquetada. En este caso, si la condición es verdadera, seguimos la flecha Sí; si es falsa, la flecha No.' Overlay: 'Flechas etiquetadas = sin ambigüedades.'",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO)",
+        "Diseño de algoritmos visuales"
+      ],
+      "conceptos_clave": [
+        "flechas etiquetadas",
+        "rama Sí/No",
+        "rastreo de estado",
+        "símbolo Start"
+      ]
+    },
+    "tags_rag": [
+      "flowchart",
+      "interpretación",
+      "ramas",
+      "decisión",
+      "ejecución"
+    ],
+    "quiz_ia": [
+      {
+        "pregunta": "Al interpretar un flowchart con nodos de decisión, ¿cuál es el error más frecuente?",
+        "opciones": [
+          "Asumir la dirección de las flechas sin etiquetas",
+          "Contar incorrectamente los nodos de proceso",
+          "Olvidar identificar el símbolo Start",
+          "Confundir el símbolo Process con Decision"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque al no tener etiquetas en las flechas de decisión, es muy común asumir incorrectamente cuál rama representa 'Sí' y cuál 'No', especialmente en flowcharts con múltiples ramificaciones. Las otras opciones son errores posibles también, pero el faltar etiquetas es el más frecuente y evitable.",
+        "tipo": "concepto"
+      }
+    ]
+  },
+  {
+    "id": "F0.0-003",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "competencia": "De flowchart a pseudocódigo y código",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Convertir un flowchart a pseudocódigo y código Python",
+    "modelo_mental": "Imagina un **flowchart** como un **mapa de ruta** donde cada símbolo es una instrucción precisa: el óvalo `●` (Start) es el `main()` o la inicialización de variables, el rectángulo `□` (Process) equivale a una asignación como `x = 5` o una llamada a función, y el rombo `◘` (Decision) se traduce **siempre** a una estructura `if/else` completa. La analogía central es la de **seguir las flechas como un hilo conductor**: no puedes saltarte una intersección ni decidir por tu cuenta por dónde ir; el código debe replicar *exactamente* la topología del diagrama.\n\nEsto importa porque **la ambigüedad visual se vuelve error de ejecución**: un rombo sin salida `else` es un camino sin salida en el mapa, y un rectángulo omitido es una gasolinera que olvidaste visitar y ahora el coche (el programa) se queda sin combustible (variables sin inicializar).\n\nLos errores que previene esta mentalidad son tres: **omisión de ramas** (olvidar el `else`), **desorden secuencial** (ejecutar el `if` antes de la asignación previa) y **puntos de salida implícitos** (terminar la función sin `return` explícito porque el óvalo `End` no se tradujo).",
+    "codigo_roto": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Error: la traducción omite el bloque else en la decisión, y el proceso final no tiene asignación -->\n</div>",
+    "diagnostico": "1. **Falta el bloque `else` en la traducción de la decisión**: En el `codigo_roto`, el rombo `◘` tiene dos salidas visuales (las flechas), pero el código generado probablemente solo tiene `if condicion: ...`. Python no lanza error de sintaxis por un `if` sin `else`, pero **rompe la equivalencia semántica**: si la condición es falsa, el flujo \"se cae\" silenciosamente al siguiente nodo en lugar de seguir la rama `No` del diagrama. El patrón general es: **todo rombo exige dos bloques de código** (uno por cada flecha de salida).\n\n2. **El proceso final no tiene asignación (o el `End` se ignora)**: El comentario del HTML indica que el símbolo final no se traduce a una sentencia de cierre (como `return resultado` o `sys.exit(0)`). En Python, una función sin `return` devuelve `None` implícito, lo que suele ser un **bug lógico** si el flowchart prometía un valor de salida. En Bash, omitir `exit 0` deja el código de salida al azar del último comando. El patrón es: **el óvalo `End` siempre mapea a una instrucción de terminación explícita**.\n\n3. **Saltar nodos (omisión del Process)**: Ir directo del `Start` al `Decision` sin procesar el rectángulo `□` intermedio significa que **las variables necesarias para la condición no existen aún**. Python lanzará `NameError: name 'x' is not defined` al evaluar `if x > 10:`. El patrón general es: **respeta el orden topológico estricto**; cada flecha entrante a un nodo garantiza que los nodos predecesores ya se ejecutaron.",
+    "codigo_corregido": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-text' style='left:120;top:0;font-size:12px;color:#6b7280'>if cond entonces</div>\n  <div class='flow-text' style='left:160;top:0;font-size:12px;color:#6b7280'>sino</div>\n  <!-- Flujo corregido: includes else block y proceso final con asignación -->\n</div>",
+    "disenso_experto": "Un error común al traducir flowcharts a código es asumir que todo flujo se traduce a `if` simple; en realidad, todo nodo de decisión debe traducirse a `if ... else` para mantener la equivalencia lógica con el flowchart. Además, el símbolo End siempre debe traducirse a una sentencia de retorno o cierre, nunca omitirse, para que el código tenga un comportamiento predecible y bien definido.",
+    "pregunta_transferencia": "Imagina un flowchart para un sistema de **acceso a servidor**: Start → Process (leer `user`, `pass`) → Decision (`user == 'admin'`) → Sí → Decision (`pass == '1234'`) → Sí → Process (`grant_access()`) → End; los caminos `No` van a Process (`deny_access()`) → End. Aquí tienes **dos rombos anidados**.\n\n**Pista**: En Python, la indentación **es** la estructura. Cada nivel de anidación en el diagrama (un rombo dentro de la rama `Sí` de otro) sube un nivel de sangría (4 espacios). Pregúntate: ¿la segunda decisión depende *estrictamente* de que la primera sea verdadera? Si sí, `if` anidado. Si fueran independientes, usarías `and` en una sola condición. Dibuja primero el esqueleto `if/else` vacío siguiendo las flechas, y *luego* rellena los bloques.",
+    "quiz": {
+      "pregunta": "Al traducir un nodo de decisión de un flowchart a código, ¿cuál es el error más común?",
+      "opciones": [
+        "Traducir solo el bloque 'if' y olvidar el 'else'",
+        "Usar variables con nombres demasiado largos",
+        "Traducir el símbolo Start como un comentario",
+        "Omiter el símbolo End del flowchart"
+      ],
+      "correcta": "A",
+      "explicacion": "La opción A es correcta porque al traducir un nodo de decisión, es muy fácil olvidar el bloque `else`, lo que cambia completamente el comportamiento lógico del programa. Las otras opciones son errores posibles, pero olvidar el `else` es el error más frecuente y con mayores consecuencias lógicas.",
+      "tipo": "concepto"
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "instruccion": "Completa el pseudocódigo traduciendo el flowchart: agrega el bloque 'sino' y la asignación final.",
+      "solucion": "si cond entonces\n  acción\nsino\n  otra_accion\nfin",
+      "validacion": "El pseudocódigo debe tener bloques 'si/sino' y una línea 'fin' al final.",
+      "codigo_inicial": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n</div>",
+      "engine": "none"
+    },
+    "audio_script": "Al traducir un flowchart a pseudocódigo, el paso crítico es el nodo de decisión: cada uno debe traducirse a un bloque `if ... sino`. Si omites el `sino`, el comportamiento del programa cambia drásticamente porque las condiciones falsas no tendrán acción definida. El patrón de oro es: cada decisión flowchart → `if ... sino` en código, manteniendo la indentación correcta y siguiendo el orden de ejecución de flechas de izquierda a derecha.",
+    "video_prompt": "Video de 60 segundos. Un flowchart con Start → Process → Decision → End. El narrador traduce cada símbolo a código Python en tiempo real: Start → `x = 0`, Process → `y = 1`, Decision → `if cond entonces` / `sino` → `otra_accion` → End → `print('fin')`. Overlay: 'De flowchart a código: 4 pasos, 1 traducción correcta.'",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Fundamentos de algoritmo traducción",
+        "De flujo visual a código imperativo"
+      ],
+      "conceptos_clave": [
+        "traducción de flowchart",
+        "if/sino",
+        "orden de ejecución",
+        "asignación de variables"
+      ]
+    },
+    "tags_rag": [
+      "flowchart",
+      "pseudocódigo",
+      "traducción",
+      "Python",
+      "orden de ejecución"
+    ],
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué estructura de control de Python corresponde **siempre** a un símbolo de decisión (rombo) en un flowchart bien formado?",
+        "opciones": [
+          "`while`",
+          "`if/else`",
+          "`for`",
+          "`def`"
+        ],
+        "correcta": "B",
+        "explicacion": "El rombo representa una bifurcación binaria (Sí/No). `if/else` es la única que modela exactamente dos caminos mutuamente excluyentes. `while`/`for` son bucles (ciclos), `def` define función.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el flujo: Start → `x = 10` → Decision `x > 5` → Sí: `print(\"A\")` → No: `print(\"B\")` → End. ¿Cuál código Python es **equivalente estricta**?",
+        "opciones": [
+          "x=10\nif x>5: print(\"A\")\nprint(\"B\")",
+          "if x>5: print(\"A\")\nelse: print(\"B\")\nx=10",
+          "x=10\nif x>5:\n    print(\"A\")\nelse:\n    print(\"B\")",
+          "x=10\nif x<5: print(\"A\")\nelse: print(\"B\")"
+        ],
+        "correcta": "C",
+        "explicacion": "C respeta orden (asignación antes de uso), indentación, y rama `else` explícita. A imprime ambos si x>5 (falta else). B falla NameError (orden incorrecto). D invierte la lógica de la condición.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Un alumno traduce un flowchart con decisión y **olvida el `else`**. El código resultante es `x = 5\\nif x > 10: print(\"Grande\")\\nprint(\"Fin\")`. ¿Cuál es el **comportamiento real** vs el **esperado en el flowchart** si x=5?",
+        "opciones": [
+          "Real: imprime \"Fin\". Esperado: imprimir \"Pequeño\" (rama No) y luego \"Fin\".",
+          "Real: Error sintaxis. Esperado: \"Grande\".",
+          "Real: Imprime \"Grande\" y \"Fin\". Esperado: solo \"Fin\".",
+          "Real: Bucle infinito. Esperado: \"Pequeño\"."
+        ],
+        "correcta": "A",
+        "explicacion": "Sin `else`, la rama `No` del diagrama no tiene código asociado. El flujo continúa secuencialmente a `print(\"Fin\")`. El flowchart exige una acción en la rama `No` (ej. `print(\"Pequeño\")`), que se pierde. No hay error de sintaxis ni bucle.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Al convertir un flowchart a código, ¿cuál es la **regla de oro** para el orden de escritura de las sentencias?",
+        "opciones": [
+          "Escribir primero las funciones, luego el main.",
+          "Orden alfabético de nombres de variables.",
+          "Agrupar todos los `if` al principio.",
+          "**Seguir el flujo de flechas** (topología) desde Start hasta End."
+        ],
+        "correcta": "D",
+        "explicacion": "El flowchart dicta el orden de ejecución temporal. Saltar nodos o reordenar rompe la lógica (ej. usar variable antes de asignarla). D es la única que garantiza equivalencia semántica.",
+        "tipo": "concepto"
+      }
+    ],
+    "_enriched": true
+  }
+]
