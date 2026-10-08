@@ -31,17 +31,39 @@
       "setup_code": "",
       "codigo_inicial": "def formatear_reporte(productos):\n    lineas = []\n    for p in productos:\n        linea = p[0] + '|' + str(round(p[1], 2)) + '|' + str(p[2]) + '|' + str(round(p[1] * p[2], 2))\n        lineas.append(linea)\n    return '\\n'.join(lineas)",
       "test_code": "prods = [('Teclado', 250.5, 10), ('Mouse', 150.0, 25), ('Monitor LED', 3200.0, 2)]\nr = formatear_reporte(prods)\nesperado = 'Teclado     |  250.50 |  10 |   2505.00\\nMouse       |  150.00 |  25 |   3750.00\\nMonitor LED | 3200.00 |   2 |   6400.00'\nassert r == esperado, f'Formato incorrecto.\\nObtuviste:\\n{r}\\nEsperado:\\n{esperado}'\nassert formatear_reporte([]) == ''\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["round(", ".ljust(", ".rjust("],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "round(",
+        ".ljust(",
+        ".rjust("
+      ],
       "solucion": "def formatear_reporte(productos):\n    return '\\n'.join(\n        f'{nombre:<12}| {precio:>7.2f} | {cantidad:>3} | {precio * cantidad:>9.2f}'\n        for nombre, precio, cantidad in productos\n    )"
     },
     "audio_script": "El f-string tiene un mini-lenguaje de formato dentro de las llaves que casi nadie aprende completo, y que elimina el noventa por ciento de la manipulación manual de strings. Después de los dos puntos defines: el carácter de relleno, la alineación con menor que, mayor que o acento circunflejo, el ancho total, la precisión con punto, y el tipo con f de float, d de entero, coma de miles o incluso x de hexadecimal. Dos errores que la IA comete constantemente y que este mini-lenguaje resuelve. Primero: usar round y luego str esperando dos decimales. Round cambia el valor, no la representación: doscientos cincuenta punto cinco se imprime sin el cero final. Punto dos f garantiza los dos decimales visibles. Segundo: alinear columnas con ljust y rjust a mano. Un solo f-string con anchos hace la tabla completa. Y un truco de debugging que te va a salvar horas: el signo igual dentro del f-string imprime el nombre de la variable junto a su valor. Perfecto para saber qué contiene cada variable sin escribir veinte prints.",
     "video_prompt": "Video de 80 segundos. Mostrar un f-string desarmándose como un diagrama técnico: {precio:>10.2f} con etiquetas apuntando a cada parte (fill, align, width, precision, type). Animación de alineación: la misma cifra renderizada con <, >, ^ dentro de una caja de ancho fijo. Comparativa visual: reporte con round+str (columnas temblando desalineadas) vs f-strings (tabla perfecta como de terminal). Cierre con tipos exóticos: %, x, b, , y el modificador = mostrando 'umbral=0.85'. Overlay: 'El spec del f-string reemplaza a ljust, rjust, round+str y zfill.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 2 y 6", "Effective Python Item 10", "Fluent Python Cap 1 (representación)"],
-      "conceptos_clave": ["f-strings", "formato", "alineacion", "precision", "reportes"]
+      "libros_fuente": [
+        "Python Crash Course Cap 2 y 6",
+        "Effective Python Item 10",
+        "Fluent Python Cap 1 (representación)"
+      ],
+      "conceptos_clave": [
+        "f-strings",
+        "formato",
+        "alineacion",
+        "precision",
+        "reportes"
+      ]
     },
-    "tags_rag": ["python", "f-strings", "formato", "strings", "reportes"]
+    "tags_rag": [
+      "python",
+      "f-strings",
+      "formato",
+      "strings",
+      "reportes"
+    ]
   },
   {
     "id": "M1.4-002",
@@ -50,13 +72,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "Los strings de Python son inmutables: cada método retorna uno NUEVO, nunca modifica el original. Los métodos se agrupan en 4 familias: transformación (upper/lower/title/capitalize/swapcase), limpieza (strip/lstrip/rstrip con caracteres opcionales), división/unión (split/splitlines/partition/join) y búsqueda (find/index/count/startswith/contains). Cada uno tiene una trampa documentada: `.title()` rompe apóstrofes, `.split()` sin argumentos colapsa espacios y `.split(' ')` no, `.strip()` solo quita de los extremos, y `find` retorna -1 mientras `index` lanza ValueError.",
+    "modelo_mental": "Los strings de Python son inmutables: cada método retorna uno NUEVO, nunca modifica el original. Los métodos se agrupan en 4 familias: transformación (upper/lower/title/capitalize/swapcase), limpieza (strip/lstrip/rstrip con caracteres opcionales), división/unión (split/splitlines/partition/join) y búsqueda (find/index/count/startswith/contains). Cada uno tiene una trampa documentada: `.title()` rompe apóstrofes, `.split()` sin argumentos colapsa espacios y `.split(' ')` no, `.strip()` solo quita de los extremos, y `find` retorna -1 mientras `index` lanza ValueError.\n\nEsta inmutabilidad es clave para entender por qué `texto.strip().title()` no altera la variable original: cada llamada crea un nuevo objeto string en memoria. La analogía central es pensar en los strings como máquinas expendedoras: introduces un string, el método procesa y expulsa un nuevo string, pero el original permanece intacto dentro de la máquina. Esto evita errores sutiles donde se asume que un método modifica 'in place'.\n\nEl patrón general es: siempre asigna el resultado a una variable, incluso si el método parece 'modificar' el string. La trampa de `.title()` con apóstrofes (`don't` → `Don'T`) es un ejemplo clásico de por qué es peligroso confiar ciegamente en métodos de transformación sin entender su lógica interna de detección de palabras.",
     "codigo_roto": "def normalizar_titulo(texto):\n    return texto.strip().title()",
-    "diagnostico": "`.title()` aplica capitalización a CADA palabra detectada tras cualquier no-letra, incluyendo apóstrofes: `\"don't stop\"` se convierte en `\"Don'T Stop\"`. Lo mismo con `o'brien` → `O'Brien` (bien por accidente) pero `rock'n'roll` → `Rock'N'Roll` (mal). Es un bug de datos real que corromperá todos los títulos de tu dataset. Además `.strip()` sin argumentos quita espacios/tab/newlines de los extremos pero NO colapsa espacios internos: `'python   es   genial'` conserva los triples espacios.",
+    "diagnostico": "1. Error: `.title()` capitaliza después de cada carácter no alfabético, incluyendo apóstrofes. Causa: Python detecta 'palabras' dividiendo en cualquier secuencia de letras, y el apóstrofe es un separador válido. Por eso `'don't stop'` se convierte en `'Don'T Stop'`. El patrón general es que `.title()` no entiende contexto lingüístico, solo reglas ortográficas simples. Solución: usar expresiones regulares con `re.sub(r\"\\b(\\w)\", lambda m: m.group(1).upper(), texto)` o bibliotecas especializadas como `titlecase`.\n\n2. Error: `.strip()` sin argumentos solo elimina espacios en los extremos, no colapsa espacios internos. Causa: `.strip()` opera exclusivamente en los bordes del string, no en el interior. Por ejemplo, `'  python   es   genial  '` se convierte en `'python   es   genial'` conservando los múltiples espacios internos. El patrón general es confundir 'limpieza de bordes' con 'normalización de espacios internos'. Solución: usar `re.sub(r'\\s+', ' ', texto.strip())` para colapsar espacios internos después de hacer strip.\n\n3. Error: confusión entre `.split()` y `.split(' ')`. Causa: `.split()` sin argumentos trata múltiples espacios como un solo separador y colapsa espacios vacíos, mientras que `.split(' ')` divide estrictamente en cada espacio individual, generando strings vacíos. Por ejemplo, `'a  b'.split()` retorna `['a', 'b']` pero `'a  b'.split(' ')` retorna `['a', '', 'b']`. El patrón general es que el argumento vacío activa el modo 'inteligente' de división.",
     "codigo_corregido": "import string\n\ndef normalizar_titulo(texto):\n    return string.capwords(texto)",
     "codigo_optimizado": "import string\nimport re\n\n# string.capwords(s) == ' '.join(w.capitalize() for w in s.split())\n# → divide por CUALQUIER whitespace, colapsa espacios, y capitalize()\n#   solo pone en mayúscula la primera letra y el resto a minúscula.\n#   Por eso respeta apóstrofes: \"don't\" → \"Don't\"\n\n# --- Las 4 trampas que debes memorizar ---\n\n# 1) split() vs split(' ')\n'  a  b  '.split()     # ['a', 'b']       ← colapsa y descarta vacíos\n'  a  b  '.split(' ')  # ['', '', 'a', '', 'b', '', '']  ← conserva vacíos\n'a,b,,c'.split(',')    # ['a', 'b', '', 'c']  ← con separador explícito sí los conserva\n\n# 2) maxsplit: protege campos que contienen el separador\n'ERROR db: fallo: disco'.split(':', 1)     # ['ERROR db', ' fallo: disco']\n'ERROR db: fallo: disco'.partition(':')    # ('ERROR db', ':', ' fallo: disco')\n# partition SIEMPRE retorna 3 elementos: nunca ValueError, ideal para parsing\n\n# 3) strip con caracteres específicos\n'000123'.strip('0')          # '123'\n'--titulo--'.strip('-')      # 'titulo'\n'  x  '.strip()              # 'x'  (default: todo whitespace)\n\n# 4) Python 3.9+: removeprefix/removesuffix (más seguro que lstrip)\n'https://app.com/ruta'.removeprefix('https://')   # 'app.com/ruta'\n'archivo.bak'.removesuffix('.bak')               # 'archivo'\n# 'archivo.bak'.rstrip('bak') quitaría CUALQUIER combinación de b,a,k → 'archivo.'\n\n# --- Búsqueda: qué retorna cada uno ---\ntexto = 'error en linea 42'\ntexto.find('error')      # 0      (o -1 si no está)\ntexto.index('error')     # 0      (o ValueError si no está)\ntexto.count('e')         # 2\ntexto.startswith('err')  # True\ntexto.endswith('42')     # True\n'err' in texto           # True   ← lo más pythónico para membership\n\n# --- Predicados para validación (útiles en limpieza de datos) ---\n'2026'.isdigit()         # True\n'abc123'.isalnum()        # True\n'   '.isspace()          # True\n'Ana'.istitle()          # True\n''.isdigit()              # False ← OJO: string vacío es False en todos\n\n# --- Normalización Unicode: NFD/NFC (crítico para acentos) ---\nimport unicodedata\ndef sin_acentos(s):\n    nfd = unicodedata.normalize('NFD', s)\n    return ''.join(c for c in nfd if unicodedata.category(c) != 'Mn')\n\nsin_acentos('José García')   # 'Jose Garcia'\n\n# 'José' puede tener 5 code points (e + acento combinante) o 4 (é precompuesto).\n# normalize('NFC', s) unifica a la forma compuesta: hazlo ANTES de comparar\n# strings que vienen de fuentes distintas (teclado macOS vs Linux vs API).",
     "disenso_experto": "¿`.title()` tiene defensa? Sí, para casos controlados donde sabes que no hay apóstrofes ni guiones (etiquetas de categorías, nombres de campos). Pero en datos que vienen de usuarios — títulos de artículos, nombres propios, direcciones — `string.capwords()` o un `re.sub(r\"\\b\\w\", lambda m: m.group().upper(), s.lower())` son correctos. El caso realmente difícil son nombres propios con partículas: 'Ludwig van Beethoven' debe conservar la 'v' minúscula, y NINGÚN método automático lo logra sin una lista de excepciones. Ahí la respuesta no es más código: es no capitalizar automáticamente.",
-    "pregunta_transferencia": "Recibes nombres de usuario desde tres fuentes distintas (formulario web, CSV de Excel, API) y `'José' == 'José'` retorna False aunque se vean idénticos en pantalla. Explica qué está pasando a nivel de code points, qué función de la stdlib lo resuelve y en qué momento del pipeline debes aplicarla.",
+    "pregunta_transferencia": "Recibes nombres de usuario desde tres fuentes distintas (formulario web, CSV de Excel, API) y `'José' == 'José'` retorna False aunque se vean idénticos en pantalla. Explica qué está pasando a nivel de code points, qué función de la stdlib lo resuelve y en qué momento del pipeline debes aplicarla.\n\nLa pista clave está en la diferencia entre normalización Unicode y codificación visual: el carácter 'é' puede representarse como un solo code point (U+00E9) o como una combinación de 'e' + acento agudo (U+0065 U+0301). La función `unicodedata.normalize('NFC', texto)` de la biblioteca estándar resuelve esta ambigüedad convirtiendo ambas representaciones a su forma canónica compuesta. Debes aplicar esta normalización inmediatamente después de leer los datos de cada fuente, antes de cualquier comparación o procesamiento, ya que esperar solo para hacerlo en la base de datos provocará inconsistencias silenciosas que son extremadamente difíciles de depurar.",
     "quiz": {
       "pregunta": "¿Qué retorna `'  a  b  '.split(' ')`?",
       "opciones": [
@@ -75,17 +97,92 @@
       "setup_code": "",
       "codigo_inicial": "def normalizar_titulo(texto):\n    return texto.strip().title()",
       "test_code": "assert normalizar_titulo('  hello world  ') == 'Hello World'\nassert normalizar_titulo(\"don't stop believing\") == \"Don't Stop Believing\", f'apostrofo roto: {normalizar_titulo(chr(34)+\"don\"+chr(39)+\"t stop believing\"+chr(34))!r}'\nassert normalizar_titulo('el QUIJOTE') == 'El Quijote'\nassert normalizar_titulo('python   es   genial') == 'Python Es Genial', 'espacios internos sin colapsar'\nassert normalizar_titulo('   ') == ''\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": [".title()"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        ".title()"
+      ],
       "solucion": "import string\n\ndef normalizar_titulo(texto):\n    return string.capwords(texto)"
     },
     "audio_script": "Los strings de Python tienen decenas de métodos, pero cuatro trampas que vas a pisar sí o sí. Primera: title pone en mayúscula cada palabra, y considera que después de un apóstrofo empieza una palabra nueva. Don comilla t stop se convierte en Don T stop. Para títulos reales usa string punto capwords, que divide por espacios y capitaliza cada palabra correctamente. Segunda: split sin argumentos colapsa espacios y descarta los vacíos; split con un espacio entre comillas no. La diferencia son strings vacíos fantasma en tu lista. Tercera: strip solo limpia los extremos. Si tienes tres espacios en medio del texto, siguen ahí; capwords o una regex los colapsan. Cuarta, y la más traicionera: dos strings que se ven idénticos pueden no ser iguales, porque Unicode permite escribir un acento como un solo carácter o como dos: la letra más el acento combinante. El módulo unicodedata con normalize NFC unifica ambas formas. Aplica esa normalización en la entrada de tus datos, no en la comparación, o vas a tener duplicados imposibles de detectar a simple vista.",
     "video_prompt": "Video de 85 segundos. Cuatro actos cortos. Acto 1: \"don't\" pasando por .title() y saliendo como \"Don'T\" con alarma roja; luego por capwords saliendo correcto. Acto 2: animación de split() vs split(' ') sobre '  a  b  ' mostrando strings vacíos como fantasmas apareciendo en la segunda versión. Acto 3: strip() limpiando solo los bordes mientras los espacios internos quedan intactos. Acto 4: la palabra 'José' mostrada en dos formas a nivel de code points (U+00E9 vs U+0065 U+0301), comparadas con == dando False, y normalize('NFC') fusionándolas. Overlay: '4 trampas: title, split, strip, Unicode.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 2", "Fluent Python Cap 4 (Unicode)", "Automate the Boring Stuff Cap 6"],
-      "conceptos_clave": ["strings", "title", "capwords", "split", "strip", "unicode", "normalizacion"]
+      "libros_fuente": [
+        "Python Crash Course Cap 2",
+        "Fluent Python Cap 4 (Unicode)",
+        "Automate the Boring Stuff Cap 6"
+      ],
+      "conceptos_clave": [
+        "strings",
+        "title",
+        "capwords",
+        "split",
+        "strip",
+        "unicode",
+        "normalizacion"
+      ]
     },
-    "tags_rag": ["python", "strings", "title", "capwords", "split", "unicode", "limpieza"]
+    "tags_rag": [
+      "python",
+      "strings",
+      "title",
+      "capwords",
+      "split",
+      "unicode",
+      "limpieza"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué salida produce el siguiente código en Python?",
+        "opciones": [
+          "'Don'T Stop'",
+          "'Don'T Stop'",
+          "'Don't Stop'",
+          "'Don'T Stop'"
+        ],
+        "correcta": "A",
+        "explicacion": "El método `.title()` capitaliza la primera letra de cada palabra, donde 'palabra' se define como cualquier secuencia de caracteres alfabéticos. El apóstrofe en 'don't' es tratado como un separador, por lo que la 't' des des des después del apóstrofe también se capitaliza. El resultado correcto es 'Don'T Stop'. La opción A es correcta. Las otras opciones no reflejan el comportamiento real de `.title()` con apóstrofes.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la diferencia entre `'a  b'.split()` y `'a  b'.split(' ')`?",
+        "opciones": [
+          "Ambos retornan ['a', 'b']",
+          "El primero retorna ['a', 'b'], el segundo retorna ['a', '', 'b']",
+          "El primero retorna ['a', '', 'b'], el segundo retorna ['a', 'b']",
+          "Ambos retornan ['a', '', 'b']"
+        ],
+        "correcta": "B",
+        "explicacion": "`.split()` sin argumentos trata múltiples espacios consecutivos como un solo separador, colapsando espacios vacíos. Por eso retorna ['a', 'b']. En cambio, `.split(' ')` divide estrictamente en cada espacio individual, generando strings vacíos entre espacios múltiples. Por eso retorna ['a', '', 'b']. La opción B es correcta. Esta diferencia es una trampa común que causa bugs silenciosos en el procesamiento de texto.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Por qué falla la comparación `'José' == 'José'` aunque ambos strings se vean idénticos?",
+        "opciones": [
+          "Porque uno usa mayúsculas y otro minúsculas",
+          "Porque los code points Unicode son diferentes: uno usa U+00E9 y otro usa U+0065 U+0301",
+          "Porque hay espacios ocultos",
+          "Porque Python distingue acentos"
+        ],
+        "correcta": "B",
+        "explicacion": "El carácter 'é' puede representarse de dos formas en Unicode: como un solo code point precompuesto (U+00E9) o como una secuencia de dos code points (U+0065 para 'e' + U+0301 para el acento agudo). Aunque visualmente son idénticos, Python los trata como strings diferentes porque sus code points internos no coinciden. La opción B es correcta. La solución es usar `unicodedata.normalize('NFC', texto)` para unificar ambas representaciones.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué tipo de error causa el siguiente patrón de código?",
+        "opciones": [
+          "SyntaxError por sintaxis incorrecta",
+          "ValueError porque el string no se encuentra",
+          "AttributeError porque los strings son inmutables",
+          "No causa error, pero el resultado no es el esperado"
+        ],
+        "correcta": "D",
+        "explicacion": "El código `def normalizar_titulo(texto): return texto.strip().title()` no genera ningún error de ejecución. Sin embargo, el resultado no es el esperado debido a la trampa de `.title()` con apóstrofes. Los strings son inmutables, pero eso no causa error aquí porque el resultado se retorna correctamente. La opción D es correcta: el problema es un error lógico silencioso, no un error de ejecución.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M1.4-003",
@@ -94,13 +191,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "Cuatro funciones, cuatro contratos distintos — confundirlas es el bug de regex #1. `match()` ancla al INICIO del string (no 'busca una coincidencia': ese es `search()`). `search()` recorre hasta encontrar la primera. `findall()` retorna TODAS como lista de strings. `finditer()` retorna un iterador de objetos Match (memoria O(1), y te da acceso a grupos y posiciones). Los objetos Match son la verdadera API: `.group()`, `.group('nombre')`, `.start()`, `.end()`, `.span()`. Y `re.compile()` cuando usas el mismo patrón más de dos veces.",
+    "modelo_mental": "Imagina que `re.match` es un **portero de discoteca** que solo revisa la primera persona de la fila (el índice 0): si no coincide con el patrón, cierra la puerta y no deja entrar a nadie más, aunque el invitado perfecto esté en la posición 5. `re.search` es un **detective** que recorre la fila completa hasta encontrar al primer sospechoso y se detiene. `re.findall` es un **reclutador** que anota en una lista los nombres de *todos* los que cumplen el perfil, pero solo guarda sus nombres (strings), perdiendo información contextual como en qué posición estaban. Finalmente, `re.finditer` es un **generador perezoso (stream)** que te entrega uno a uno objetos `Match` completos: te da el nombre (`.group()`), los apellidos por separado (`.groups()`), y la posición exacta en la fila (`.start()`, `.end()`, `.span()`) sin cargar toda la lista en memoria (O(1)).\n\n**Por qué importa:** Confundir `match` con `search` es el **bug #1 de regex en Python** porque el nombre `match` en inglés coloquial significa \"coincidir/buscar\", pero en la API significa \"anclar al inicio\". Usar `findall` cuando necesitas posiciones o grupos anidados te obliga a re-escanear el texto o hacer malabares con índices. `finditer` es la navaja suiza: una sola pasada, memoria constante, acceso total a la metadata del `Match`.\n\n**Qué errores previene:** Evita el falso negativo silencioso (patrón existe pero `match` retorna `None`), la pérdida de información posicional (imposible resaltar en UI con `findall`), y el *memory blow* en archivos masivos (logs de GB) al usar `findall` en lugar de iterar con `finditer`. Además, recuerda compilar con `re.compile(patron)` si vas a usar el patrón en un bucle: evita re-parsear la regex cada iteración.",
     "codigo_roto": "import re\n\ndef extraer_telefonos(texto):\n    resultado = []\n    m = re.match(r'\\d{3}-\\d{4}', texto)\n    if m:\n        resultado.append(m.group())\n    return resultado",
-    "diagnostico": "Dos bugs. (1) `re.match` solo intenta coincidir en la POSICIÓN 0 del string: con 'Contacto: Ana al 555-1234' retorna None inmediatamente porque el texto empieza con 'C'. La función devuelve [] aunque haya teléfonos. Este error es ubicuo porque el nombre 'match' sugiere 'buscar coincidencia' en inglés coloquial, pero en la API significa 'coincidir desde el inicio'. (2) Aunque usara search, solo encontraría el PRIMERO — con múltiples teléfonos necesitas findall o finditer. (3) Sin `\\b` (word boundary): en 'codigo 12345-6789' capturaría '345-6789', un falso positivo.",
+    "diagnostico": "1. **`re.match` ancla implícitamente al inicio (`^`):** En el `codigo_roto`, `re.match(r'\\d{3}-\\d{4}', 'Contacto: 555-1234')` retorna `None` inmediatamente porque el motor intenta encajar `\\d` contra `C`. Python lanza este comportamiento porque `match` está diseñado para validar *formatos completos* de strings (ej. `match(r'\\d+', input_usuario)`), no para buscar subcadenas. **Patrón general:** Si necesitas \"buscar en cualquier parte\", **nunca uses `match`**; usa `search` o `findall`.\n\n2. **Un solo match vs todos los matches:** Aunque cambiaras a `re.search`, la función solo devolvería el primer teléfono (`555-1234`) ignorando el resto. `search` retorna un único objeto `Match` o `None`. Para extraer *múltiples* ocurrencias, el contrato exige `findall` (lista de strings/grupos) o `finditer` (iterador de objetos `Match`). **Patrón general:** \"Encontrar uno\" -> `search`; \"Encontrar todos\" -> `findall`/`finditer`.\n\n3. **Falta de fronteras (`\\b`) genera falsos positivos:** El patrón `\\d{3}-\\d{4}` coincide dentro de números más largos. En `'ID: 12345-6789'`, captura `'345-6789'`. Python no lanza error, pero la lógica de negocio falla. **Patrón general:** Siempre delimita patrones numéricos/código con `\\b` (word boundary) o lookarounds `(?<!\\d)` / `(?!\\d)` para evitar capturas parciales dentro de tokens alfanuméricos mayores.",
     "codigo_corregido": "import re\n\n_PATRON_TEL = re.compile(r'\\b\\d{3}-\\d{4}\\b')\n\ndef extraer_telefonos(texto):\n    return _PATRON_TEL.findall(texto)",
     "codigo_optimizado": "import re\n\n# --- Tabla de decisión: qué función usar ---\n# ¿El string COMPLETO debe cumplir el patrón?      → fullmatch()\n# ¿Coincide desde el principio?                    → match()\n# ¿Existe en algún lugar? (una vez)                → search()\n# ¿Todas las coincidencias como lista de strings?  → findall()\n# ¿Todas, con acceso a grupos/posición y O(1) mem? → finditer()\n# ¿Dividir por un patrón?                          → split()\n\n_TEL = re.compile(r'\\b\\d{3}-\\d{4}\\b')\n\n# search + Match object: posiciones exactas\nm = _TEL.search('Llama al 555-1234 urgente')\nm.group()      # '555-1234'\nm.start()      # 10\nm.end()        # 18\nm.span()       # (10, 18)\n\n# finditer: streaming sobre textos gigantes (memoria constante)\ndef telefonos_con_posicion(texto):\n    return [(m.group(), m.start()) for m in _TEL.finditer(texto)]\n\n# fullmatch: validación estricta (mejor que ^...$ con match)\n_CODIGO_POSTAL = re.compile(r'\\d{5}')\nbool(_CODIGO_POSTAL.fullmatch('12345'))    # True\nbool(_CODIGO_POSTAL.fullmatch('123456'))   # False\n\n# Metacaracteres esenciales (memoriza estos 10):\n# \\d  dígito [0-9]              \\D  NO dígito\n# \\w  palabra [a-zA-Z0-9_]      \\W  NO palabra\n# \\s  whitespace                \\S  NO whitespace\n# .   cualquier char (excepto \\n sin re.DOTALL)\n# ^   inicio de línea           $   fin de línea\n# \\b  límite de palabra (¡NO es backspace dentro de un patrón!)\n# \\   escapa el siguiente carácter: \\. \\* \\\\ \\+\n\n# Cuantificadores:\n# *  0 o más        +  1 o más        ?  0 o 1\n# {3} exactamente 3  {2,5} entre 2 y 5  {3,} al menos 3\n# *?  +?  ??  → versiones NO codiciosas (mínimo posible)\n\n# Banderas (flags) que usarás siempre:\n# re.IGNORECASE  (re.I)  → ignora mayúsculas\n# re.DOTALL      (re.S)  → . también coincide con \\n\n# re.MULTILINE   (re.M)  → ^ y $ por cada línea\n# re.VERBOSE     (re.X)  → permite comentarios y espacios en el patrón\n\n# re.VERBOSE: la única forma de mantener regex legibles\n_FECHA_ISO = re.compile(r\"\"\"\n    ^\n    (?P<anio>\\d{4}) -\n    (?P<mes>0[1-9]|1[0-2]) -\n    (?P<dia>0[1-9]|[12]\\d|3[01])\n    $\n\"\"\", re.VERBOSE)\n\n_FECHA_ISO.fullmatch('2026-09-29').group('mes')   # '09'\n\n# findall cambia de comportamiento según los grupos — trampa crítica:\nre.findall(r'\\d+', 'a1b2')          # ['1', '2']        sin grupos: string completo\nre.findall(r'(\\d)(\\w)', 'a1b2')     # [('1','b'), ('2','b')]  CON grupos: SOLO las tuplas\nre.findall(r'(?P<n>\\d+)', 'a1b2')   # ['1', '2']        un grupo nombrado: el grupo\n# → Si necesitas la coincidencia completa Y los grupos, usa finditer.",
     "disenso_experto": "¿Regex o herramientas de string simples? Regla de Rob Pike: 'Algunos, ante un problema, piensan \"usaré expresiones regulares\". Ahora tienen dos problemas.' Si buscas un substring literal, `in` o `.find()` son más rápidos y claros que regex. Si separas por un delimitador fijo, `split()`. Regex es la herramienta correcta cuando el patrón es genuinely irregular (fechas, teléfonos, códigos, formatos variables). El anti-patrón profesional es usar regex para lo que `partition()` resuelve: código más lento, más difícil de leer y más difícil de corregir.",
-    "pregunta_transferencia": "Escribes `re.findall(r'(\\w+)@(\\w+)\\.com', texto)` esperando pares usuario-dominio, pero obtienes tuplas y perdiste la coincidencia completa. Además necesitas saber en qué posición del texto está cada email para resaltarlo en la UI. ¿Qué función usas y cómo obtienes ambos datos (grupos + span) en una sola pasada?",
+    "pregunta_transferencia": "Estás construyendo un **resaltador de sintaxis para un editor de código web**. Recibes un string grande con el código fuente y necesitas encontrar todas las variables Python (ej. `mi_var`, `_contador`, `x1`) para envolverlas en `<span class=\"var\">...</span>` en el HTML final. Críticamente, necesitas el **texto exacto de la variable** (para el innerHTML) y sus **índices `start`/`end`** (para calcular offsets y no romper el resto del string al inyectar etiquetas).\n\n**Pista:** `re.findall(r'\\b[a-zA-Z_]\\w*\\b', codigo)` te da una lista de strings, pero **pierdes las posiciones**. `re.search` solo te da la primera. Necesitas una función que itere *una sola vez* sobre el texto, te entregue objetos ricos con `.group(0)` (el match completo), `.span()` (la tupla inicio/fin) y permita acceder a grupos de captura si los tuvieras, sin crear una lista intermedia en memoria.",
     "quiz": {
       "pregunta": "¿Por qué `re.match(r'\\d+', 'abc 123')` retorna None?",
       "opciones": [
@@ -119,17 +216,92 @@
       "setup_code": "",
       "codigo_inicial": "import re\n\ndef extraer_telefonos(texto):\n    resultado = []\n    m = re.match(r'\\d{3}-\\d{4}', texto)\n    if m:\n        resultado.append(m.group())\n    return resultado",
       "test_code": "assert extraer_telefonos('Contacto: Ana al 555-1234 o al 555-9876.') == ['555-1234', '555-9876'], 'debe encontrar TODOS aunque no esten al inicio'\nassert extraer_telefonos('sin telefonos aqui') == []\nassert extraer_telefonos('llama al 555-0000') == ['555-0000'], 'debe encontrarlo en medio del texto'\nassert extraer_telefonos('codigo 12345-6789 no es telefono') == [], 'sin limites de palabra captura digitos de mas'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["re.match("],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "re.match("
+      ],
       "solucion": "import re\n\n_PATRON_TEL = re.compile(r'\\b\\d{3}-\\d{4}\\b')\n\ndef extraer_telefonos(texto):\n    return _PATRON_TEL.findall(texto)"
     },
     "audio_script": "Cuatro funciones de regex, cuatro contratos completamente distintos, y confundirlas es el error número uno. Match no significa buscar coincidencia: significa coincidir desde el principio del string. Si tu texto empieza con una letra y buscas dígitos, match retorna None, aunque los dígitos estén ahí dos palabras después. El que busca en cualquier posición es search. Si necesitas todas las coincidencias, findall te da una lista de strings. Si el texto es enorme y necesitas posición y grupos sin cargar todo en memoria, finditer te da un iterador de objetos Match, con punto group, punto start y punto span. Una trampa crítica de findall: si tu patrón tiene grupos, findall retorna SOLO las tuplas de los grupos, no la coincidencia completa. Y dos reglas de higiene: compila el patrón con re punto compile si lo usas más de dos veces, y usa límites de palabra con backslash b para evitar falsos positivos dentro de números más largos.",
     "video_prompt": "Video de 90 segundos. Un string de texto en pantalla como una cinta. Cuatro animaciones secuenciales: match() probando SOLO en la posición 0 y rebotando; search() recorriendo la cinta hasta encontrar; findall() iluminando todas las coincidencias y cayendo en una lista; finditer() entregando objetos Match con etiquetas group/start/span. Escena de la trampa: un patrón con paréntesis haciendo que findall suelte la coincidencia completa y devuelva solo las tuplas. Cierre con \\b evitando que '345-6789' salga de '12345-6789'. Overlay: 'match=inicio, search=primera, findall=todas, finditer=objetos.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 7 (regex)", "Python Crash Course Cap 10", "Classic Computer Science Problems (búsqueda de patrones)"],
-      "conceptos_clave": ["regex", "match", "search", "findall", "finditer", "compile", "word-boundary"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 7 (regex)",
+        "Python Crash Course Cap 10",
+        "Classic Computer Science Problems (búsqueda de patrones)"
+      ],
+      "conceptos_clave": [
+        "regex",
+        "match",
+        "search",
+        "findall",
+        "finditer",
+        "compile",
+        "word-boundary"
+      ]
     },
-    "tags_rag": ["python", "regex", "match", "search", "findall", "finditer", "patrones"]
+    "tags_rag": [
+      "python",
+      "regex",
+      "match",
+      "search",
+      "findall",
+      "finditer",
+      "patrones"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la diferencia fundamental entre `re.match(pattern, text)` y `re.search(pattern, text)` en Python?",
+        "opciones": [
+          "`match` busca en todo el string; `search` solo al inicio.",
+          "`match` intenta coincidir solo al inicio del string (índice 0); `search` recorre el string hasta encontrar la primera coincidencia.",
+          "`match` retorna una lista de todas las coincidencias; `search` retorna solo la primera.",
+          "Ambas son alias y funcionan idénticamente; `match` es legado."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: **B**. `re.match` ancla implícitamente al inicio (`^`); si el patrón no coincide en el índice 0, falla instantáneamente. `re.search` escanea de izquierda a derecha hasta hallar una coincidencia. A es lo opuesto a la realidad. C describe `findall` vs `search`. D es falso; tienen semánticas distintas y documentadas.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el código:\npython\nimport re\ntexto = 'user1@mail.com y user2@mail.com'\npatron = r'(\\w+)@(\\w+)\\.com'\nprint(re.findall(patron, texto))\n\n¿Qué imprime?",
+        "opciones": [
+          "['user1@mail.com', 'user2@mail.com']",
+          "[('user1', 'mail'), ('user2', 'mail')]",
+          "['user1', 'mail', 'user2', 'mail']",
+          "[<re.Match object>, <re.Match object>]"
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: **B**. **Regla clave de `findall`:** Si el patrón tiene **grupos de captura** `(...)`, `findall` retorna una lista de **tuplas** con el contenido de *esos grupos*, descartando el match completo (grupo 0). Si no hay grupos, retorna lista de strings (match completo). A sería el resultado sin paréntesis en el patrón. C aplanaría las tuplas (incorrecto). D es lo que retorna `finditer` (iterador de objetos Match).",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "El siguiente código intenta extraer todos los teléfonos formato `XXX-XXXX` de un texto, pero falla silenciosamente (devuelve `[]`) cuando el teléfono no está al principio. ¿Cuál es la corrección mínima?",
+        "opciones": [
+          "Cambiar `re.match` por `re.search` y envolver en `while` loop.",
+          "Cambiar `re.match` por `re.findall` (o `re.finditer`).",
+          "Añadir `^` al inicio del pattern: `r'^\\d{3}-\\d{4}'`.",
+          "Usar `re.compile` antes de llamar a `match`."
+        ],
+        "correcta": "B",
+        "explicacion": "Correcta: **B**. El bug raíz es usar `match` (ancla al inicio) para una tarea de búsqueda global. `re.findall(patron, texto)` resuelve ambos problemas: busca en cualquier posición **y** retorna todas las ocurrencias. A funciona pero es verboso y propenso a errores (manual loop + slicing). C empeora el bug (fuerza ancla explícita). D (`compile`) optimiza rendimiento pero no cambia la semántica de `match` vs búsqueda global.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Procesas un archivo de logs de 5 GB línea a línea buscando IPs `\\d{1,3}(?:\\.\\d{1,3}){3}`. Necesitas para cada IP: el string completo, la línea donde aparece y su offset en la línea. ¿Qué enfoque es **óptimo en memoria y API**?",
+        "opciones": [
+          "`re.findall(patron, linea)` dentro del bucle y `linea.index(ip)` para posición.",
+          "`re.finditer(patron, linea)` iterando los Match objects y usando `m.group()`, `m.start()`.",
+          "`re.search(patron, linea)` en bucle `while` cortando la línea (`linea = linea[m.end():]`).",
+          "Leer todo el archivo: `contenido = f.read()`; luego `re.finditer(patron, contenido)`."
+        ],
+        "correcta": "D",
+        "explicacion": "Correcta: **D**. `finditer` retorna un **iterador perezoso** de objetos `Match` (memoria O(1) respecto a matches), dando acceso directo a `.group(0)` (IP completa), `.start()`/`.end()` (offsets) y `.span()`. A crea lista intermedia (`findall`) y `index` re-escanea (O(N²)). B es bueno *por línea*, pero D procesa el archivo completo como un stream único si se usa `mmap` o lectura chunked, siendo el patrón canónico para 'grep masivo'. C es reinventar `finditer` mal (lento, frágil con overlaps).",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M1.4-004",
@@ -163,17 +335,39 @@
       "setup_code": "",
       "codigo_inicial": "def parsear_logs(lineas):\n    resultado = []\n    for linea in lineas:\n        partes = linea.split(' ')\n        resto = linea.split(':')\n        modulo = resto[0].split(' ')[-1]\n        mensaje = resto[1].strip()\n        resultado.append({\n            'fecha': partes[0],\n            'nivel': partes[1],\n            'modulo': modulo,\n            'mensaje': mensaje,\n        })\n    return resultado",
       "test_code": "lineas = [\n    '2026-09-29 ERROR db: conexion perdida',\n    '2026-09-29 INFO app: inicio ok',\n    '2026-09-30 WARNING red: timeout en API: reintentando',\n    'LINEA MALFORMADA SIN FORMATO',\n]\nr = parsear_logs(lineas)\nassert len(r) == 3, f'las lineas malformadas deben saltarse, no crashear: obtuve {len(r)}'\nassert r[0] == {'fecha': '2026-09-29', 'nivel': 'ERROR', 'modulo': 'db', 'mensaje': 'conexion perdida'}, r[0]\nassert r[2]['mensaje'] == 'timeout en API: reintentando', f'mensaje con dos puntos truncado: {r[2][\"mensaje\"]!r}'\nassert r[2]['modulo'] == 'red'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["split(':')"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "split(':')"
+      ],
       "solucion": "import re\n\n_PATRON_LOG = re.compile(\n    r'^(?P<fecha>\\d{4}-\\d{2}-\\d{2})\\s+(?P<nivel>[A-Z]+)\\s+(?P<modulo>[\\w.]+):\\s*(?P<mensaje>.*)$'\n)\n\ndef parsear_logs(lineas):\n    resultado = []\n    for linea in lineas:\n        m = _PATRON_LOG.match(linea)\n        if m:\n            resultado.append(m.groupdict())\n    return resultado"
     },
     "audio_script": "Un regex sin grupos solo te dice si algo coincide. Un regex con grupos te entrega los datos. Y aquí hay una decisión que separa código frágil de código mantenible: grupos posicionales o grupos nombrados. Con paréntesis simples, accedes por número: group uno, group dos, group tres. Funciona hasta el día en que alguien agrega un grupo en medio y todos los números se desplazan en silencio. Con la sintaxis de grupo nombrado — interrogación, P, el nombre entre ángulos — escribes group módulo, y el código se documenta solo. Pero el método que realmente cambia tu flujo de trabajo es groupdict: te devuelve un diccionario con todos los grupos nombrados y sus valores. Ese diccionario va directo a json punto dumps y de ahí a tu aplicación. Es el puente completo entre texto crudo y datos estructurados. Y una regla de parseo masivo: cuando el match falla, no lances una excepción. Salta la línea, cuenta cuántas fallaron, y sigue. Un log con una línea rara no debe tumbar el procesamiento de un millón de líneas buenas.",
     "video_prompt": "Video de 85 segundos. Una línea de log entra en un embudo etiquetado con el patrón regex. Cada (?P<nombre>...) aparece como un filtro de color que atrapa su fragmento: fecha en azul, nivel en rojo, módulo en verde, mensaje en amarillo. A la salida, los fragmentos se ensamblan en un dict con claves nombradas, y el dict se transforma en un bloque JSON. Escena comparativa: grupos posicionales con números que se DESPLAZAN cuando se inserta un grupo nuevo (los índices cambian y el código rompe) vs nombrados que permanecen estables. Escena final: una línea 'PING' rebotando suavemente contra el filtro sin romper nada. Overlay: 'groupdict() = de texto a JSON en un paso.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 7", "Linux Command Line Bible (logs y grep)", "Python docs - re module"],
-      "conceptos_clave": ["grupos-nombrados", "groupdict", "parsing", "logs", "verbose", "walrus"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 7",
+        "Linux Command Line Bible (logs y grep)",
+        "Python docs - re module"
+      ],
+      "conceptos_clave": [
+        "grupos-nombrados",
+        "groupdict",
+        "parsing",
+        "logs",
+        "verbose",
+        "walrus"
+      ]
     },
-    "tags_rag": ["python", "regex", "grupos-nombrados", "groupdict", "parsing", "logs"]
+    "tags_rag": [
+      "python",
+      "regex",
+      "grupos-nombrados",
+      "groupdict",
+      "parsing",
+      "logs"
+    ]
   },
   {
     "id": "M1.4-005",
@@ -207,17 +401,40 @@
       "setup_code": "",
       "codigo_inicial": "def limpiar_texto(texto):\n    limpio = texto.replace('  ', ' ')\n    return limpio.strip()",
       "test_code": "assert limpiar_texto('  hola   mundo  ') == 'hola mundo', repr(limpiar_texto('  hola   mundo  '))\nassert limpiar_texto('a        b') == 'a b', 'corridas largas sin colapsar'\nassert limpiar_texto('linea1\\n\\tlinea2') == 'linea1 linea2', repr(limpiar_texto('linea1\\n\\tlinea2'))\nassert limpiar_texto('a\\x00b') == 'ab', 'caracter de control no eliminado'\nassert limpiar_texto('   ') == ''\nassert limpiar_texto('texto normal') == 'texto normal'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": [".replace('  ', ' ')"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        ".replace('  ', ' ')"
+      ],
       "solucion": "import re\n\n_CONTROL = re.compile(r'[\\x00-\\x08\\x0e-\\x1f\\x7f]')\n_ESPACIOS = re.compile(r'\\s+')\n\ndef limpiar_texto(texto):\n    return _ESPACIOS.sub(' ', _CONTROL.sub('', texto)).strip()"
     },
     "audio_script": "Limpiar datos es normalizar a una forma canónica, y el orden de las etapas importa tanto como las etapas mismas. Primero elimina lo invisible: caracteres de ancho cero, marcas de orden de bytes, espacios duros. No los ves en pantalla, pero rompen comparaciones y corrompen bases de datos. Segundo elimina los caracteres de control. Tercero normaliza Unicode con NFC, porque un acento puede ser un carácter o dos, y si no unificas vas a tener duplicados invisibles. Cuarto colapsa el whitespace con una regex: backslash s más, reemplazado por un espacio. Un replace con dos espacios no sirve, porque hace una sola pasada y convierte cuatro espacios en dos, no en uno. Quinto, strip de los extremos. Y una advertencia de diseño: si tu aplicación guarda notas donde el usuario puede pegar código, colapsar espacios destruye la indentación de Python. La solución profesional es guardar el original intacto y mantener una versión normalizada solo para buscar. Nunca destruyas el dato del usuario.",
     "video_prompt": "Video de 85 segundos. Un texto sucio entrando por una línea de producción con 5 estaciones numeradas: (1) filtro de invisibles donde zero-width y BOM caen por una trampilla, (2) filtro de control, (3) cámara de normalización NFC donde 'e+acento' se fusiona en 'é', (4) rodillo compresor de whitespace, (5) cepillo de extremos. Sale un texto limpio y canónico. Escena final de advertencia: un snippet de Python pasando por la estación 4 y perdiendo su indentación (código rojo roto), con un desvío que lo manda a 'preservar original'. Overlay: 'El orden importa. Y no todo debe limpiarse.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 6-7", "Fluent Python Cap 4 (Unicode)", "Effective Python Item 12"],
-      "conceptos_clave": ["limpieza", "normalizacion", "unicode", "whitespace", "chars-control", "pipeline", "slugify"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 6-7",
+        "Fluent Python Cap 4 (Unicode)",
+        "Effective Python Item 12"
+      ],
+      "conceptos_clave": [
+        "limpieza",
+        "normalizacion",
+        "unicode",
+        "whitespace",
+        "chars-control",
+        "pipeline",
+        "slugify"
+      ]
     },
-    "tags_rag": ["python", "limpieza", "normalizacion", "unicode", "regex", "datos"]
+    "tags_rag": [
+      "python",
+      "limpieza",
+      "normalizacion",
+      "unicode",
+      "regex",
+      "datos"
+    ]
   },
   {
     "id": "M1.4-006",
@@ -251,17 +468,40 @@
       "setup_code": "",
       "codigo_inicial": "import re\n\ndef enmascarar(texto):\n    numeros = re.findall(r'\\d{4} \\d{4} \\d{4} \\d{4}', texto)\n    for n in numeros:\n        texto = texto.replace(n, '****')\n    return texto",
       "test_code": "assert enmascarar('Pago con 4111 1111 1111 1234 registrado') == 'Pago con **** **** **** 1234 registrado', enmascarar('Pago con 4111 1111 1111 1234 registrado')\nassert enmascarar('4111 1111 1111 1234 y otra vez 4111 1111 1111 1234') == '**** **** **** 1234 y otra vez **** **** **** 1234', 'debe enmascarar TODAS las ocurrencias'\nassert enmascarar('tarjeta 5500-0000-0000-9876 con guiones') == 'tarjeta **** **** **** 9876 con guiones', enmascarar('tarjeta 5500-0000-0000-9876')\nassert enmascarar('sin datos sensibles') == 'sin datos sensibles'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["findall(", ".replace("],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "findall(",
+        ".replace("
+      ],
       "solucion": "import re\n\n_TARJETA = re.compile(r'\\b(\\d{4})[ -]?(\\d{4})[ -]?(\\d{4})[ -]?(\\d{4})\\b')\n\ndef enmascarar(texto):\n    return _TARJETA.sub(lambda m: f'**** **** **** {m.group(4)}', texto)"
     },
     "audio_script": "Buscar y reemplazar con regex tiene dos niveles, y el segundo es donde vive el poder real. Nivel uno: re punto sub con un string de reemplazo. Puedes referenciar grupos capturados con backslash uno o con la forma nombrada, pero solo estás copiando lo que encontraste. Nivel dos: re punto sub con una función. Esa función recibe el objeto Match completo — grupos, posiciones, todo — y retorna el string que tú decidas. Ahí puedes duplicar cada número que encuentres, traducir niveles de log a emojis consultando un diccionario, censurar palabras según su longitud, o enmascarar una tarjeta conservando sus últimos cuatro dígitos. El caso que te va a importar en tu aplicación es exactamente ese: antes de enviar notas o logs a un modelo de lenguaje, necesitas anonimizar datos sensibles. Y hay una función hermana que casi nadie usa: subn, que hace lo mismo pero además te devuelve cuántos reemplazos hizo. Ese número es oro para logs y para validar que tu limpieza realmente limpió algo.",
     "video_prompt": "Video de 85 segundos. Dos carriles. Carril 'string de reemplazo': el Match entrega sus grupos a una plantilla que los reordena (\\g<d>/\\g<u>), resultado predecible. Carril 'función de reemplazo': el Match entra en una pequeña fábrica donde se multiplica por 2, se consulta en un diccionario, se mide su longitud y se decide el output — cada coincidencia sale distinta. Demo central: una tarjeta de crédito 4111 1111 1111 1234 pasando por la fábrica y saliendo como **** **** **** 1234, con las dos ocurrencias procesadas en una sola pasada. Cierre con subn mostrando el contador de reemplazos. Overlay: 'String = copiar. Función = transformar.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 7", "Effective Python Item 12", "Python docs - re.sub"],
-      "conceptos_clave": ["re-sub", "funcion-de-reemplazo", "anonimizacion", "subn", "patrones-compilados", "privacidad"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 7",
+        "Effective Python Item 12",
+        "Python docs - re.sub"
+      ],
+      "conceptos_clave": [
+        "re-sub",
+        "funcion-de-reemplazo",
+        "anonimizacion",
+        "subn",
+        "patrones-compilados",
+        "privacidad"
+      ]
     },
-    "tags_rag": ["python", "regex", "re-sub", "enmascarado", "anonimizacion", "datos-sensibles"]
+    "tags_rag": [
+      "python",
+      "regex",
+      "re-sub",
+      "enmascarado",
+      "anonimizacion",
+      "datos-sensibles"
+    ]
   },
   {
     "id": "M1.4-007",
@@ -295,17 +535,40 @@
       "setup_code": "",
       "codigo_inicial": "import re\n\ndef validar_usuario(nombre):\n    if not isinstance(nombre, str):\n        return False\n    return bool(re.match(r'^([a-zA-Z0-9_]+)+$', nombre) and 3 <= len(nombre) <= 20)",
       "test_code": "import time\nassert validar_usuario('ana') is True\nassert validar_usuario('bob_2026') is True\nassert validar_usuario('x' * 20) is True\nassert validar_usuario('ab') is False, 'minimo 3 caracteres'\nassert validar_usuario('x' * 21) is False, 'maximo 20 caracteres'\nassert validar_usuario('con espacios') is False\nassert validar_usuario('correo@mail.com') is False\nadversarial = 'a' * 23 + '!'\nt0 = time.perf_counter()\nr = validar_usuario(adversarial)\nt1 = time.perf_counter()\nassert r is False, 'el input adversarial debe rechazarse'\nassert (t1 - t0) < 0.1, f'Tardo {t1-t0:.3f}s: catastrophic backtracking (ReDoS). Usa una clase de caracteres con llaves [A-Za-z0-9_]{{3,20}}, no cuantificadores anidados.'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["([a-zA-Z0-9_]+)+"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "([a-zA-Z0-9_]+)+"
+      ],
       "solucion": "import re\n\n_USUARIO = re.compile(r'^[A-Za-z0-9_]{3,20}$')\n\ndef validar_usuario(nombre):\n    return bool(_USUARIO.match(nombre)) if isinstance(nombre, str) else False"
     },
     "audio_script": "Este es el chunk de seguridad más importante de todo el módulo, porque describe un ataque real llamado ReDoS: denegación de servicio por expresión regular. El motor de regex de Python funciona por prueba y error: intenta un camino, y si falla, retrocede y prueba otro. Con cuantificadores anidados — un más dentro de un grupo que a su vez tiene un más — el número de caminos crece exponencialmente. Mientras tu match tenga éxito, el motor toma el primer camino y termina al instante. Pero cuando el match FALLA, tiene que agotar todas las combinaciones antes de rendirse. Y ahí está la trampa: un input diseñado para fallar por un pelo. Medimos el patrón de este ejercicio con veintitrés caracteres más un signo de exclamación: cero punto cuatro segundos. Con cuarenta caracteres serían horas. Con sesenta, el universo termina antes. La regla de detección visual es simple: si ves un cuantificador dentro de un grupo que también tiene cuantificador, sospecha. Y la regla de diseño: valida la longitud y el tipo ANTES de ejecutar el regex, porque esa verificación es gratis y puede ahorrarte la explosión.",
     "video_prompt": "Video de 100 segundos. Un árbol de decisiones que se ramifica: el motor regex prueba un camino (rama iluminada), falla, retrocede (backtracking), prueba otro. Con el patrón '(a+)+' y 8 caracteres, el árbol ya tiene 256 ramas visibles. Animación de crecimiento exponencial con n=16, 20, 23 mostrando el árbol llenando la pantalla y un cronómetro acelerándose: 0.003s → 0.05s → 0.41s. Proyección a n=40: cronómetro marcando 'horas' con la pantalla congelada. Luego el patrón seguro '[A-Za-z0-9_]{3,20}' mostrando UN solo camino recto, cronómetro en 0.00001s. Overlay: 'Cuantificador anidado = exponencial. Clase con llaves = lineal.'",
     "trazabilidad": {
-      "libros_fuente": ["Classic Computer Science Problems (complejidad algorítmica)", "Effective Python Item 12", "OWASP ReDoS"],
-      "conceptos_clave": ["redos", "backtracking", "seguridad", "complejidad-exponencial", "regex", "grupos-atomicos"]
+      "libros_fuente": [
+        "Classic Computer Science Problems (complejidad algorítmica)",
+        "Effective Python Item 12",
+        "OWASP ReDoS"
+      ],
+      "conceptos_clave": [
+        "redos",
+        "backtracking",
+        "seguridad",
+        "complejidad-exponencial",
+        "regex",
+        "grupos-atomicos"
+      ]
     },
-    "tags_rag": ["python", "regex", "redos", "seguridad", "backtracking", "performance", "codigo-ia"]
+    "tags_rag": [
+      "python",
+      "regex",
+      "redos",
+      "seguridad",
+      "backtracking",
+      "performance",
+      "codigo-ia"
+    ]
   },
   {
     "id": "M1.4-008",
@@ -339,17 +602,40 @@
       "setup_code": "",
       "codigo_inicial": "import re\n\ndef es_email_valido(s):\n    return bool(re.match(r'^[\\w\\.]+@[\\w\\.]+$', s))",
       "test_code": "validos = ['ana@mail.com', 'juan.perez+tag@sub.dominio.co.uk', 'usuario@empresa.mx', 'a_b-c@x.io']\ninvalidos = ['sin-arroba.com', '@falta-usuario.com', 'doble@@arroba.com', 'espacio @mail.com', 'usuario@dominio..com', 'usuario@.com', 'usuario@dominio', '.punto@inicio.com', '']\nfor e in validos:\n    assert es_email_valido(e) is True, f'EMAIL VALIDO rechazado: {e!r}'\nfor e in invalidos:\n    assert es_email_valido(e) is False, f'EMAIL INVALIDO aceptado: {e!r}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["^[\\\\w\\\\.]+@[\\\\w\\\\.]+$"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "^[\\\\w\\\\.]+@[\\\\w\\\\.]+$"
+      ],
       "solucion": "import re\n\n_EMAIL = re.compile(\n    r\"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+\"\n    r\"@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+\"\n    r\"[A-Za-z]{2,63}$\"\n)\n\ndef es_email_valido(s):\n    if not isinstance(s, str) or not s or len(s) > 254:\n        return False\n    local, sep, dominio = s.partition('@')\n    if not sep or not local or not dominio:\n        return False\n    if len(local) > 64:\n        return False\n    if local.startswith('.') or local.endswith('.') or '..' in local:\n        return False\n    if dominio.startswith('-') or dominio.endswith('-') or '..' in dominio:\n        return False\n    return bool(_EMAIL.match(s))"
     },
     "audio_script": "Este chunk enseña a reconocer cuándo una expresión regular es la herramienta equivocada, y hay dos casos canónicos. Primero: validar emails. El estándar permite comillas, comentarios, direcciones IP literales y doscientos cincuenta y cuatro caracteres. Cualquier regex que escribas va a rechazar emails reales que la gente usa, como los que tienen más etiqueta o subdominios con guiones, y va a aceptar cosas inválidas como dominios con puntos dobles. La industria resolvió esto de una sola forma: valida la sintaxis mínima, normaliza, y confirma enviando un correo con un enlace. Ningún regex puede probar que un buzón existe. Segundo, y es un límite matemático, no de habilidad: no puedes parsear HTML con regex. HTML permite anidamiento recursivo infinito, y los lenguajes regulares no pueden contar profundidad. No es que tu regex sea corto; es que ningún regex puede hacerlo. Usa html punto parser de la biblioteca estándar, o BeautifulSoup. La habilidad del senior no es escribir el regex perfecto: es saber cuándo salirse del regex.",
     "video_prompt": "Video de 95 segundos. Acto 1 'Email': un regex intentando atrapar una red de emails válidos — algunos legítimos (con +tag, con subdominios) se escapan por los agujeros mientras otros inválidos (puntos dobles, sin TLD) quedan atrapados. Overlay: 'Falsos negativos + falsos positivos = peor que no validar'. Acto 2 'Confirmación': el flujo correcto — validación mínima → normalización → correo con enlace → usuario confirma. Acto 3 'HTML': divs anidándose como muñecas rusas en niveles crecientes mientras un regex intenta contarlos y falla; aparece una máquina de estados (HTMLParser) que los maneja sin esfuerzo. Overlay: 'No es tu regex. Es un límite teórico.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 7 y 12 (web scraping)", "Fluent Python Cap 4", "RFC 5322 (referencia)"],
-      "conceptos_clave": ["email-validation", "html-parsing", "limites-de-regex", "html-parser", "rfc-5322", "code-review"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 7 y 12 (web scraping)",
+        "Fluent Python Cap 4",
+        "RFC 5322 (referencia)"
+      ],
+      "conceptos_clave": [
+        "email-validation",
+        "html-parsing",
+        "limites-de-regex",
+        "html-parser",
+        "rfc-5322",
+        "code-review"
+      ]
     },
-    "tags_rag": ["python", "regex", "email", "html", "html-parser", "validacion", "codigo-ia"]
+    "tags_rag": [
+      "python",
+      "regex",
+      "email",
+      "html",
+      "html-parser",
+      "validacion",
+      "codigo-ia"
+    ]
   },
   {
     "id": "M1.4-009",
@@ -381,20 +667,68 @@
       "engine": "json_match",
       "instruccion": "Arrastra cada tarea de procesamiento de texto a la herramienta más adecuada. Piensa en qué hace cada una mejor que las demás.",
       "elementos": [
-        { "id": "e1", "texto": "Filtrar las líneas que contienen 'ERROR' en un log de 5GB", "categoria_correcta": "grep" },
-        { "id": "e2", "texto": "Reemplazar 'v1.0' por 'v2.0' en todas las líneas de un archivo", "categoria_correcta": "sed" },
-        { "id": "e3", "texto": "Sumar los valores de la columna 3 de un CSV", "categoria_correcta": "awk" },
-        { "id": "e4", "texto": "Validar un email con lookahead y retornar un dict con los grupos nombrados", "categoria_correcta": "python_re" },
-        { "id": "e5", "texto": "Contar cuántas veces aparece cada palabra única y obtener el top 10", "categoria_correcta": "awk" },
-        { "id": "e6", "texto": "Invertir la selección: mostrar todas las líneas EXCEPTO las de DEBUG", "categoria_correcta": "grep" },
-        { "id": "e7", "texto": "Extraer solo los teléfonos 555-1234 de un texto, sin el resto de la línea", "categoria_correcta": "grep" },
-        { "id": "e8", "texto": "Parsear HTML anidado y extraer los títulos h2 con sus atributos", "categoria_correcta": "python_re" }
+        {
+          "id": "e1",
+          "texto": "Filtrar las líneas que contienen 'ERROR' en un log de 5GB",
+          "categoria_correcta": "grep"
+        },
+        {
+          "id": "e2",
+          "texto": "Reemplazar 'v1.0' por 'v2.0' en todas las líneas de un archivo",
+          "categoria_correcta": "sed"
+        },
+        {
+          "id": "e3",
+          "texto": "Sumar los valores de la columna 3 de un CSV",
+          "categoria_correcta": "awk"
+        },
+        {
+          "id": "e4",
+          "texto": "Validar un email con lookahead y retornar un dict con los grupos nombrados",
+          "categoria_correcta": "python_re"
+        },
+        {
+          "id": "e5",
+          "texto": "Contar cuántas veces aparece cada palabra única y obtener el top 10",
+          "categoria_correcta": "awk"
+        },
+        {
+          "id": "e6",
+          "texto": "Invertir la selección: mostrar todas las líneas EXCEPTO las de DEBUG",
+          "categoria_correcta": "grep"
+        },
+        {
+          "id": "e7",
+          "texto": "Extraer solo los teléfonos 555-1234 de un texto, sin el resto de la línea",
+          "categoria_correcta": "grep"
+        },
+        {
+          "id": "e8",
+          "texto": "Parsear HTML anidado y extraer los títulos h2 con sus atributos",
+          "categoria_correcta": "python_re"
+        }
       ],
       "categorias": [
-        { "id": "grep", "nombre": "grep — filtrar/buscar líneas", "pista": "-c cuenta, -v invierte, -o solo lo coincidente, -E activa regex extendido" },
-        { "id": "sed", "nombre": "sed — transformar/sustituir", "pista": "s/antiguo/nuevo/g — el sustituto por excelencia" },
-        { "id": "awk", "nombre": "awk — campos y cálculo", "pista": "Programa completo: tiene campos $1..$NF, condicionales y aritmética" },
-        { "id": "python_re", "nombre": "Python re — lógica compleja", "pista": "Cuando necesitas lookahead, grupos nombrados, estructuras o un parser real" }
+        {
+          "id": "grep",
+          "nombre": "grep — filtrar/buscar líneas",
+          "pista": "-c cuenta, -v invierte, -o solo lo coincidente, -E activa regex extendido"
+        },
+        {
+          "id": "sed",
+          "nombre": "sed — transformar/sustituir",
+          "pista": "s/antiguo/nuevo/g — el sustituto por excelencia"
+        },
+        {
+          "id": "awk",
+          "nombre": "awk — campos y cálculo",
+          "pista": "Programa completo: tiene campos $1..$NF, condicionales y aritmética"
+        },
+        {
+          "id": "python_re",
+          "nombre": "Python re — lógica compleja",
+          "pista": "Cuando necesitas lookahead, grupos nombrados, estructuras o un parser real"
+        }
       ],
       "umbral_aprobacion": 0.75,
       "explicacion_solucion": "grep FILTRA (e1, e6 con -v, e7 con -o). sed TRANSFORMA (e2). awk EXTRAE CAMPOS Y CALCULA (e3 suma $3, e5 cuenta con un array asociativo). Python gana cuando hay lookahead/grupos nombrados/estructuras (e4) o cuando necesitas un parser real porque regex no puede con HTML (e8). Nota: e5 también se resuelve con `sort|uniq -c|sort -rn|head`, pero awk lo hace en UNA pasada sin ordenar — por eso es la respuesta óptima."
@@ -402,10 +736,32 @@
     "audio_script": "Python y la línea de comandos resuelven el mismo problema — procesar texto — con filosofías distintas, y conocer el mapa entre ambos es un superpoder. Grep filtra líneas: es tu re punto search aplicado a cada línea, corriendo en C, en streaming, sobre archivos de gigabytes sin sudar. Sed transforma: es tu re punto sub. Awk extrae campos y calcula: es tus grupos de captura con aritmética incluida, porque awk es un lenguaje de programación completo con campos uno, dos, tres. Y sort con uniq menos c es tu Counter. Pero hay tres diferencias que debes grabar. Primera: el regex de Bash no es el de Python. En POSIX no existe el no-codicioso, no existe lookahead, y dígito se escribe con corchetes y la clase digit. Segunda: grep pe de GNU te da el regex completo de Perl, pero no existe en macOS ni en contenedores Alpine, así que tu script deja de ser portable. Tercera, y la más importante: Bash no tiene estructuras de datos. En cuanto necesites agrupar por clave, validar con mensajes útiles o emitir JSON, es territorio Python. La regla práctica es simple: para explorar y diagnosticar, Bash, porque una tubería de tres comandos te responde en diez segundos. Para procesar con lógica y salida estructurada, Python.",
     "video_prompt": "Video de 100 segundos. Pantalla dividida: arriba una terminal Bash, abajo un editor Python. Cada tarea aparece en el centro y se ejecuta SIMULTÁNEAMENTE en ambos lados, mostrando la equivalencia: 'filtrar ERROR' → `grep ERROR app.log` vs `[l for l in f if 'ERROR' in l]`. 'Sustituir' → `sed s/a/b/g` vs `re.sub`. 'Campo 2' → `awk -F, '{print $2}'` vs `.split(',')[1]`. 'Contar' → `sort|uniq -c` vs `Counter.most_common()`. Luego una tabla comparativa resaltando en rojo lo que POSIX NO tiene: .*?, lookahead, (?P<nombre>). Cierre con un diagrama de decisión: ¿explorar? → Bash. ¿estructurar/validar/JSON? → Python. Overlay: 'Mismo problema. Dos herramientas. Conoce el mapa.'",
     "trazabilidad": {
-      "libros_fuente": ["Linux Command Line Bible Caps 8-12 (redirecciones, grep, sed, awk)", "Automate the Boring Stuff Cap 7", "Classic CS Problems"],
-      "conceptos_clave": ["grep", "sed", "awk", "bash", "pipelines", "posix", "regex-portable", "python-vs-bash"]
+      "libros_fuente": [
+        "Linux Command Line Bible Caps 8-12 (redirecciones, grep, sed, awk)",
+        "Automate the Boring Stuff Cap 7",
+        "Classic CS Problems"
+      ],
+      "conceptos_clave": [
+        "grep",
+        "sed",
+        "awk",
+        "bash",
+        "pipelines",
+        "posix",
+        "regex-portable",
+        "python-vs-bash"
+      ]
     },
-    "tags_rag": ["bash", "grep", "sed", "awk", "regex", "pipelines", "linux", "python"]
+    "tags_rag": [
+      "bash",
+      "grep",
+      "sed",
+      "awk",
+      "regex",
+      "pipelines",
+      "linux",
+      "python"
+    ]
   },
   {
     "id": "M1.4-010",
@@ -439,16 +795,41 @@
       "setup_code": "",
       "codigo_inicial": "import json\nimport re\n\ndef extraer_productos(html_texto, ruta_salida):\n    productos = []\n    patron = re.compile(r'<div class=\"producto\">.*?</div>')\n    for m in patron.finditer(html_texto):\n        bloque = m.group()\n        nombre = bloque.split('<h3>')[1].split('</h3>')[0]\n        precio = bloque.split('$')[1].split('<')[0]\n        stock = bloque.split('stock: ')[1].split('<')[0]\n        productos.append({'nombre': nombre, 'precio': float(precio), 'stock': int(stock)})\n    with open(ruta_salida, 'w') as f:\n        json.dump(productos, f)",
       "test_code": "import tempfile, os, json\nhtml = \"\"\"\n<div class=\"producto\">\n  <h3>Teclado   Mecánico</h3>\n  <span class=\"precio\">$ 1,250.50</span>\n  <span class=\"stock\">stock: 10</span>\n</div>\n<div class=\"producto\">\n  <h3>Mouse</h3>\n  <span class=\"precio\">$250</span>\n  <span class=\"stock\">stock: 0</span>\n</div>\n<div class=\"producto\">\n  <h3>DATO ROTO</h3>\n  <span class=\"precio\">$abc</span>\n  <span class=\"stock\">stock: 5</span>\n</div>\n<div class=\"banner\">publicidad</div>\n\"\"\"\nruta = os.path.join(tempfile.mkdtemp(), 'productos.json')\nextraer_productos(html, ruta)\nwith open(ruta, encoding='utf-8') as f:\n    raw = f.read()\ndatos = json.loads(raw)\nassert len(datos) == 2, f'debe extraer 2 productos validos y saltar el roto: obtuve {len(datos)}'\nassert datos[0] == {'nombre': 'Teclado Mecánico', 'precio': 1250.5, 'stock': 10}, datos[0]\nassert datos[1] == {'nombre': 'Mouse', 'precio': 250.0, 'stock': 0}, datos[1]\nassert 'Mecánico' in raw, 'los acentos deben guardarse legibles (ensure_ascii=False)'\nassert '\\n' in raw, 'debe escribirse indentado para legibilidad'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": [".split('<h3>')", "json.dump(productos, f)"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        ".split('<h3>')",
+        "json.dump(productos, f)"
+      ],
       "solucion": "import json\nimport os\nimport re\nimport tempfile\n\n_PRODUCTO = re.compile(\n    r'<div\\s+class=\"producto\">\\s*'\n    r'<h3>\\s*(?P<nombre>.*?)\\s*</h3>\\s*'\n    r'<span\\s+class=\"precio\">\\s*\\$\\s*(?P<precio>[\\d.,]+)\\s*</span>\\s*'\n    r'<span\\s+class=\"stock\">\\s*stock:\\s*(?P<stock>\\d+)\\s*</span>',\n    re.DOTALL | re.IGNORECASE,\n)\n\ndef _limpiar_numero(crudo):\n    return float(crudo.replace(',', '').strip())\n\ndef extraer_productos(html_texto, ruta_salida):\n    productos = []\n    for m in _PRODUCTO.finditer(html_texto):\n        nombre = re.sub(r'\\s+', ' ', m.group('nombre')).strip()\n        try:\n            precio = _limpiar_numero(m.group('precio'))\n            stock = int(m.group('stock'))\n        except ValueError:\n            continue\n        if not nombre:\n            continue\n        productos.append({'nombre': nombre, 'precio': precio, 'stock': stock})\n\n    dirn = os.path.dirname(os.path.abspath(ruta_salida))\n    fd, tmp = tempfile.mkstemp(dir=dirn, suffix='.tmp')\n    try:\n        with os.fdopen(fd, 'w', encoding='utf-8') as f:\n            json.dump(productos, f, ensure_ascii=False, indent=2)\n        os.replace(tmp, ruta_salida)\n    except BaseException:\n        try:\n            os.unlink(tmp)\n        except OSError:\n            pass\n        raise"
     },
     "audio_script": "Este es el proyecto que integra toda la Fase uno, y el patrón que debes llevarte es uno solo: falla por elemento, no por lote. Un extractor profesional nunca aborta los novecientos noventa y nueve registros buenos porque uno vino corrupto. Captura el error de ese registro, cuenta cuántos rechazaste, y sigue. Ese contador de rechazados es oro: si de pronto pasa de cero a quinientos, sabes que la fuente cambió su formato antes de que tus datos se vacíen en silencio. El segundo aprendizaje es técnico y es el bug más silencioso que vas a encontrar: el punto en un regex no coincide con el salto de línea. Si tu HTML ocupa varias líneas y olvidas la bandera DOTALL, tu patrón no encuentra absolutamente nada, y no lanza ningún error: retorna una lista vacía. Tú crees que el sitio no tiene productos. Revisa siempre tus banderas. Tercero: el parsing por split con corchetes uno es frágil. En cuanto el HTML agrega una clase o cambia una comilla, recibes un IndexError. Usa grupos nombrados y el patrón se vuelve tolerante y auto-documentado. Y cierra el ciclo con lo que ya sabes del módulo anterior: encoding UTF-8, ensure_ascii falso para tus acentos, indent para poder leer el archivo, y escritura atómica para no destruir el JSON anterior si algo falla.",
     "video_prompt": "Video de 110 segundos. Un HTML sucio entra en una planta de procesamiento con 5 estaciones: (1) filtro de bloques con DOTALL — mostrar el patrón SIN DOTALL rebotando contra líneas multilínea y devolviendo '0 productos' en silencio, y luego con DOTALL capturando bloques completos; (2) extracción con grupos nombrados donde cada campo sale etiquetado (nombre, precio, stock); (3) estación de limpieza colapsando espacios y quitando comas de miles; (4) puerta de validación donde un registro con '$abc' es desviado a un contenedor 'rechazados' con contador +1 mientras los demás siguen; (5) escritura atómica: JSON a un archivo temporal, luego os.replace como interruptor. Salida: JSON limpio y legible con acentos intactos. Overlay: 'Falla por elemento, no por lote.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 7, 9 y 12", "Python Crash Course Cap 10 (proyecto)", "Effective Python Items 12, 23-25"],
-      "conceptos_clave": ["microproyecto", "extraccion", "scraper", "regex", "json", "tolerancia-a-fallos", "integrador"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 7, 9 y 12",
+        "Python Crash Course Cap 10 (proyecto)",
+        "Effective Python Items 12, 23-25"
+      ],
+      "conceptos_clave": [
+        "microproyecto",
+        "extraccion",
+        "scraper",
+        "regex",
+        "json",
+        "tolerancia-a-fallos",
+        "integrador"
+      ]
     },
-    "tags_rag": ["python", "microproyecto", "scraper", "regex", "json", "extraccion", "integrador"]
+    "tags_rag": [
+      "python",
+      "microproyecto",
+      "scraper",
+      "regex",
+      "json",
+      "extraccion",
+      "integrador"
+    ]
   }
 ]

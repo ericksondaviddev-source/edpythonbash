@@ -547,13 +547,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Sistema de inventario/organización con búsqueda rápida",
-    "modelo_mental": "Una comprehension se lee como matemática: [f(x) for x in S if P(x)] = 'la imagen de S bajo f, restringida a los que cumplen P'. Tienen scope propio (la variable del bucle NO se filtra, a diferencia de los bucles for normales). Son para CONSTRUIR colecciones, nunca para efectos secundarios (print, append a listas externas). Y tienen una versión perezosa: quitando los corchetes obtienes un generator expression, que consume O(1) de memoria en vez de materializar la colección completa.",
+    "modelo_mental": "Una comprehension es como un **filtro de café**: el agua (el iterable) pasa a través del grano molido (la expresión `f(x)`) y el filtro (la condición `if P(x)`), produciendo solo el líquido deseado. Se lee como una fórmula matemática: `[f(x) for x in S if P(x)]`, lo que significa 'la imagen de S bajo f, restringida a los que cumplen P'. Tienen **scope propio**, lo que significa que la variable del bucle (como `x` o `fila`) **no** contamina el entorno externo, a diferencia de los bucles `for` normales. Esto previene errores de reasignación accidental de variables. Además, son exclusivamente para **construir colecciones**; usarlas para efectos secundarios como `print` o `append` a listas externas es un anti-patrón que rompe la legibilidad. Si quitas los corchetes `[]`, obtienes un `generator expression`. Esto cambia el consumo de memoria de O(n) a O(1), evitando que programas con grandes volúmenes de datos se queden sin RAM (OOM) al materializar listas gigantes innecesariamente.",
     "codigo_roto": "matriz = [[1,2,3],[4,5,6],[7,8,9]]\n\n# Ilegible: doble for + triple if encadenado\nplana = [x**2 for fila in matriz for x in fila if x % 2 == 0 if x > 0 if x < 10]\n\n# Comprehension con side effects: anti-patrón\nresultados = [print(f'Procesando {x}') or procesar(x) for x in datos]\n\n# Lista materializada donde solo se necesita el total: ~400MB de RAM\ntotal = sum([x**2 for x in range(10_000_000)])",
-    "diagnostico": "(1) El doble for con tres ifs obliga al lector a simular mentalmente el bucle: viola 'Readability counts'. Un bucle explícito de 5 líneas es mejor. (2) print dentro de una comprehension es el anti-patrón clásico: el `or` para forzar evaluación es una bandera roja; las comprehensions construyen valores, los bucles ejecutan efectos. (3) Los corchetes dentro de sum() crean una lista de 10M enteros (~400MB) que existe solo para ser sumada y descartada; sin corchetes es un generator de memoria constante.",
+    "diagnostico": "1. **Leyibilidad rota por anidamiento excesivo**: El doble `for` con tres `if` encadenados obliga al cerebro a simular el flujo del bucle, violando el principio 'Readability counts' de Python. Python no lanza un error de sintaxis aquí, pero el código se vuelve propenso a errores lógicos porque el patrón general de 'nidos profundos' oculta la intención. La solución es descomponerlo en un bucle explícito o usar funciones auxiliares. 2. **Side effects en comprehensions**: Usar `print(...) or procesar(x)` dentro de una comprehension es un anti-patrón clásico. Python no lanza un error de sintaxis, pero la comprehension está diseñada para *construir* valores, no para *ejecutar* efectos. El patrón general es: si no necesitas el resultado de la lista, usa un bucle `for` normal. El `or` fuerza la evaluación de `procesar(x)` solo porque `print` devuelve `None`, lo cual es una señal de alarma de que estás usando la herramienta incorrecta. 3. **Materialización innecesaria**: `sum([x**2 for x in range(10_000_000)])` crea una lista de 10 millones de enteros en RAM antes de sumarla. Python no lanza un error, pero consume memoria O(n). El patrón general es que `sum()`, `any()`, `all()`, `max()`, `min()` aceptan iterables perezosos; quitar los corchetes convierte la expresión en un `generator expression`, consumiendo O(1) de memoria.",
     "codigo_corregido": "# Complejo → bucle explícito (más legible)\nplana = []\nfor fila in matriz:\n    for x in fila:\n        if 0 < x < 10 and x % 2 == 0:\n            plana.append(x**2)\n\n# Side effects → bucle normal\nfor x in datos:\n    print(f'Procesando {x}')\n    procesar(x)\n\n# Generator expression: sin lista intermedia\ntotal = sum(x**2 for x in range(10_000_000))",
     "codigo_optimizado": "import itertools, math\n\n# Regla práctica: comprehension si cabe en UNA línea con máximo 1 for + 1 if\ncuadrados_pares = [x**2 for x in range(100) if x % 2 == 0]\n\n# Dict y set comprehensions\nnombres_por_id = {u['id']: u['nombre'] for u in usuarios}\nids_unicos = {u['id'] for u in usuarios}\n\n# Nested comprehension legítima: transpuesta de matriz\nmatriz_t = [[fila[i] for fila in matriz] for i in range(len(matriz[0]))]\n\n# Walrus operator (3.8+): filtrar por un valor calculado sin calcularlo dos veces\nraices_exactas = [r for x in range(100) if (r := math.isqrt(x))**2 == x]\n\n# Pipeline perezoso completo: procesa un log de 10GB con memoria O(1)\nlineas = (l.strip() for l in open('app.log'))\nerrores = (l for l in lineas if 'ERROR' in l)\nprimeros_10 = list(itertools.islice(errores, 10))  # lee solo lo necesario\n\n# Cuándo NO usar comprehension:\n# - Necesitas break/else en el bucle → for normal\n# - Más de 2 cláusulas → for normal (o función auxiliar)\n# - Efectos secundarios → SIEMPRE for normal\n# - Necesitas try/except por elemento → for normal",
     "disenso_experto": "'Las comprehensions son siempre más pythónicas que los bucles' es una verdad a medias que produce código peor. Son superiores cuando la transformación es simple y declarativa (un for, un if, una expresión). Cuando necesitas condiciones complejas, break temprano o manejo de errores por elemento, el bucle explícico gana en legibilidad Y en capacidad de debugging (puedes poner un breakpoint dentro). La medida profesional: si debes leerla dos veces para entenderla, era un bucle.",
-    "pregunta_transferencia": "Tienes que leer un archivo de 5GB línea por línea, filtrar las que contienen 'ERROR', extraer el timestamp (primeros 19 chars) y quedarte solo con los 100 primeros errores. Escribe el pipeline con generators encadenados e islice. ¿Por qué esta versión usa kilobytes de RAM mientras que la versión con listas usaría gigabytes?",
+    "pregunta_transferencia": "Escenario: Imagina que estás monitorizando logs de un servidor en producción. El archivo de log tiene 5GB, imposible de cargar en memoria de golpe. Necesitas extraer los timestamps de las líneas que contienen 'ERROR', pero solo los primeros 100 incidentes para generar un reporte rápido sin saturar la RAM del sistema. Pista: Debes encadenar un `open()` con un `filter()` para las líneas de error, un `map()` para extraer los primeros 19 caracteres, y finalmente `itertools.islice()` para cortar a los 100 primeros. La clave está en que cada paso genera un valor bajo demanda, sin almacenar la colección completa en el heap de memoria.",
     "quiz": {
       "pregunta": "¿Cuánta memoria额外 consume sum([x for x in range(10_000_000)]) comparado con sum(x for x in range(10_000_000))?",
       "opciones": [
@@ -604,6 +604,57 @@
       "lazy",
       "memoria",
       "estilo"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En Python 3, ¿qué ocurre con la variable `x` después de ejecutar `[x**2 for x in range(5)]`?",
+        "opciones": [
+          "A) Queda definida con valor 4",
+          "B) Queda definida con valor 16",
+          "C) No queda definida (NameError)",
+          "D) Queda definida como una lista"
+        ],
+        "correcta": "C",
+        "explicacion": "Las comprehensions tienen scope propio en Python 3, aislando la variable del bucle del entorno exterior. A y B son errores comunes de quienes vienen de Python 2 o bucles tradicionales donde la variable sí filtra. D confunde la variable de iteración con el resultado de la lista.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Por qué `sum([x**2 for x in range(10_000_000)])` es un anti-patrón de memoria?",
+        "opciones": [
+          "A) Lanza un MemoryError inmediato",
+          "B) Crea una lista de 10M enteros en RAM antes de sumar",
+          "C) El sum no acepta listas como argumento",
+          "D) Itera dos veces sobre el rango"
+        ],
+        "correcta": "B",
+        "explicacion": "Los corchetes materializan la lista completa en memoria (~80MB+), que existe solo para ser consumida por sum y luego descartada. Sin corchetes, es un generator de O(1). A es falso porque no siempre lanza error, solo consume RAM. C y D son conceptualmente incorrectas sobre el comportamiento de sum.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué problema tiene `resultados = [print(f'Procesando {x}') or procesar(x) for x in datos]`?",
+        "opciones": [
+          "A) Devuelve una lista con los retornos de procesar(x) (o None), pero viola el principio de construir colecciones",
+          "B) Lanza SyntaxError por usar or",
+          "C) Lanza TypeError en print",
+          "D) Devuelve una lista vacía"
+        ],
+        "correcta": "A",
+        "explicacion": "El patrón or es una bandera roja: print devuelve None, forzando la evaluación de procesar(x). La comprehension construye una lista con los retornos de procesar, pero su propósito debería ser construir valores, no ejecutar efectos secundarios. B y C son falsos sintácticamente. D es falso porque la lista se llena con los resultados de procesar.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es el resultado de `plana = [x for fila in [[1,2],[3,4]] for x in fila if x > 2]`?",
+        "opciones": [
+          "A) [1, 2, 3, 4]",
+          "B) [2, 4]",
+          "C) [1, 3]",
+          "D) [3, 4]"
+        ],
+        "correcta": "D",
+        "explicacion": "El doble for itera sobre cada fila y cada elemento, y el if x > 2 filtra quedándose solo con 3 y 4. A ignora el filtro. B y C aplican mal la condición o el orden de iteración. La sintaxis es válida, no hay error.",
+        "tipo": "codigo"
+      }
     ]
   },
   {

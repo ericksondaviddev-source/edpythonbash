@@ -123,13 +123,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "El 'texto plano' no existe: los archivos contienen BYTES, y el encoding es el contrato que traduce bytes↔caracteres. UTF-8 es el estándar de facto (1-4 bytes por carácter, compatible con ASCII), pero Windows usó históricamente cp1252/latin-1, y si abres un archivo sin especificar encoding, Python usa el del sistema: tu script funciona en tu Linux y explota en el Windows del usuario. Regla absoluta: `encoding='utf-8'` EXPLÍCITO en cada open(). Y para archivos potencialmente corruptos: `errors='replace'` o `errors='ignore'` en vez de crashear.",
+    "modelo_mental": "El 'texto plano' no existe: los archivos contienen BYTES, y el encoding es el contrato que traduce bytes↔caracteres. Imagina que tienes un libro escrito en un idioma desconocido: los bytes son las letras, pero sin saber el idioma (el encoding), no puedes leer el contenido. UTF-8 es el estándar de facto (1-4 bytes por carácter, compatible con ASCII), pero Windows usó históricamente cp1252/latin-1, y si abres un archivo sin especificar encoding, Python usa el del sistema: tu script funciona en tu Linux y explota en el Windows del usuario. Regla absoluta: `encoding='utf-8'` EXPLÍCITO en cada open(). Y para archivos potencialmente corruptos: `errors='replace'` o `errors='ignore'` en vez de crashear.\n\nEste contrato de encoding es crítico porque determina cómo Python interpreta cada byte. Si el archivo fue escrito con UTF-8 pero tú lees con cp1252, verás caracteres como 'JosÃ©' en lugar de 'José'. El problema no es el archivo, es el mismatch entre el encoding de escritura y el de lectura. Por eso, siempre debes conocer el encoding original del archivo o usar herramientas como `chardet` para detectarlo automáticamente.\n\nLos errores comunes incluyen asumir que 'texto plano' significa ASCII, olvidar que UTF-8 es multibyte (un carácter puede ocupar 1-4 bytes), y no manejar casos donde el encoding es desconocido o corrupto. Usar `errors='replace'` reemplaza bytes inválidos con el carácter de reemplazo Unicode (U+FFFD), evitando crashes. Usar `errors='ignore'` simplemente descarta los bytes inválidos, lo que puede perder datos pero evita interrupciones.",
     "codigo_roto": "def leer_texto(ruta):\n    with open(ruta) as f:\n        return f.read()",
-    "diagnostico": "Sin encoding explícito, Python usa locale.getpreferredencoding(): UTF-8 en Linux/macOS modernos, pero cp1252 en Windows espanyol y variantes impredecibles en servidores. Consecuencias: (1) el mismo código lee 'José' correctamente en tu máquina y 'JosÃ©' o UnicodeDecodeError en otra; (2) un solo byte inválido (archivo corrupto, binario mezclado) crashea toda la lectura con UnicodeDecodeError y pierdes el 99% del contenido que sí era válido. Es el bug de portabilidad #1 en scripts de automatización — y la IA no agrega encoding porque sus ejemplos corren en sandboxes Linux.",
+    "diagnostico": "1. **Sin encoding explícito**: Python usa locale.getpreferredencoding() que varía por sistema. En Linux modernos es UTF-8, en Windows español es cp1252. Esto causa que el mismo código funcione en un entorno y falle en otro, produciendo 'JosÃ©' o UnicodeDecodeError.\n2. **Bytes inválidos o corruptos**: Si el archivo contiene un byte inválido para el encoding especificado (por ejemplo, 0x80 en UTF-8), Python lanza UnicodeDecodeError y detiene toda la lectura, perdiendo el 99% del contenido válido.\n3. **Mezcla de encodings**: Si el archivo fue parcialmente escrito con un encoding y parcialmente con otro, la lectura fallará en el punto de transición, ya que no hay un encoding único que cubra toda la secuencia de bytes.\n\nEl patrón general es: el encoding es un contrato bilateral entre escritura y lectura. Si ambos extremos no usan el mismo encoding, la comunicación falla. Python no adivina el encoding porque no puede: debe ser especificado explícitamente. La solución es siempre usar encoding='utf-8' y manejar errores con errors='replace' o errors='ignore'.",
     "codigo_corregido": "def leer_texto(ruta):\n    with open(ruta, encoding='utf-8', errors='replace') as f:\n        return f.read()",
     "codigo_optimizado": "from pathlib import Path\n\n# Lectura tolerante: nunca crashea, marca bytes inválidos con U+FFFD\ndef leer_texto_tolerante(ruta) -> str:\n    return Path(ruta).read_text(encoding='utf-8', errors='replace')\n\n# Lectura estricta: falla rápido si el archivo no es UTF-8 válido\n# (correcto cuando necesitas GARANTIZAR integridad, ej. datos financieros)\ndef leer_texto_estricto(ruta) -> str:\n    with open(ruta, encoding='utf-8') as f:  # errors='strict' es el default\n        return f.read()\n\n# Detección de encoding cuando el origen es desconocido (archivos legacy)\ndef leer_autodetectar(ruta) -> str:\n    raw = Path(ruta).read_bytes()\n    # BOM de UTF-8: empieza con b'\\xef\\xbb\\xbf'\n    if raw.startswith(b'\\xef\\xbb\\xbf'):\n        return raw.decode('utf-8-sig')\n    try:\n        return raw.decode('utf-8')\n    except UnicodeDecodeError:\n        return raw.decode('latin-1')  # latin-1 NUNCA falla: mapea los 256 bytes\n\n# Opciones de errors (memoriza las 3 primeras):\n# 'strict'  → UnicodeDecodeError (default)\n# 'replace' → sustituye byte inválido por U+FFFD (el rombo )\n# 'ignore'  → descarta bytes inválidos en silencio (peligroso: pierde datos)\n# 'backslashreplace' → muestra \\xff (útil para debug)\n\n# Escritura: SIEMPRE utf-8\nPath('notas.txt').write_text('Reunión con José — café ☕', encoding='utf-8')",
     "disenso_experto": "¿Debería Python haber exigido encoding explícito siempre? La PEP 686 (Python 3.15) hará UTF-8 el modo default incluso en Windows, cerrando la brecha histórica. Mientras tanto, el debate real es errors='strict' vs 'replace': strict falla rápido y ruidoso (filosofía 'los datos corruptos deben bloquear el pipeline'), replace degrada con gracia (filosofía 'un log con un byte roto sigue siendo 99% útil'). Para logs y scraping: replace. Para datos financieros o médicos: strict. Decidir esto por archivo, no por costumbre.",
-    "pregunta_transferencia": "Recibes un CSV de un sistema bancario legacy donde 'José' aparece como 'JosÃ©' al abrirlo con encoding='utf-8'. ¿Qué encoding se usó al ESCRIBIR el archivo originalmente, qué secuencia de bytes hay en el archivo, y cómo lo conviertes correctamente a UTF-8 sin perder datos?",
+    "pregunta_transferencia": "Recibes un CSV de un sistema bancario legacy donde 'José' aparece como 'JosÃ©' al abrirlo con encoding='utf-8'. El escenario es que el archivo fue originalmente escrito con cp1252 (Windows), pero tú lo lees como UTF-8. La secuencia de bytes para 'JosÃ©' en UTF-8 es: 0x4A 0x6F 0x73 0xC3 0xA9. Para convertirlo correctamente, debes leer el archivo con encoding='cp1252' y luego codificarlo a UTF-8: `contenido = open(ruta, encoding='cp1252').read(); open(ruta_nueva, 'w', encoding='utf-8').write(contenido)`. Pista: usa `chardet` para detectar el encoding automáticamente si no estás seguro, y siempre verifica con un fragmento del archivo antes de procesarlo completo.",
     "quiz": {
       "pregunta": "¿Qué pasa al ejecutar `open('archivo.txt').read()` sin encoding en Windows con locale español si el archivo está en UTF-8 y contiene 'ñ'?",
       "opciones": [
@@ -180,6 +180,57 @@
       "unicode",
       "archivos",
       "portabilidad"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué sucede si ejecutas el código_roto en una máquina Windows configurada en español y el archivo contiene caracteres como 'José'?",
+        "opciones": [
+          "Lee correctamente 'José' porque Python detecta automáticamente el encoding",
+          "Lee 'JosÃ©' o lanza UnicodeDecodeError porque usa cp1252 en lugar de UTF-8",
+          "Lee correctamente porque el código_roto no necesita encoding explícito",
+          "Lee 'José' pero con un warning de deprecación"
+        ],
+        "correcta": "B",
+        "explicacion": "En Windows español, locale.getpreferredencoding() devuelve 'cp1252'. Si el archivo fue escrito en UTF-8, los bytes de 'José' (0xC3 0xA9) se interpretan como dos caracteres cp1252: 'Ã' y '©', resultando en 'JosÃ©'. Si hay bytes inválidos para cp1252, se lanza UnicodeDecodeError. La opción A es incorrecta porque Python no detecta encoding automáticamente. La C es incorrecta porque el código_roto SÍ necesita encoding explícito. La D es incorrecta porque no hay warnings, el problema es un error de interpretación.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la salida del siguiente código si el archivo contiene la palabra 'café' escrita en UTF-8?",
+        "opciones": [
+          "['café']",
+          "['cafÃ©']",
+          "['caf\\xe9']",
+          "Error: UnicodeDecodeError"
+        ],
+        "correcta": "B",
+        "explicacion": "Si el sistema es Windows con cp1252, el byte 0xE9 (que en UTF-8 representa 'é') se interpreta como el carácter '©' en cp1252, y el byte 0xC3 (que también es parte de la codificación UTF-8 de 'é') se interpreta como 'Ã'. Por lo tanto, 'café' se leería como 'cafÃ©'. La opción A es incorrecta porque no se leería correctamente sin encoding explícito. La C es incorrecta porque no se mostraría como escape. La D podría ocurrir si hay bytes inválidos, pero en este caso específico no habría error, solo interpretación incorrecta.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Por qué es peligroso confiar en el encoding por defecto de Python al abrir archivos?",
+        "opciones": [
+          "Porque el encoding por defecto siempre es UTF-8, lo que puede ser lento",
+          "Porque el encoding por defecto depende del sistema operativo y configuración regional, causando inconsistencias",
+          "Porque Python no soporta UTF-8 por defecto",
+          "Porque el encoding por defecto es ASCII, que no soporta caracteres especiales"
+        ],
+        "correcta": "B",
+        "explicacion": "El encoding por defecto viene dado por locale.getpreferredencoding(), que varía según el sistema operativo y configuración regional. En Linux modernos es UTF-8, en Windows español es cp1252, y puede variar en otros sistemas. Esto significa que el mismo código puede comportarse de manera diferente en diferentes máquinas. La opción A es incorrecta porque el encoding por defecto no siempre es UTF-8. La C es incorrecta porque Python sí soporta UTF-8. La D es incorrecta porque el encoding por defecto no es siempre ASCII.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué línea de código corrige el problema del código_roto para garantizar portabilidad?",
+        "opciones": [
+          "with open(ruta, 'r', encoding='utf-8', errors='replace') as f:",
+          "with open(ruta, encoding='utf-8') as f:",
+          "with open(ruta, 'rb') as f:",
+          "with open(ruta, errors='ignore') as f:"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque especifica encoding='utf-8' explícitamente y también incluye errors='replace' para manejar bytes inválidos sin crashear. La opción B corrige el encoding pero no maneja errores. La C abre en modo binario, lo que requiere decodificación manual. La D no especifica encoding, por lo que sigue dependiendo del sistema. La combinación de encoding explícito y manejo de errores es la solución más robusta.",
+        "tipo": "codigo"
+      }
     ]
   },
   {
@@ -295,13 +346,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "JSON es un formato de INTERCAMBIO con solo 6 tipos (objeto, array, string, número, bool, null). Todo lo que serialices fuera de esos tipos se pierde o crashea: datetime y set no son serializables (TypeError), las tuplas se convierten en listas y las claves int de un dict se convierten en string. El round-trip `json.load(json.dump(x))` NO garantiza `x == x_original` para tipos ricos. Las tres banderas que debes conocer de memoria: `ensure_ascii=False` (acentos legibles), `indent=2` (humanos), `default=str` (o `object_hook` para reconstruir).",
+    "modelo_mental": "JSON es como una **caja de embalaje** con **solo seis compartimentos**: un objeto, una lista, una cadena, un número, un booleano y `null`. Cada uno de estos tipos está definido de forma estándar, lo que permite que diferentes lenguajes intercambien datos sin ambigüedades.\n\nEsta limitación es crucial porque **garantiza la portabilidad** y la **legibilidad** de los datos intercambiados; si intentas serializar un objeto `datetime.datetime` o una `set`, Python lanzará un `TypeError` y el proceso fallará, impidiendo que la aplicación continúe funcionando.\n\nPara evitar estos problemas se recomienda usar los parámetros `ensure_ascii=False` (para mantener acentos legibles), `indent=2` (para una representación humana) y, cuando sea necesario, `default=str` o un `object_hook` que permita reconstruir tipos complejos al leer el JSON.",
     "codigo_roto": "import json\nfrom datetime import datetime\n\ndef guardar_notas(ruta, notas):\n    with open(ruta, 'w') as f:\n        json.dump(notas, f)\n\ndef leer_notas(ruta):\n    with open(ruta) as f:\n        return json.load(f)",
-    "diagnostico": "La primera nota con `datetime` crashea con 'TypeError: Object of type datetime is not JSON serializable'. Además: sin `ensure_ascii=False`, 'Reunión' se escribe como 'Reuni\\u00f3n' (bytes extra, ilegible para humanos); sin encoding explícito, doble bug de portabilidad (ver M1.3-002); sin `indent`, el archivo es una línea ilegible para depurar a mano. Este es EL código que la IA genera cuando pides 'guardar datos en JSON' y funciona solo hasta que tus datos tienen fechas — o sea, en la primera semana de uso real.",
+    "diagnostico": "1. El intento de serializar un objeto `datetime.datetime` provoca `TypeError: Object of type datetime is not JSON serializable` porque el módulo `json` solo acepta los seis tipos básicos (objeto, lista, cadena, número, booleano, null). Un `datetime` es un tipo complejo que no está incluido, por lo que la operación de volcado falla antes de escribir cualquier dato.\n\n2. Si no se usa `ensure_ascii=False`, los caracteres Unicode como la ‘ó’ se convierten en secuencias escapadas `ó`, lo que dificulta la lectura humana; además, al omitir el parámetro `encoding` al abrir el archivo, el programa depende de la codificación predeterminada del sistema operativo, lo que genera incompatibilidades entre Windows, Linux y macOS.\n\n3. La ausencia de `indent=2` produce un archivo JSON en una sola línea, lo que hace muy costoso inspeccionarlo manualmente; sin `default=str` o `object_hook`, tipos como tuplas o diccionarios con claves enteras se transforman inesperadamente, rompiendo el round‑trip esperado `json.load(json.dump(x)) == x_original`.",
     "codigo_corregido": "import json\nfrom datetime import datetime\n\ndef guardar_notas(ruta, notas):\n    with open(ruta, 'w', encoding='utf-8') as f:\n        json.dump(notas, f, ensure_ascii=False, indent=2, default=str)\n\ndef leer_notas(ruta):\n    with open(ruta, encoding='utf-8') as f:\n        return json.load(f)",
     "codigo_optimizado": "import json\nfrom datetime import datetime\nfrom pathlib import Path\n\n# Estrategia profesional: ISO 8601 al guardar, datetime real al cargar\n\ndef _serializar(obj):\n    \"\"\"default hook: convierte tipos no serializables a string.\"\"\"\n    if isinstance(obj, datetime):\n        return obj.isoformat()          # '2026-09-29T10:30:00' — estándar y ordenable\n    raise TypeError(f'Tipo no serializable: {type(obj).__name__}')\n\ndef _deserializar(dct):\n    \"\"\"object_hook: reconstruye datetimes desde ISO.\"\"\"\n    if 'creada' in dct:\n        try:\n            dct['creada'] = datetime.fromisoformat(dct['creada'])\n        except (ValueError, TypeError):\n            pass\n    return dct\n\ndef guardar_notas(ruta, notas):\n    # Escritura atómica (ver M1.3-007): nunca dejes un JSON a medio escribir\n    tmp = Path(ruta).with_suffix('.tmp')\n    tmp.write_text(\n        json.dumps(notas, ensure_ascii=False, indent=2, default=_serializar),\n        encoding='utf-8'\n    )\n    tmp.replace(ruta)\n\ndef leer_notas(ruta):\n    path = Path(ruta)\n    if not path.exists():\n        return []\n    try:\n        return json.loads(path.read_text(encoding='utf-8'), object_hook=_deserializar)\n    except json.JSONDecodeError:\n        # Nunca crashees por un archivo corrupto: recupera y avisa\n        path.replace(path.with_suffix('.corrupto'))\n        return []\n\n# Mapa de pérdidas del round-trip que debes memorizar:\n# datetime        → TypeError (sin default)      → reconstruir con object_hook\n# set             → TypeError (siempre)          → list() manual + documentar\n# tuple           → list (silencioso)            → marcador {'__tuple__': [...]}\n# claves int      → string (silencioso)          → convertir al cargar\n# float grandes   → posible pérdida de precisión → str o Decimal\n# None/True/False → null/true/false (correcto)",
     "disenso_experto": "`default=str` vs serializador ISO explícito. `default=str` es pragmático: nunca crashea y datetime queda como '2026-09-29 10:30:00' (formato str, no ISO estándar con la T). Pero convierte CUALQUIER objeto no serializable en su repr de string — un set queda como \"{'a', 'b'}\" que NO puedes reconstruir. El serializador explícito falla rápido en tipos desconocidos (mejor que corromper en silencio) y usa ISO 8601 (ordenable lexicográficamente, estándar internacional). Para datos que viajarán a tu API en Fase 2: ISO siempre.",
-    "pregunta_transferencia": "Guardas un dict `{1: 'uno', 2: 'dos'}` en JSON y al cargarlo obtienes `{'1': 'uno', '2': 'dos'}` — las claves son strings. Tu código hace `datos[1]` y lanza KeyError solo en producción (tras reiniciar la app), nunca en la primera ejecución donde los datos aún están en memoria. Explica exactamente por qué el bug es intermitente y qué patrón de diseño lo previene.",
+    "pregunta_transferencia": "Al guardar un diccionario `{1: 'uno', 2: 'dos'}` en JSON y cargarlo, obtienes `{'1': 'uno', '2': 'dos'}`; las claves se convierten en strings. Si tu código accede a `datos[1]` esperando una clave entera, se producirá un `KeyError` solo después de que los datos sean leídos del archivo, es decir, en producción tras reiniciar la aplicación, porque la primera ejecución trabaja con la versión en memoria donde las claves siguen siendo enteros.\n\nEste comportamiento intermitente ocurre porque la serialización transforma automáticamente las claves numéricas en cadenas, y la pista para corregirlo es validar o convertir las claves después de la carga, o bien usar un wrapper que garantice que las claves se traten como su tipo original antes de cualquier acceso.",
     "quiz": {
       "pregunta": "¿Qué hace `ensure_ascii=False` en json.dump?",
       "opciones": [
@@ -350,6 +401,57 @@
       "datetime",
       "persistencia",
       "archivos"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de los siguientes tipos de datos **NO** puede serializarse directamente por el módulo `json` de Python?",
+        "opciones": [
+          "texto",
+          "42",
+          "datetime.datetime(2023, 1, 1, 12, 0)",
+          "True"
+        ],
+        "correcta": "C",
+        "explicacion": "El módulo json solo admite los seis tipos básicos: str, int, float, bool, list, dict y None. `datetime.datetime` es un objeto complejo que no está incluido en esa lista, por lo que `json.dump` lanzará `TypeError`. Las otras opciones (texto, número, booleano) son tipos permitidos y se serializan sin problemas.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Considere el siguiente fragmento de código:\n\npython\nimport json\ndef guardar_notas(ruta, notas):\n    with open(ruta, 'w') as f:\n        json.dump(notas, f)\n\n\nSi `notas` contiene un objeto `datetime.datetime`, ¿qué excepción se producirá al ejecutar `guardar_notas('notas.json', notas)`?",
+        "opciones": [
+          "ValueError: datetime is not JSON serializable",
+          "TypeError: Object of type datetime is not JSON serializable",
+          "UnicodeEncodeError",
+          "FileNotFoundError"
+        ],
+        "correcta": "B",
+        "explicacion": "El método `json.dump` intenta convertir cada objeto a JSON; como `datetime.datetime` no está entre los tipos soportados, Python lanza `TypeError: Object of type datetime is not JSON serializable`. Las demás opciones corresponden a errores diferentes (ValueError no existe en este contexto, UnicodeEncodeError ocurre con caracteres no ASCII, FileNotFoundError solo si el archivo no existe).",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Después de cargar un archivo JSON con `json.load`, el código intenta acceder a `datos[1]` y se produce un `KeyError: '1'`. ¿Cuál es la causa más probable?",
+        "opciones": [
+          "La clave original era un entero y JSON la convierte en cadena, por lo que la búsqueda con clave entera falla.",
+          "El archivo JSON está corrupto y falta la clave '1'.",
+          "No se especificó el parámetro `encoding` al abrir el archivo, provocando una codificación inesperada.",
+          "Falta el parámetro `indent` al cargar, lo que impide leer el contenido."
+        ],
+        "correcta": "A",
+        "explicacion": "JSON siempre convierte las claves de los diccionarios a strings, incluso si en el código original eran enteros. Al cargar el archivo, el diccionario resultante tiene la clave `'1'` (string) en lugar de `1` (int). Intentar acceder con `datos[1]` busca una clave entera que no existe, generando `KeyError`. Las otras opciones no afectan la conversión de claves.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la principal ventaja de usar `indent=2` al serializar un objeto a JSON?",
+        "opciones": [
+          "Reduce el tamaño del archivo, haciendo que la transferencia sea más rápida.",
+          "Mejora la legibilidad para humanos, facilitando la revisión y depuración.",
+          "Evita que se produzcan errores de tipo durante la deserialización.",
+          "Permite que el JSON sea compatible con más lenguajes de programación."
+        ],
+        "correcta": "B",
+        "explicacion": "El parámetro `indent` añade saltos de línea y espacios, estructurando el JSON de forma legible. Esto permite a los desarrolladores inspeccionar rápidamente la estructura y detectar errores. No afecta el tamaño (de hecho puede aumentarlo ligeramente), ni evita errores de tipo ni mejora la compatibilidad multiplataforma.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -425,13 +527,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "Un file object en Python es su propio iterador: `for linea in f` lee UNA línea a la vez con memoria O(1), sin importar si el archivo pesa 10KB o 10GB. `f.readlines()` y `f.read()` cargan TODO a memoria — O(n). La regla de auditoría: si ves readlines() o read() sobre un archivo cuyo tamaño no controlas (logs, exports, datos de usuario), es una bomba de memoria latente. Con un log de 8GB en un servidor con 4GB de RAM, readlines() mata el proceso con MemoryError. Con streaming, lo procesas igual de bien en tu teléfono.",
+    "modelo_mental": "Piensa en un archivo grande como una biblioteca enorme. Usar `for linea en f` es como leer un libro página por página: solo tienes la página actual en tu mente, sin importar cuántas páginas tenga el libro, porque no cargas el resto. En cambio, `f.readlines()` es como fotocopiar todo el libro y llevártelo a tu escritorio: consumes espacio en tu escritorio (memoria) proporcional al tamaño del libro, independientemente de cuánto leas. Esta analogía resalta la diferencia clave: el streaming es selectivo y eficiente, mientras que los métodos de carga completa son arbitrarios y costosos.\n\nEsto es crucial porque en sistemas con recursos limitados, como servidores con poca RAM o navegadores móviles, cargando un archivo completo en memoria puedes causar un **MemoryError** o ralentizar todo el sistema. Por ejemplo, un log de 8GB en un servidor con 4GB de RAM hará que el proceso se colapse inmediatamente. Usando streaming, mantienes la memoria constante, lo que permite procesar archivos del tamaño de un terabyte en un dispositivo pequeño como un teléfono. Además, el streaming permite procesamiento en tiempo real, ya que no esperas a cargar todo el archivo antes de empezar.\n\nLa regla de auditoría es simple: si ves `readlines()` o `read()` sobre un archivo cuyo tamaño no controlas (logs, exports, datos de usuario), es una bomba de memoria latente. Estos métodos previenen errores comunes como el agotamiento de memoria, caídas del sistema, y problemas de rendimiento en aplicaciones de gran escala. En resumen, siempre que sea posible, prefiere iteradores sobre la carga completa para garantizar estabilidad y escalabilidad.",
     "codigo_roto": "def lineas_de_error(ruta):\n    with open(ruta, encoding='utf-8') as f:\n        lineas = f.readlines()\n    resultado = []\n    for linea in lineas:\n        if 'ERROR' in linea:\n            resultado.append(linea)\n    return resultado",
-    "diagnostico": "Doble carga en memoria: readlines() materializa todas las líneas como lista de strings, y `resultado` acumula otra lista con las coincidentes. Con un log de 1M de líneas ocupas ~10x el tamaño del archivo en RAM. Funcionalmente correcto, estructuralmente insostenible: en la PWA (Pyodide con memoria limitada del navegador móvil) un archivo grande tumbaría la pestaña. La versión streaming usa un generator: produce cada línea bajo demanda, memoria constante.",
+    "diagnostico": "1. El primer error es el uso de `readlines()`, que materializa todas las líneas del archivo en una lista de strings. Esto es O(n) en memoria, y para archivos grandes, puede superar la memoria disponible. Python lanzará un MemoryError si no hay suficiente RAM, porque intenta asignar un bloque continuo de memoria para la lista, lo que falla cuando el tamaño excede el límite físico. El patrón general es que cualquier método que cargue datos completos en memoria es vulnerable a limitaciones del sistema.\n\n2. El segundo error es la acumulación de otra lista `resultado`, que duplica el uso de memoria. Incluso si el archivo no es enorme, esta doble carga es ineficiente: por cada línea que coincide, se guarda un referencia en `resultado`, lo que aumenta el consumo de memoria en un factor de ~2x. Además, si el archivo es muy grande, ambas listas pueden no caber en memoria simultáneamente, causando un error de asignación. El patrón aquí es evitar la creación de colecciones intermedias; en su lugar, usa generadores que produzcan elementos bajo demanda, manteniendo la memoria constante.\n\nEn general, el problema subyacente es la falta de conciencia sobre el flujo de datos: Python no lanza errores específicos por este patrón, pero el MemoryError es una consecuencia directa. La solución es reemplazar la carga completa por iteración perezosa, como `for linea en f`, que procesa cada línea sin acumularla.",
     "codigo_corregido": "def lineas_de_error(ruta):\n    with open(ruta, encoding='utf-8') as f:\n        for linea in f:\n            if 'ERROR' in linea:\n                yield linea",
     "codigo_optimizado": "from itertools import islice\nfrom collections import Counter\n\n# Generator: el patrón base de streaming\ndef lineas_de_error(ruta):\n    with open(ruta, encoding='utf-8') as f:\n        for linea in f:\n            if 'ERROR' in linea:\n                yield linea\n\n# Pipelines encadenados: cada etapa es perezosa, nada se materializa\ndef sin_timestamp(lineas):\n    for l in lineas:\n        yield l.split(' ', 2)[-1].strip()\n\npipeline = sin_timestamp(lineas_de_error('app.log'))\nprimeros_5 = list(islice(pipeline, 5))   # lee SOLO lo necesario del archivo\n\n# Contar sin acumular: O(1) memoria aunque haya 1M de errores\ndef contar_errores(ruta):\n    total = 0\n    with open(ruta, encoding='utf-8') as f:\n        for linea in f:\n            if 'ERROR' in linea:\n                total += 1\n    return total\n\n# Estadísticas por streaming con Counter\ndef top_mensajes_error(ruta, n=10):\n    c = Counter()\n    with open(ruta, encoding='utf-8') as f:\n        for linea in f:\n            if 'ERROR' in linea:\n                c[linea.split(' ', 2)[-1].strip()] += 1\n    return c.most_common(n)\n\n# CUIDADO con el generator + with: el archivo se cierra cuando el generator\n# se agota o se recolecta. Si lo abandonas a medias, cierra explícitamente:\ngen = lineas_de_error('app.log')\nprimera = next(gen)\ngen.close()   # libera el file descriptor de inmediato\n\n# Procesar por bloques (chunks) cuando necesitas más que líneas:\ndef leer_por_bloques(ruta, tamano=64 * 1024):\n    with open(ruta, encoding='utf-8') as f:\n        while bloque := f.read(tamano):   # walrus + read(n) acotado\n            yield bloque",
     "disenso_experto": "¿readlines() está mal siempre? No: para archivos pequeños (< 1MB) cuyo tamaño controlas (un config, un CSV de 500 filas), readlines() es inocuo e incluso más cómodo si necesitas indexar líneas o recorrerlas varias veces. El generator solo permite UN recorrido secuencial. La regla profesional no es 'nunca readlines' sino '¿quién controla el tamaño de este archivo?'. Si el archivo viene del usuario, de un log o de internet: streaming obligatorio. Si es un recurso tuyo pequeño y acotado: lo que sea más legible. El bug no es la técnica, es aplicarla a archivos de tamaño desconocido.",
-    "pregunta_transferencia": "Necesitas procesar un log de 12GB en un servidor con 2GB de RAM: contar errores por día y extraer las últimas 100 líneas con ERROR. Diseña el pipeline con generators que lo resuelva con memoria constante. ¿Por qué `list(lineas_de_error(ruta))[-100:]` sería catastrófico a pesar de que lineas_de_error sea un generator?",
+    "pregunta_transferencia": "Imagina que tienes que analizar un log de 12GB en un servidor con solo 2GB de RAM. Necesitas dos cosas: contar cuántos errores hubo por cada día (basándose en la marca de tiempo de cada línea) y extraer las últimas 100 líneas que contienen 'ERROR'. Si usas métodos tradicionales, como leer todo el archivo en memoria con `readlines()`, el sistema fallará porque no hay suficiente RAM para cargalos. En su lugar, debes diseñar un pipeline que use generators para procesar línea a línea, contabilizando los errores por día en un diccionario y guardando solo las últimas 100 líneas con ERROR, sin mantener todo en memoria.\n\nLa pista es que, aunque `lineas_de_error` pueda ser un generator que filtre líneas con ERROR, convertirlo a una lista con `list(lineas_de_error(ruta))[-100:]` sería catastrófico porque `list()` fuerza la evaluación completa del generator, cargando todas las líneas coincidentes en memoria. En un archivo de 12GB, incluso si solo una pequeña parte tiene ERROR, el generator podría producir millones de líneas, y `list()` las acumularía en una lista, superando los 2GB de RAM. En su lugar, piensa en cómo hacer un recorrido inverso o usar un buffer limitado para obtener las últimas 100 líneas sin materializar la lista completa, manteniendo la memoria constante.",
     "quiz": {
       "pregunta": "¿Cuánta memoria consume `for linea in f:` al recorrer un archivo de 10GB?",
       "opciones": [
@@ -483,6 +585,57 @@
       "memoria",
       "logs",
       "archivos-grandes"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones es verdadera sobre la iteración sobre un archivo en Python?",
+        "opciones": [
+          "A) `for linea en f` procesa línea a línea, usando memoria constante.",
+          "B) `f.readlines()` es más eficiente en memoria que `for linea en f`.",
+          "C) `f.read()` siempre es mejor que `f.readlines()`.",
+          "D) No hay diferencia en memoria entre `for linea en f` y `f.readlines()`."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque `for linea en f` es un iterador que lee una línea a la vez, manteniendo la memoria constante independientemente del tamaño del archivo. La opción B es incorrecta porque `readlines()` carga todo el archivo en memoria, siendo menos eficiente. La opción C es falsa porque `read()` también carga datos completos si no se especifica un tamaño, y no es mejor en todos los casos. La opción D es incorrecta porque sí hay una diferencia significativa en el uso de memoria.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código proporcionado, ¿qué problema principal hay?\ndef lineas_de_error(ruta):\n    with open(ruta, encoding='utf-8') as f:\n        lineas = f.readlines()\n    resultado = []\n    for linea in lineas:\n        if 'ERROR' in linea:\n            resultado.append(linea)\n    return resultado",
+        "opciones": [
+          "A) El código no cierra el archivo.",
+          "B) Usa `readlines()` que puede causar MemoryError con archivos grandes.",
+          "C) La variable `resultado` no está bien definida.",
+          "D) El código es correcto."
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el uso de `readlines()` carga todas las líneas del archivo en una lista, lo que puede agotar la memoria si el archivo es grande, llevando a un MemoryError. La opción A es un problema pero no el principal, ya que el `with` statement cierra el archivo automáticamente. La opción C es falsa porque `resultado` está definido correctamente. La opción D es incorrecta porque el código tiene un problema de eficiencia en memoria.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si un programa falla con MemoryError al leer un archivo, ¿cuál es la causa más probable?",
+        "opciones": [
+          "A) El archivo está vacío.",
+          "B) Se está usando `for linea en f` en lugar de `readlines()`.",
+          "C) Se está cargando el archivo completo en memoria con `read()` o `readlines()`.",
+          "D) El archivo tiene un formato incorrecto."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque el MemoryError se lanza cuando se intenta asignar más memoria de la disponible, y métodos como `read()` o `readlines()` cargan el archivo entero en memoria, lo que es común con archivos grandes. La opción A no causa MemoryError, un archivo vacío usa poca memoria. La opción B es incorrecta porque `for linea en f` usa menos memoria y no causaría este error. La opción D puede causar otros errores pero no MemoryError por sí sola.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué técnicas se pueden usar para procesar archivos grandes sin cargalos en memoria?",
+        "opciones": [
+          "A) Usar generadores que produzcan líneas bajo demanda.",
+          "B) Leer el archivo en trozos con un tamaño fijo.",
+          "C) Usar `f.readlines()` con un archivo pequeño.",
+          "D) Tanto A como B son correctas."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta porque tanto los generadores (como `for linea en f`) como la lectura en chunks (usando `f.read(chunk_size)`) son métodos de streaming que mantienen la memoria constante. La opción A es válida por sí misma, pero no completa; la opción B también es válida, y la opción D las combina. La opción C es incorrecta para archivos grandes, ya que `readlines()` siempre carga todo, independientemente del tamaño del archivo.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -556,13 +709,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "El estilo Python es EAFP ('Easier to Ask Forgiveness than Permission'): haz la operación y captura el error específico, en lugar de LBYL ('Look Before You Leap'): verificar condiciones antes. LBYL con archivos tiene un defecto estructural llamado TOCTOU (time-of-check to time-of-use): entre tu `os.path.exists()` y tu `open()`, el archivo puede desaparecer, cambiar o bloquearse — la verificación no garantiza nada. La taxonomía que debes conocer: FileNotFoundError (no existe), PermissionError (sin acceso), IsADirectoryError (es carpeta), FileExistsError (modo 'x' y ya estaba), todas hijas de OSError.",
+    "modelo_mental": "El estilo Python favorece EAFP ('Easier to Ask Forgiveness than Permission') sobre LBYL ('Look Before You Leap'). La analogía central es como pedir permiso antes de hablar: LBYL es como preguntar '¿puedo hablar?' antes de cada frase, pero entre que preguntas y que hablas, alguien puede interrumpirte o el contexto cambia. EAFP es como hablar directamente y disculparse si te interrumpen. Esto importa porque en sistemas concurrentes o con recursos compartidos (como archivos), las condiciones cambian constantemente. El patrón `os.path.exists()` seguido de `open()` crea una ventana de tiempo entre verificación y uso, conocida como TOCTOU (time-of-check to time-of-use). Este enfoque no solo es más lento (dos llamadas al sistema), sino que introduce bugs sutiles que son difíciles de reproducir. La filosofía EAFP alinea con el Zen de Python: 'Es mejor pedir perdón que permiso', lo que lleva a código más limpio y menos propenso a condiciones de carrera.\n\nLa taxonomía de errores de archivo es clave para manejar excepciones correctamente. Todas las excepciones de archivo derivan de `OSError`, lo que permite capturar el caso general o casos específicos. `FileNotFoundError` ocurre cuando la ruta no existe, `PermissionError` cuando el proceso carece de permisos, `IsADirectoryError` cuando intentas abrir una carpeta como archivo, y `FileExistsError` cuando usas modo 'x' y el archivo ya existe. Conocer esta jerarquía permite escribir manejadores de excepciones precisos en lugar de atrapar todo con `except Exception`, que es una mala práctica que enmascara errores reales.\n\nEste modelo mental previene errores comunes como fugas de descriptores de archivo (no usar `with`), condiciones de carrera (TOCTOU), y manejo inadecuado de errores (capturar excepciones genéricas). Al adoptar EAFP, el código se vuelve más robusto frente a cambios en el sistema de archivos entre la verificación y la operación. Además, fuerza al desarrollador a pensar en qué errores específicos pueden ocurrir y cómo manejarlos, en lugar de asumir que una verificación previa cubre todos los casos.",
     "codigo_roto": "import os\n\ndef leer_si_existe(ruta):\n    if os.path.exists(ruta):\n        f = open(ruta, encoding='utf-8')\n        contenido = f.read()\n        f.close()\n        return contenido\n    return None",
-    "diagnostico": "LBYL clásico con tres defectos. (1) TOCTOU: exists() verifica en un instante, open() ocurre después — en un script que corre mientras otro proceso mueve archivos (típico en automatización), la verificación miente. (2) Sin with: si read() lanza UnicodeDecodeError, el descriptor queda abierto. (3) Incompleto: si la ruta es un DIRECTORIO, exists() retorna True y open() crashea con IsADirectoryError no manejado. El contrato 'retorna None si no es legible' solo cubre el caso de no-existencia. EAFP resuelve los tres: intenta leer, captura las excepciones específicas que significan 'no legible'.",
+    "diagnostico": "1. **TOCTOU (Time-of-Check to Time-of-Use)**: El código usa `os.path.exists()` para verificar la existencia del archivo antes de abrirlo. Sin embargo, entre la llamada a `exists()` y `open()`, otro proceso puede eliminar, mover o bloquear el archivo. Esto es especialmente problemático en scripts de automatización donde múltiples procesos interactúan con el sistema de archivos simultáneamente. Python no puede garantizar que el estado verificado permanezca igual, lo que convierte a LBYL en una antipatrn en entornos concurrentes.\n2. **Fuga de descriptor de archivo**: El código abre el archivo con `f = open(...)` pero no usa un bloque `with`. Si `f.read()` lanza una excepción como `UnicodeDecodeError` (por ejemplo, si el archivo no es UTF-8), la llamada a `f.close()` nunca se ejecuta, dejando el descriptor de archivo abierto. Esto puede agotar los límites del sistema y causar comportamientos impredecibles. Python no cierra automáticamente los archivos abiertos sin `with` o `close()` explícito.\n3. **Manejo incompleto de errores**: El contrato dice 'retorna None si no es legible', pero solo verifica existencia. Si la ruta apunta a un directorio, `os.path.exists()` retorna `True`, pero `open()` lanza `IsADirectoryError`. Esta excepción no se captura, causando un crash. El patrón general aquí es que LBYL solo verifica una condición (existencia) pero ignora otras (permisos, tipo de recurso), lo que requiere verificaciones adicionales que siguen siendo proclives a TOCTOU.",
     "codigo_corregido": "def leer_si_existe(ruta):\n    try:\n        with open(ruta, encoding='utf-8') as f:\n            return f.read()\n    except (FileNotFoundError, IsADirectoryError):\n        return None",
     "codigo_optimizado": "from pathlib import Path\n\n# Jerarquía de excepciones que debes conocer:\n# OSError\n# ├── FileNotFoundError   (ENOENT: no existe)\n# ├── PermissionError     (EACCES: sin permisos)\n# ├── IsADirectoryError   (EISDIR: es carpeta)\n# ├── FileExistsError     (EEXIST: ya existe, modo 'x')\n# └── NotADirectoryError  (ENOTDIR: un componente no es carpeta)\n\ndef leer_si_existe(ruta) -> str | None:\n    \"\"\"Contenido si es un archivo legible; None si no existe o es directorio.\n    PermissionError SE PROPAGA: sin permisos es un problema real, no 'ausencia'.\"\"\"\n    try:\n        with open(ruta, encoding='utf-8') as f:\n            return f.read()\n    except (FileNotFoundError, IsADirectoryError):\n        return None\n\n# Patrón EAFP para leer-o-crear config (evita carrera entre exists y open)\ndef leer_o_crear_config(ruta, fabrica=dict):\n    try:\n        with open(ruta, encoding='utf-8') as f:\n            return json.load(f)\n    except FileNotFoundError:\n        config = fabrica()\n        guardar_atomico(ruta, config)   # ver M1.3-007\n        return config\n\n# Cuándo LBYL sí es aceptable:\n# - Verificaciones de UX (mostrar estado antes de una acción larga del usuario)\n# - Cuando el check es mucho más barato que la excepción (código caliente con\n#   fallo FRECUENTE: lanzar excepciones cuesta ~microsegundos)\n# En ambos casos el resultado es informativo; la operación real sigue protegida\n# por try/except. LBYL nunca como ÚNICA defensa.\n\n# El anti-patrón que jamás debes escribir:\n# if os.path.exists(p):\n#     open(p)        ← entre estas dos líneas, el mundo puede cambiar",
     "disenso_experto": "EAFP vs LBYL tiene matices de rendimiento reales: lanzar y capturar una excepción en Python moderno cuesta ~1 microsegundo (3.11+ lo optimizó mucho), mientras que un os.path.exists() cuesta una syscall (~2-5 µs). Para fallos RAROS, EAFP gana en velocidad Y robustez. Para fallos CONSTANTES en código caliente (ej. verificar 10M de paths que casi nunca existen), un set pre-cargado en memoria vence a ambos. La regla: EAFP por defecto; optimiza con medición, no con intuición.",
-    "pregunta_transferencia": "Un script de deployment hace `if not os.path.exists(lock): open(lock,'x')` para evitar ejecuciones concurrentes. Dos procesos llegan a la vez, ambos ven que el lock no existe, ambos lo crean... ¿cómo es posible si el segundo debería fallar? Explica la ventana TOCTOU exacta y por qué `open(lock, 'x')` DENTRO de un try/except FileExistsError cierra la carrera por completo.",
+    "pregunta_transferencia": "Imagina un script de despliegue que usa `if not os.path.exists(lock): open(lock, 'x')` para prevenir ejecuciones concurrentes. Dos procesos llegan casi al mismo tiempo, ambos verifican que el archivo de bloqueo no existe, y ambos intentan crearlo. Aunque el segundo `open(lock, 'x')` debería fallar con `FileExistsError`, ambos procesos continúan ejecutándose. La ventana TOCTOU aquí es crítica: entre que el primer proceso verifica `exists()` y crea el archivo, el segundo proceso también verifica y encuentra que aún no existe. La solución es mover la operación de creación dentro de un bloque `try/except FileExistsError`, eliminando la verificación previa. Esto convierte la operación en atómica desde la perspectiva del programador, ya que el sistema de archivos garantiza que solo un proceso pueda crear el archivo con éxito.",
     "quiz": {
       "pregunta": "¿Qué excepción lanza `open('/home/user/', encoding='utf-8')` cuando la ruta es un directorio existente?",
       "opciones": [
@@ -614,6 +767,57 @@
       "archivos",
       "errores",
       "oserror"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el problema principal con este patrón LBYL para leer archivos?",
+        "opciones": [
+          "Es más lento porque usa dos llamadas al sistema",
+          "Puede causar condiciones de carrera TOCTOU entre exists() y open()",
+          "No maneja correctamente la codificación UTF-8",
+          "No verifica si el archivo es legible por el usuario"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el problema estructural de LBYL con archivos es la ventana TOCTOU. Entre que `os.path.exists()` verifica y que `open()` abre, otro proceso puede modificar el archivo. La opción A es parcialmente cierta pero no es el problema principal. La opción C es incorrecta porque la codificación no está relacionada con LBYL vs EAFP. La opción D es un problema, pero secundario al TOCTOU.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué excepción lanza Python al ejecutar este código si /tmp es una carpeta?",
+        "opciones": [
+          "FileNotFoundError",
+          "PermissionError",
+          "IsADirectoryError",
+          "FileExistsError"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque `IsADirectoryError` se lanza cuando intentas abrir una carpeta como si fuera un archivo. La opción A es incorrecta porque el directorio existe. La opción B no aplica a menos que haya restricciones de permisos. La opción D es para modo 'x' con archivos existentes.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué causa el siguiente error: 'UnboundLocalError: local variable f referenced before assignment'?",
+        "opciones": [
+          "El archivo no existe en la ruta especificada",
+          "La variable f se usa antes de ser asignada en una excepción",
+          "El archivo está bloqueado por otro proceso",
+          "La codificación del archivo no es UTF-8"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta: si `open()` lanza una excepción, `f` nunca se asigna, pero el código intenta usar `f` en el `finally` o des despues. La opción A causaría `FileNotFoundError`. La opción C causaría un error de bloqueo. La opción D causaría `UnicodeDecodeError`.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la mejor práctica para reescribir este código usando EAFP?",
+        "opciones": [
+          "Usar os.path.isfile() antes de open() y envolver en try/except",
+          "Envolver open() en try/except FileNotFoundError y usar with",
+          "Verificar permisos con os.access() antes de abrir",
+          "Usar pathlib.Path.read_text() sin manejo de errores"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque EAFP implica intentar la operación y capturar excepciones específicas, usando `with` para gestión automática de recursos. La opción A sigue siendo LBYL. La opción C agrega verificaciones innecesarias. La opción D ignora errores por completo.",
+        "tipo": "codigo"
+      }
     ]
   },
   {
@@ -690,13 +894,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "Una capa de persistencia concentra TODOS los riesgos de I/O en un solo lugar — por eso es el mejor sitio para aplicar todo lo aprendido de golpe. El contrato de un Store robusto tiene 4 cláusulas: (1) leer sin crashear (archivo ausente → estado inicial; archivo corrupto → recuperación con respaldo), (2) escribir atómicamente (nunca corromper lo existente), (3) serializar tipos reales del dominio (fechas → ISO), (4) encoding explícito en todo. La IA genera el esqueleto feliz que viola las 4; tu trabajo es saber cuáles faltan antes de que los datos del usuario lo demuestren.",
+    "modelo_mental": "Una capa de persistencia concentra **todos los riesgos de I/O** en un solo lugar, por eso es el mejor sitio para aplicar todo lo aprendido de golpe. El **contrato de un Store robusto** tiene 4 cláusulas fundamentales: (1) **leer sin crashear** — el archivo ausente debe producir estado inicial, no error; el archivo corrupto debe activar un respaldo, no una excepción. (2) **escribir atómicamente** — nunca corromper lo existente; un guardado fallido no debe dejar el archivo medio escrito. (3) **serializar tipos reales del dominio** — fechas como `datetime` deben convertirse a ISO, no lanzar `TypeError`. (4) **encoding explícito** en todo, con `ensure_ascii=False` para preservar acentos y portabilidad. La IA genera el esqueleto feliz que viola las 4; tu trabajo es saber cuáles faltan antes de que los datos del usuario lo demuestren. Esta mentalidad evita fallos costosos: una app que crashe en la primera nota o que se bloquee con un archivo corrupto es inútil, mientras que una capa robusta centraliza el manejo de bordes y permite crecer sin miedo.",
     "codigo_roto": "import json\nimport os\nfrom datetime import datetime\n\nclass NoteStore:\n    def __init__(self, ruta):\n        self.ruta = ruta\n        if os.path.exists(ruta):\n            with open(ruta) as f:\n                self.notas = json.load(f)\n        else:\n            self.notas = []\n\n    def agregar(self, texto):\n        nota = {'texto': texto, 'creada': datetime.now()}\n        self.notas.append(nota)\n        self._guardar()\n\n    def _guardar(self):\n        with open(self.ruta, 'w') as f:\n            json.dump(self.notas, f)",
-    "diagnostico": "Las 4 cláusulas violadas: (1) `agregar()` crashea con TypeError en la PRIMERA nota — datetime no es serializable y no hay default=. La app es inutilizable desde el minuto uno. (2) `__init__` crashea con JSONDecodeError si el archivo está corrupto (corte de energía durante un guardado anterior — exactamente lo que produce _guardar sin atomicidad): sin recuperación, sin respaldo, la app queda brickeada. (3) `_guardar` con open('w') directo: cada guardado es una ruleta rusa de corrupción (M1.3-007). (4) Sin encoding ni ensure_ascii=False: acentos escapados + bug de portabilidad Windows. (5) Bonus: LBYL con exists() en __init__ (M1.3-008). Este es el código que obtienes al pedirle a una IA 'una clase para guardar notas en JSON' — parece completo, falla en cada borde.",
+    "diagnostico": "1) **`agregar()` crashea con `TypeError`** en la primera nota porque `datetime.now()` no es serializable por JSON y no hay `default=`. La app es inutilizable desde el minuto uno. El patrón general es que la serialización debe manejar tipos no nativos. 2) **`__init__` crashea con `JSONDecodeError`** si el archivo está corrupto (corte de energía durante un guardado anterior). Sin recuperación ni respaldo, la app queda brickeada. Esto refleja la falta de escritura atómica y de manejo de excepciones. 3) **`_guardar` con `open('w')` directo** es una ruleta rusa: cada guardado puede corromper el archivo si falla el proceso. El patrón general es escribir a un archivo temporal y renombrar (atomicidad). 4) **Sin `encoding` ni `ensure_ascii=False`**: acentos se escapan como `\\u00e9` y hay bug de portabilidad Windows. El patrón es especificar siempre `encoding='utf-8'`. 5) **Bonus: LBYL con `exists()`** en `__init__` es propenso a condiciones de carrera; el patrón general en Python es EAFP (Easier to Ask for Forgiveness than Permission).",
     "codigo_corregido": "import json\nimport os\nimport tempfile\nfrom datetime import datetime\n\nclass NoteStore:\n    def __init__(self, ruta):\n        self.ruta = ruta\n        self.notas = self._cargar()\n\n    def _cargar(self):\n        try:\n            with open(self.ruta, encoding='utf-8') as f:\n                datos = json.load(f)\n            return datos if isinstance(datos, list) else []\n        except FileNotFoundError:\n            return []\n        except json.JSONDecodeError:\n            try:\n                os.replace(self.ruta, self.ruta + '.corrupto')\n            except OSError:\n                pass\n            return []\n\n    def agregar(self, texto):\n        nota = {'texto': texto, 'creada': datetime.now().isoformat()}\n        self.notas.append(nota)\n        self._guardar()\n\n    def _guardar(self):\n        dirn = os.path.dirname(os.path.abspath(self.ruta))\n        fd, tmp = tempfile.mkstemp(dir=dirn, suffix='.tmp')\n        try:\n            with os.fdopen(fd, 'w', encoding='utf-8') as f:\n                json.dump(self.notas, f, ensure_ascii=False, indent=2)\n            os.replace(tmp, self.ruta)\n        except BaseException:\n            try:\n                os.unlink(tmp)\n            except OSError:\n                pass\n            raise",
     "codigo_optimizado": "import json\nimport os\nimport tempfile\nfrom datetime import datetime\nfrom pathlib import Path\n\nclass NoteStore:\n    \"\"\"Persistencia de notas con las 4 cláusulas + API de dominio completa.\"\"\"\n\n    def __init__(self, ruta):\n        self.ruta = Path(ruta)\n        self.notas = self._cargar()\n\n    # ---- Cláusula 1: lectura tolerante ----\n    def _cargar(self):\n        try:\n            datos = json.loads(self.ruta.read_text(encoding='utf-8'))\n            return datos if isinstance(datos, list) else []\n        except FileNotFoundError:\n            return []\n        except json.JSONDecodeError:\n            # Respaldar el corrupto: los datos del usuario se investigan, no se borran\n            backup = self.ruta.with_suffix('.corrupto')\n            try:\n                self.ruta.replace(backup)\n            except OSError:\n                pass\n            return []\n\n    # ---- Cláusulas 2+3+4: escritura atómica, ISO, UTF-8 ----\n    def _guardar(self):\n        self.ruta.parent.mkdir(parents=True, exist_ok=True)\n        fd, tmp = tempfile.mkstemp(dir=self.ruta.parent, suffix='.tmp')\n        try:\n            with os.fdopen(fd, 'w', encoding='utf-8') as f:\n                json.dump(self.notas, f, ensure_ascii=False, indent=2, default=str)\n            os.replace(tmp, self.ruta)\n        except BaseException:\n            try:\n                os.unlink(tmp)\n            except OSError:\n                pass\n            raise\n\n    # ---- API de dominio ----\n    def agregar(self, texto: str) -> dict:\n        nota = {'texto': texto, 'creada': datetime.now().isoformat()}\n        self.notas.append(nota)\n        self._guardar()\n        return nota\n\n    def eliminar(self, indice: int) -> None:\n        del self.notas[indice]   # IndexError si fuera de rango: correcto, no silenciar\n        self._guardar()\n\n    def buscar(self, termino: str):\n        t = termino.lower()\n        return (n for n in self.notas if t in n['texto'].lower())  # generator: M1.3-006\n\n    def exportar_txt(self, ruta):\n        with open(ruta, 'w', encoding='utf-8') as f:\n            for n in self.notas:\n                f.write(f\"[{n['creada']}] {n['texto']}\\n\")\n\n# MICROPROYECTO del módulo: con esta clase ya tienes el núcleo de tu app\n# de notas. Siguiente paso natural (Fase 2): exponerla tras una API FastAPI.",
     "disenso_experto": "¿Guardar en cada mutación (write-through, como hace esta clase) o guardar solo con un método explícito save()? Write-through nunca pierde datos si la app crashea, pero paga I/O en cada operación — con cientos de notas y guardado frecuente en móvil, se siente. Save() explícito es rápido pero confía en que el cierre sea limpio. La solución intermedia profesional: write-through con debounce (guardar como máximo una vez cada N segundos tras el último cambio) o guardar en los puntos de transición (cambio de pantalla, blur de la ventana). Para una app de notas con decenas de operaciones por sesión: write-through directo es correcto; el debate empieza con miles de escrituras por minuto.",
-    "pregunta_transferencia": "Tu NoteStore guarda en cada agregar(). Un usuario con 5000 notas agrega 100 notas en un minuto: son 100 escrituras completas de un JSON que crece (cada _guardar serializa las 5000+ notas). ¿Qué complejidad total tiene esa ráfaga y qué dos estrategias concretas la reducen a O(n) sin sacrificar la durabilidad?",
+    "pregunta_transferencia": "Tu NoteStore guarda en cada `agregar()`. Un usuario con 5000 notas agrega 100 notas en un minuto: son 100 escrituras completas de un JSON que crece (cada `_guardar` serializa las 5000+ notas). ¿Qué complejidad total tiene esa ráfaga y qué dos estrategias concretas la reducen a O(n) sin sacrificar la durabilidad? Escenario: la app se vuelve lenta y consume recursos excesivos. Pista: piensa en cómo evitar reescribir todo el archivo en cada operación, manteniendo la integridad de los datos. No se trata de cambiar el formato, sino de rediseñar el flujo de escritura para que el coste total sea lineal con el número de notas finales, no multiplicativo.",
     "quiz": {
       "pregunta": "El archivo de notas quedó corrupto (JSON inválido) por un corte de energía. ¿Qué debe hacer __init__ de un Store robusto?",
       "opciones": [
@@ -749,6 +953,45 @@
       "codigo-ia",
       "auditoria",
       "microproyecto"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de las siguientes NO es una cláusula del contrato de un Store robusto?",
+        "opciones": [
+          "Leer sin crashear",
+          "Escribir atómicamente",
+          "Serializar tipos reales del dominio",
+          "Usar siempre el mismo encoding"
+        ],
+        "correcta": "D",
+        "explicacion": "Las cuatro cláusulas son: leer sin crashear, escribir atómicamente, serializar tipos reales del dominio y especificar el encoding. La cláusula del encoding es sobre especificarlo explícitamente, no sobre usar siempre el mismo (podría variar según el sistema). Por tanto, 'Usar siempre el mismo encoding' no es una cláusula del contrato.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué método se usa comúnmente para una escritura atómica en Python?",
+        "opciones": [
+          "open(filename, 'w')",
+          "open(filename, 'a')",
+          "Escribir a un archivo temporal y luego renombrar",
+          "open(filename, 'wb')"
+        ],
+        "correcta": "C",
+        "explicacion": "La escritura atómica se logra escribiendo los datos en un archivo temporal (por ejemplo, con `tempfile`) y luego renombrándolo al archivo original usando `os.replace()`. Esto asegura que el archivo original no sea corrupto si falla el proceso durante la escritura. Las otras opciones no garantizan atomicidad.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué problema puede causar no especificar el encoding al abrir un archivo en Python?",
+        "opciones": [
+          "El archivo se abrirá siempre en modo binario",
+          "Se pueden ver caracteres extraños o ocurrir errores de decodificación",
+          "El archivo no se pueda guardar",
+          "No hay problema, Python usa UTF-8 por defecto"
+        ],
+        "correcta": "B",
+        "explicacion": "Si no se especifica el encoding, Python usará el encoding del sistema operativo (por ejemplo, 'cp1252' en Windows o 'utf-8' en Linux). Esto puede causar errores de decodificación o caracteres extraños al leer archivos con acentos, y afecta la portabilidad entre sistemas. No es seguro asumir UTF-8 por defecto.",
+        "tipo": "debugging"
+      }
     ]
   }
 ]
