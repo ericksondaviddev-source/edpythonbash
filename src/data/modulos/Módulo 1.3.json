@@ -461,13 +461,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "App de notas/tareas que persiste en archivos JSON",
-    "modelo_mental": "CSV no significa 'valores separados por comas' sino 'valores delimitados con reglas de quoting'. Un campo puede contener comas, saltos de línea y comillas si viene entre comillas dobles (RFC 4180). Parsearlo con `.split(',')` funciona solo hasta el primer campo con coma interna — y los CSVs reales (exportados de Excel, bancos, APIs) SIEMPRE los tienen. El módulo `csv` implementa el estado-máquina del quoting correctamente: `DictReader` te da dicts con las claves del header, `DictWriter` escribe con quoting automático.",
+    "modelo_mental": "**Analogía central**: Leer un CSV es como interpretar un libro donde las comas son puntos y coma pero algunos nombres propios están rodeados de comillas para indicar que contienen más comas; el módulo **csv** aplica una máquina de estados que respeta esas comillas (**RFC 4180**). Esta comprensión evita que un campo como `\"Comprar pan, integral y semillas\"` se corte a mitad, protegiendo la integridad de los datos. **Errores previos**: El código original usa `line.split(',')` y `f.read().split('\\n')`, lo que ignora el cuotizado y rompe la estructura del archivo, generando diccionarios con claves incorrectas.",
     "codigo_roto": "def importar_tareas(ruta):\n    tareas = []\n    with open(ruta, encoding='utf-8') as f:\n        lineas = f.read().split('\\n')\n    headers = lineas[0].split(',')\n    for linea in lineas[1:]:\n        if not linea:\n            continue\n        valores = linea.split(',')\n        tareas.append(dict(zip(headers, valores)))\n    return tareas",
-    "diagnostico": "El campo `\"Comprar pan, integral y semillas\"` tiene una coma INTERNA protegida por comillas. `split(',')` no entiende quoting: parte el campo en dos y desalinea toda la fila (zip trunca silenciosamente los valores sobrantes — sin error, con datos corruptos). Segundo bug: `split('\\n')` rompe con campos multi-línea y con archivos Windows (\\r\\n deja '\\r' pegado al último valor). Tercer bug: lee el archivo completo a memoria (ver M1.3-006). Este código pasa tus pruebas con CSVs simples y corrompe datos silenciosamente con el primer CSV real.",
+    "diagnostico": "1. El uso de `line.split(',')` sobre el contenido leído con `f.read().split('\\n')` no respeta las comillas dobles. Cuando un campo contiene una coma dentro de comillas, el parser lo parte prematuramente, creando más columnas de las esperadas y borrando información.\\n2. La lectura completa del archivo (`f.read()`) consume mucha memoria y no permite procesar archivos grandes; además, al abrir el archivo sin especificar `newline=''` en sistemas Windows, los saltos de línea CRLF dejan caracteres \\r adheridos al último valor, alterando la estructura.\\n3. Las tres bugs se repiten: la falta de soporte de RFC 4180 (primera), la ruptura de líneas multilínea y el CRLF (segunda), y la carga excesiva de memoria (tercera). Cada una genera un error silencioso que solo aparece cuando se usan archivos reales complejos.",
     "codigo_corregido": "import csv\n\ndef importar_tareas(ruta):\n    with open(ruta, newline='', encoding='utf-8') as f:\n        return list(csv.DictReader(f))",
     "codigo_optimizado": "import csv\nfrom pathlib import Path\n\ndef importar_tareas(ruta):\n    \"\"\"CSV → lista de dicts. newline='' es OBLIGATORIO en Windows para quoting correcto.\"\"\"\n    with open(ruta, newline='', encoding='utf-8') as f:\n        return list(csv.DictReader(f))\n\ndef exportar_tareas(ruta, tareas, fieldnames=('titulo', 'prioridad', 'fecha')):\n    \"\"\"Lista de dicts → CSV con header y quoting automático.\"\"\"\n    with open(ruta, 'w', newline='', encoding='utf-8') as f:\n        writer = csv.DictWriter(f, fieldnames=fieldnames)\n        writer.writeheader()\n        writer.writerows(tareas)\n\n# CSVs del mundo real: otros delimitadores (Excel España usa ';', logs usan tab)\nwith open('datos_semicolon.csv', newline='', encoding='utf-8') as f:\n    filas = list(csv.reader(f, delimiter=';'))\n\nwith open('datos.tsv', newline='', encoding='utf-8') as f:\n    filas = list(csv.reader(f, delimiter='\\t'))\n\n# Detección automática de dialecto (cuando no sabes el delimitador)\nwith open('misterio.csv', newline='', encoding='utf-8') as f:\n    muestra = f.read(4096)\n    f.seek(0)\n    dialecto = csv.Sniffer().sniff(muestra)\n    filas = list(csv.reader(f, dialecto))\n\n# Procesamiento en streaming de CSVs gigantes: DictReader es un iterator\ndef contar_por_prioridad(ruta):\n    conteo = {}\n    with open(ruta, newline='', encoding='utf-8') as f:\n        for fila in csv.DictReader(f):   # una fila en memoria por vez\n            conteo[fila['prioridad']] = conteo.get(fila['prioridad'], 0) + 1\n    return conteo\n\n# Por qué newline='' importa (docs oficiales):\n# El módulo csv maneja sus propios saltos de línea. Sin newline='',\n# en Windows cada '\\n' escrito se traduce a '\\r\\n' y los campos\n# multi-línea quedan corruptos.",
     "disenso_experto": "¿csv de la stdlib o pandas para datos tabulares? Para leer/escribir CSVs en scripts de automatización y apps pequeñas, `csv` es suficiente, no añade dependencias y funciona en Pyodide sin instalar nada. pandas brilla cuando necesitas operaciones vectorizadas, joins y estadísticas sobre millones de filas — pero pesa ~50MB y arrastrarlo para leer 500 tareas es absurdo. La frontera real: si tu código tiene más de 3 bucles anidados transformando filas, evalúa pandas (Fase 2, módulo de datos). Para tu PWA en Pyodide: stdlib `csv` casi siempre, pandas solo bajo demanda.",
-    "pregunta_transferencia": "Exportas tareas a CSV con DictWriter, un título contiene el texto `dijo \"hola\", y se fue` con comillas Y coma. Al re-importarlo con tu viejo parser split(',') la fila explota en 5 columnas. ¿Cómo lo escribe csv.DictWriter en el archivo (muestra la línea exacta con su quoting) y por qué DictReader la reconstruye sin problema?",
+    "pregunta_transferencia": "Tras exportar la lista de tareas a CSV usando `csv.DictWriter`, escribes un título que contiene comillas dobles internas y una coma: `\"dijo \\\"hola\\\"\", y se fue\"`. Al volver a importar el archivo con tu antiguo parser basado en `split(',')`, la fila se fragmenta en cinco columnas en lugar de cuatro.\\nPara que el `DictReader` reconstruya correctamente los campos originales, debes configurar el `csv.DictWriter` con el parámetro `quoting=csv.QUOTE_ALL` (u otro QUOTING adecuado). La línea exacta que resuelve el problema es: `writer = csv.DictWriter(file, fieldnames=tareas.keys(), dialect='excel', quoting=csv.QUOTE_ALL)`.",
     "quiz": {
       "pregunta": "¿Por qué se usa `newline=''` al abrir archivos CSV en Python?",
       "opciones": [
@@ -518,6 +518,57 @@
       "dictreader",
       "archivos",
       "datos"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué módulo de Python implementa correctamente el estándar RFC 4180 para el análisis de CSV, manejando comillas dobles y comas dentro de campos?",
+        "opciones": [
+          "A) pandas.DataFrame.read_csv",
+          "B) csv.DictReader / csv module",
+          "C) json.load",
+          "D) numpy.genfromtxt"
+        ],
+        "correcta": "B",
+        "explicacion": "El módulo **csv** ofrece clases como **DictReader** y **DictWriter** que implementan la máquina de estados del **RFC 4180**, reconociendo comillas dobles y comas internas. Las otras opciones son herramientas distintas o no cumplen el requisito de parsing robusto.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En la función `importar_tareas` se lee el archivo completo con `f.read()`. ¿Por qué esto puede causar problemas de memoria y corrupción de datos?",
+        "opciones": [
+          "A) Carga todo el contenido en memoria, lo que puede generar MemoryError en archivos grandes.",
+          "B) El uso de `with open` cierra el archivo después de cada línea, lo que ralentiza pero no afecta la memoria.",
+          "C) No usar `encoding='utf-8'` hace que se lea en bytes y se corrompa.",
+          "D) El código no verifica si la línea está vacía antes de procesarla."
+        ],
+        "correcta": "A",
+        "explicacion": "Al leer el archivo entero (`f.read()`) se almacena todo el texto en un solo objeto de cadena, consumiendo mucho RAM. En archivos grandes esto puede agotar la memoria y, si el proceso se interrumpe, causar pérdida de datos parciales. Además, no se realiza un streaming que permitiría procesar por partes.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Cuando se usa `csv.DictWriter` sin especificar `quoting`, ¿qué ocurre con los campos que contienen comas?",
+        "opciones": [
+          "A) Se escribe el campo tal cual, sin comillas, y los parsers posteriores pueden interpretar la coma como delimitador extra.",
+          "B) Todos los campos se envuelven en comillas dobles, evitando confusiones.",
+          "C) Solo los primeros campos reciben comillas, lo que rompe la consistencia.",
+          "D) El writer omite los campos con comas y los guarda en una cola separada."
+        ],
+        "correcta": "A",
+        "explicacion": "Por defecto `csv.DictWriter` emplea `QUOTE_MINIMAL`, que solo añade comillas cuando es estrictamente necesario. Si se desea que **todos** los campos estén entre comillas (incluyendo los sin comas), hay que pasar `quoting=csv.QUOTE_ALL`. Esto garantiza que el `DictReader` reconstruya los diccionarios sin ambigüedades.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es el nombre del parámetro del `csv.DictWriter` que controla el nivel de cuotas en la salida?",
+        "opciones": [
+          "A) `quoting=csv.QUOTE_ALL`",
+          "B) `dialect='unix'`",
+          "C) `skipinitialspace=True`",
+          "D) `lineterminator='\\r\\n'`"
+        ],
+        "correcta": "A",
+        "explicacion": "Este parámetro define si se deben añadir comillas dobles a los campos. Al establecerlo en `csv.QUOTE_ALL` se asegura que todo campo quede envolvido, incluso aquellos sin comas internas, lo que facilita la lectura posterior sin errores.",
+        "tipo": "concepto"
+      }
     ]
   },
   {

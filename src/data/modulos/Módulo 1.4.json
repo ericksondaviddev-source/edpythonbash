@@ -427,13 +427,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "Limpiar datos no es quitar cosas: es NORMALIZAR a una forma canónica predecible. Un pipeline de limpieza tiene 5 etapas en orden fijo: (1) tipar y validar entrada, (2) eliminar caracteres invisibles/peligrosos (control, BOM, zero-width), (3) colapsar whitespace, (4) normalizar Unicode (NFC) y case si aplica, (5) validar el resultado. Alterar el orden produce bugs: colapsar espacios ANTES de quitar zero-width deja huecos; normalizar Unicode al final rompe las comparaciones hechas antes.",
+    "modelo_mental": "Imagina la limpieza de texto como una **planta de tratamiento de agua**: el agua cruda (entrada sucia) pasa por etapas secuenciales e irreversibles (sedimentación, filtrado, cloración) para salir potable (forma canónica). Si inviertes el orden —cloras antes de filtrar— el sedimento reacciona con el cloro y genera subproductos tóxicos; en datos, **normalizar Unicode (NFC) antes de colapsar whitespace** fusiona caracteres compuestos de forma impredecible y rompe índices calculados en etapas previas. Este modelo mental previene **bugs de \"fantasmas\"**: espacios que parecen iguales pero tienen código distinto (`\\u200b` zero-width vs ` `), tabs que sobreviven a `.strip()` y rompen CSV, o secuencias ANSI (`\\x1b[31m`) que inyectan color en logs y terminales.",
     "codigo_roto": "def limpiar_texto(texto):\n    limpio = texto.replace('  ', ' ')\n    return limpio.strip()",
-    "diagnostico": "Tres fallas estructurales. (1) `.replace('  ', ' ')` es una sustitución de UNA SOLA PASADA: `'a    b'` (4 espacios) se convierte en `'a  b'` (2 espacios), no en `'a b'`. Para colapsar corridas de cualquier longitud necesitas un bucle, o mejor `re.sub(r'\\s+', ' ', ...)`. (2) No maneja tabs ni saltos de línea: `'linea1\\n\\tlinea2'` conserva ambos caracteres y rompe cualquier CSV o JSON de una línea donde lo insertes. (3) No elimina caracteres de control (`\\x00`, `\\x1b` de escapes ANSI): invisibles en pantalla, corrompen archivos y bases de datos, y pueden inyectar secuencias de terminal.",
+    "diagnostico": "1. **Sustitución de pasada única**: `texto.replace('  ', ' ')` solo reemplaza **una ocurrencia por par** de espacios adyacentes. Entrada `'a    b'` (4 espacios) → `'a  b'` (2 espacios), no `'a b'`. Python no itera automáticamente; necesitas `while '  ' in t: t = t.replace('  ', ' ')` o, idiomático y O(n), `re.sub(r'\\\\s+', ' ', texto)`. 2. **Blindaje incompleto contra whitespace**: `\\s` en regex cubre `[ \\t\\n\\r\\f\\v]`; el código original ignora `\\t`, `\\n`, `\\r`. Un log multilínea `'error\\n\\tdetalle'` pasa intacto y rompe parsers de una línea (CSV, JSON Lines, Splunk). 3. **Ausencia de saneamiento de control**: Caracteres `\\x00` (NULL), `\\x1b` (ESC), `\\x7f` (DEL) son invisibles en `print()` pero **corrompen binarios** (PostgreSQL rechaza `\\x00` en `text`), **inyectan secuencias de terminal** (riesgo de *ANSI escape injection* en logs vistos con `cat`), y rompen firmas hash. La etapa 2 del pipeline exige `re.sub(r'[\\x00-\\x1f\\x7f-\\x9f]', '', texto)` antes de colapsar espacios.",
     "codigo_corregido": "import re\n\n_CONTROL = re.compile(r'[\\x00-\\x08\\x0e-\\x1f\\x7f]')\n_ESPACIOS = re.compile(r'\\s+')\n\ndef limpiar_texto(texto):\n    return _ESPACIOS.sub(' ', _CONTROL.sub('', texto)).strip()",
     "codigo_optimizado": "import re\nimport unicodedata\n\n# Pipeline de limpieza completo y reutilizable (el que usará tu PWA)\n\n_CONTROL = re.compile(r'[\\x00-\\x08\\x0e-\\x1f\\x7f]')          # chars de control (excepto \\t \\n \\r)\n_ESPACIOS = re.compile(r'\\s+')\n_INVISIBLES = re.compile(r'[\\u200b-\\u200f\\u202a-\\u202e\\ufeff\\u00a0]')  # zero-width, BOM, nbsp\n\ndef limpiar_texto(texto, *, colapsar=True, case=None, unicode_nfc=True) -> str:\n    \"\"\"Normaliza texto a forma canónica. Nunca lanza por datos raros.\"\"\"\n    if texto is None:\n        return ''\n    if not isinstance(texto, str):\n        texto = str(texto)\n\n    texto = _INVISIBLES.sub('', texto)      # 1. invisibles primero\n    texto = _CONTROL.sub('', texto)         # 2. control\n    if unicode_nfc:\n        texto = unicodedata.normalize('NFC', texto)   # 3. Unicode canónico\n    if colapsar:\n        texto = _ESPACIOS.sub(' ', texto)   # 4. colapsar whitespace\n    texto = texto.strip()                   # 5. extremos\n\n    if case == 'lower':\n        texto = texto.lower()\n    elif case == 'upper':\n        texto = texto.upper()\n    elif case == 'title':\n        import string\n        texto = string.capwords(texto)      # NO .title() (ver M1.4-002)\n    return texto\n\n# Normalizadores específicos del dominio\ndef normalizar_email(email: str) -> str:\n    \"\"\"Gmail ignora puntos y +tags en el local part.\"\"\"\n    local, sep, dominio = limpiar_texto(email, case='lower').partition('@')\n    if not sep:\n        return email.lower()\n    local = local.split('+')[0].replace('.', '')\n    return f'{local}@{dominio}'\n\ndef normalizar_telefono(tel: str) -> str:\n    \"\"\"Conserva solo dígitos y el + inicial.\"\"\"\n    limpio = re.sub(r'[^\\d+]', '', tel)\n    return limpio\n\ndef slugify(texto: str) -> str:\n    \"\"\"'Aprende Python Ya!' → 'aprende-python-ya' (para URLs de tu PWA).\"\"\"\n    texto = unicodedata.normalize('NFD', texto.lower())\n    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')  # sin acentos\n    texto = re.sub(r'[^a-z0-9]+', '-', texto)                             # no alnum → guion\n    return texto.strip('-')\n\n# Validación post-limpieza: nunca confíes en la salida sin verificarla\n_CAMPOS_REQUERIDOS = ('titulo', 'cuerpo')\n\ndef validar_registro(reg: dict) -> list:\n    errores = []\n    for campo in _CAMPOS_REQUERIDOS:\n        if not limpiar_texto(reg.get(campo)):\n            errores.append(f'campo vacío o inválido: {campo}')\n    if len(reg.get('titulo', '')) > 200:\n        errores.append('titulo excede 200 caracteres')\n    return errores\n\n# Aplicación en streaming sobre datos sucios:\ndef limpiar_lotes(registros, tamano=100):\n    lote = []\n    for reg in registros:\n        limpio = {k: limpiar_texto(v) if isinstance(v, str) else v for k, v in reg.items()}\n        if not validar_registro(limpio):\n            lote.append(limpio)\n        if len(lote) >= tamano:\n            yield lote\n            lote = []\n    if lote:\n        yield lote",
     "disenso_experto": "¿Limpiar agresivamente o preservar el dato original? Escuela 'limpia todo': datos consistentes, búsquedas que funcionan, UI predecible. Escuela 'preserva + normaliza al leer': nunca destruyes información del usuario (¿y si el espaciado era intencional, como en un poema o código?). La práctica profesional es híbrida: **guarda el original intacto** y almacena además una versión normalizada para búsqueda/índice. En tu app de aprendizaje esto importa: si un usuario pega un snippet de código como nota, colapsar sus espacios destruiría la indentación de Python.",
-    "pregunta_transferencia": "Un usuario pega en tu app de notas un fragmento de código Python. Tu pipeline de limpieza colapsa whitespace y la indentación desaparece: el código ya no funciona. ¿Cómo rediseñas `limpiar_texto` para detectar contenido sensible a espacios y qué señal usas para decidir si colapsar o preservar?",
+    "pregunta_transferencia": "Escenario: Tu editor web permite pegar fragmentos de Python. Un usuario copia `def f():\\n    return 42` (indentación con 4 espacios). Tu `limpiar_texto` actual colapsa todo whitespace a un solo espacio, devolviendo `def f(): return 42`; al guardarlo y ejecutarlo, Python lanza `IndentationError`. La pérdida de estructura sintáctica convierte código válido en basura. Pista: No todo el texto es prosa. Detecta **patrones de lenguaje estructurado** (heurística: alta densidad de `:` `{` `}` `;` `def` `class` `function` `=>`, o líneas que empiezan por whitespace consistente). Si el detector supera un umbral, **ramifica el pipeline**: rama \"prosa\" → colapsa whitespace; rama \"código/markdown\" → preserva indentación y solo saneea caracteres de control (etapa 2). La señal decisiva es **la intención semántica**, no el formato.",
     "quiz": {
       "pregunta": "¿Por qué `'a    b'.replace('  ', ' ')` no produce `'a b'`?",
       "opciones": [
@@ -485,6 +485,57 @@
       "unicode",
       "regex",
       "datos"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué etapa del pipeline previene que caracteres zero-width (`\\u200b`) rompan comparaciones de igualdad (`==`) entre strings visualmente idénticos?",
+        "opciones": [
+          "Etapa 2: Eliminar caracteres invisibles/peligrosos (incluye zero-width spaces).",
+          "Etapa 3: Colapsar whitespace.",
+          "Etapa 4: Normalizar Unicode (NFC).",
+          "Etapa 5: Validar resultado."
+        ],
+        "correcta": "A",
+        "explicacion": "A correcta: Los zero-width spaces (`\\u200b`, `\\u200c`, `\\u200d`, `\\ufeff`) son caracteres de control/formato invisibles (categoría Cf/Cc). La etapa 2 los elimina explícitamente con un rango de control o propiedad Unicode `\\p{C}`. B incorrecta: `\\s` no matchea zero-width. C incorrecta: NFC compone caracteres (ej. `e` + `\\u0301` → `\\u00e9`), no elimina zero-width. D incorrecta: Validación detecta, no limpia.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué devuelve `limpiar_texto('  hola\\n\\tmundo  ')` con el `codigo_roto` proporcionado?",
+        "opciones": [
+          "'hola mundo'",
+          "'hola\\n\\tmundo'",
+          "'hola mundo' (con tab y newline literales preservados)",
+          "'  hola\\n\\tmundo  '"
+        ],
+        "correcta": "B",
+        "explicacion": "B correcta: El código hace `replace('  ', ' ')` (convierte los 2 espacios iniciales en 1) y `strip()` (quita el espacio inicial resultante y los 2 finales). `\\n` y `\\t` **no son espacios** (`' '`), por lo que `replace` no los toca y `strip` solo recorta bordes. A y C incorrectas: requieren colapsar `\\s+`. D incorrecta: `strip()` elimina bordes.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si ejecutas `limpiar_texto('a\\x00b')` (con byte NULL), ¿qué sucede en el `codigo_roto`?",
+        "opciones": [
+          "Lanza `ValueError: null byte in string`.",
+          "Devuelve `'a b'` (el NULL se convierte en espacio).",
+          "Devuelve `'a\\x00b'` intacto (ni replace ni strip afectan a `\\x00`).",
+          "Devuelve `'ab'` (strip elimina controles)."
+        ],
+        "correcta": "C",
+        "explicacion": "C correcta: `\\x00` (NULL) no es espacio `' '`, por lo que `replace('  ', ' ')` no actúa. `strip()` por defecto solo elimina whitespace ASCII (` \\t\\n\\r\\x0b\\x0c`), **no** todos los controles C0; `\\x00` permanece. A incorrecta: Python 3 permite NULL en strings (solo falla en APIs de SO como `open()`). B y D incorrectas: ningún método llamado transforma `\\x00`.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "En el contexto de seguridad, ¿qué caracteriza a un **carácter de control C0** (rango `\\x00-\\x1f`) que lo hace obligatorio eliminarlo en etapa 2?",
+        "opciones": [
+          "Son carácteres gráficos invisibles que `print()` renderiza como cuadrados `□`, rompiendo la UI.",
+          "Tienen nombres formales (NULL, BEL, ESC, GS) pero **ninguna representación visual estándar**; dispositivos de salida (terminales, impresoras, parsers) ejecutan **acciones de control** (pitido, borrado, escape, separación de grupos) al recibirlos.",
+          "Python 3 prohíbe literales con C0 en código fuente (`SyntaxError`), así que deben limpiarse en runtime.",
+          "La normalización NFC (etapa 4) los expande a secuencias de 4 bytes, inflando la memoria."
+        ],
+        "correcta": "D",
+        "explicacion": "D correcta: La definición misma de controles C0 (ISO 6429/ECMA-48) es **códigos no gráficos que disparan acciones de dispositivo** (ej. `\\x07` BEL suena beep, `\\x1b` ESC inicia secuencia ANSI, `\\x1d` GS separa grupos en protocolos). A incorrecta: `print` los ignora o ejecuta, no renderiza placeholder. B incorrecta: Python permite `\\x00` en strings y bytes literales. C incorrecta: NFC no toca controles C0.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -494,13 +545,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "`re.sub(patron, reemplazo, texto)` tiene dos modos y confundirlos limita tu poder. Con un STRING de reemplazo puedes referenciar grupos (`\\1`, `\\g<nombre>`) pero solo copiar lo capturado. Con una FUNCIÓN recibes el objeto Match completo y retornas cualquier string calculado: puedes transformar, enmascarar, formatear, consultar un diccionario o incluso decidir no reemplazar. Es la diferencia entre 'buscar y reemplazar' y 'procesar cada coincidencia'. Y siempre `re.compile()` si el patrón se usa más de una vez.",
+    "modelo_mental": "Imagina que `re.sub` es como una **cuchilla** que corta y pega texto, mientras que usar una **función** es como un **procesador de alimentos** que puede transformar cada pieza antes de colocarla de nuevo. Con una cadena de reemplazo solo puedes copiar lo que la expresión regular captura (`\\1`, `\\g<nombre>`), pero con una función recibes el objeto `Match` completo y puedes devolver cualquier cadena calculada, como enmascarar, formatear o decidir no cambiar nada. Esta diferencia es crucial porque **`re.sub` con función** permite procesar cada coincidencia de forma independiente, aplicando lógica dinámica (por ejemplo, consultar un diccionario o aplicar reglas) y siempre puedes **compilar** el patrón con `re.compile` si lo vas a usar varias veces, lo que mejora la eficiencia y evita recompilaciones innecesarias.",
     "codigo_roto": "import re\n\ndef enmascarar(texto):\n    numeros = re.findall(r'\\d{4} \\d{4} \\d{4} \\d{4}', texto)\n    for n in numeros:\n        texto = texto.replace(n, '****')\n    return texto",
-    "diagnostico": "Cuatro problemas. (1) FUNCIONAL: el requisito es conservar los últimos 4 dígitos (`**** **** **** 1234`), pero el código reemplaza la tarjeta completa por `'****'` — pierde el dato necesario para identificar la tarjeta. (2) RENDIMIENTO: `str.replace` en un bucle recorre y reconstruye TODO el string por cada tarjeta: O(n·k). `re.sub` lo hace en una pasada. (3) CORRECCIÓN: si dos tarjetas comparten los mismos 16 dígitos, el primer `replace` sustituye todas las ocurrencias y el segundo ya no encuentra nada — o peor, si una tarjeta es substring de otra secuencia numérica, corrompe datos adyacentes. (4) Solo maneja el formato con espacios exactos: falla con guiones o sin separadores.",
+    "diagnostico": "1. FUNCIONAL: el código reemplaza la tarjeta completa por `'****'`, perdiendo los últimos cuatro dígitos que son necesarios para identificar la tarjeta. Python lanza este error porque `replace` sustituye la coincidencia completa, y la lógica no preserva los dígitos finales.\n2. RENDIMIENTO: el bucle recorre cada número y llama a `texto.replace(n, '****')`, lo que reconstruye el string completo en cada iteración, resultando en complejidad O(n·k). Python/Bash lo lanza al intentar procesar grandes textos de forma ineficiente, mientras que `re.sub` realiza la sustitución en una sola pasada, reduciendo la complejidad a O(n).\n3. CORRECCIÓN: si dos tarjetas comparten los mismos 16 dígitos, la primera llamada a `replace` sustituye todas sus ocurrencias y la segunda ya no encuentra la tarjeta, o bien una expresión más larga puede ser parcialmente reemplazada, corrompiendo datos adyacentes. Esto ocurre porque el patrón exacto de espacios no coincide con otras separaciones y el reemplazo global afecta a todas las coincidencias.\n4. LIMITACIÓN DE FORMATO: la expresión regular `r'\\d{4} \\d{4} \\d{4} \\d{4}'` solo coincide con números separados por espacios exactos. Python/Bash lo lanza cuando el texto contiene guiones o sin separadores, ya que la coincidencia falla y no se realiza ningún reemplazo, dejando la información sin enmascarar.",
     "codigo_corregido": "import re\n\n_TARJETA = re.compile(r'\\b(\\d{4})[ -]?(\\d{4})[ -]?(\\d{4})[ -]?(\\d{4})\\b')\n\ndef enmascarar(texto):\n    return _TARJETA.sub(lambda m: f'**** **** **** {m.group(4)}', texto)",
     "codigo_optimizado": "import re\n\n# --- Los 3 poderes de re.sub con función ---\n\n# 1) Reemplazo CALCULADO (no solo copiado)\ndef duplicar_numeros(texto):\n    return re.sub(r'\\d+', lambda m: str(int(m.group()) * 2), texto)\nduplicar_numeros('tengo 5 y 10')      # 'tengo 10 y 20'\n\n# 2) Reemplazo por CONSULTA (tabla de traducción)\n_NIVELES = {'ERROR': '🔴', 'WARNING': '🟡', 'INFO': '🟢'}\ndef iconizar_log(texto):\n    return re.sub(r'\\b(ERROR|WARNING|INFO)\\b', lambda m: _NIVELES[m.group()], texto)\n\n# 3) Reemplazo CONDICIONAL (decidir caso por caso)\ndef censurar_segun_longitud(texto):\n    return re.sub(r'\\b\\w{5,}\\b', lambda m: m.group()[0] + '*' * (len(m.group()) - 1), texto)\ncensurar_segun_longitud('el gato duerme')   # 'el g*** d*****'\n\n# --- Sustituciones con string (cuando basta) ---\nre.sub(r'(\\w+)@(\\w+)', r'\\2/\\1', 'ana@mail')          # 'mail/ana'  (grupos posicionales)\nre.sub(r'(?P<u>\\w+)@(?P<d>\\w+)', r'\\g<d>/\\g<u>', 'ana@mail')   # nombrados (más claro)\n\n# --- Control de sustituciones con count ---\nre.sub(r'a', 'X', 'banana', count=2)     # 'bXnXna'  solo las 2 primeras\n\n# --- subn: reemplazar Y saber cuántos cambiaste ---\nnuevo, cantidad = re.subn(r'\\s+', ' ', 'a  b   c')\n# ('a b c', 2)  ← útil para logging y validación\n\n# --- split por patrón (más potente que str.split) ---\nre.split(r'[,;\\s]+', 'a, b;c   d')      # ['a', 'b', 'c', 'd']\n\n# --- Enmascarado completo de datos sensibles (lo que tu PWA necesita\n#     antes de enviar logs o notas al tutor de IA) ---\n_PATTERNS_SENSIBLES = [\n    (re.compile(r'\\b(?:\\d[ -]?){13,16}\\d\\b'), lambda m: '****-****-****-' + m.group()[-4:]),\n    (re.compile(r'\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b'), lambda m: m.group()[0] + '***@***.' + m.group().rsplit('.', 1)[-1]),\n    (re.compile(r'\\b\\d{3}-\\d{4}\\b'), lambda m: '***-' + m.group()[-4:]),\n]\n\ndef anonimizar(texto: str) -> str:\n    for patron, reemplazo in _PATTERNS_SENSIBLES:\n        texto = patron.sub(reemplazo, texto)\n    return texto\n\nanonimizar('Ana ana@mail.com pago con 4111 1111 1111 1234, tel 555-9876')\n# 'A***@***.com pago con ****-****-****-1234, tel ***-9876'",
     "disenso_experto": "¿Regex para anonimizar datos sensibles o librerías especializadas? Para logs internos y debug, regex propio es suficiente y no añade dependencias. Para datos que salen de tu sistema (enviar al tutor de IA, analytics, tickets de soporte), regex tiene un problema fundamental: solo enmascara lo que SABES buscar. Un DNI con formato inesperado, una dirección postal o un nombre propio pasarán de largo. Para cumplimiento real (GDPR, datos médicos) se usan librerías de NER/presidio con reconocimiento de entidades, o mejor: no enviar el dato. Regla: regex para reducir ruido y riesgo; nunca como única barrera de privacidad.",
-    "pregunta_transferencia": "Aplicas `anonimizar()` a las notas de tus usuarios antes de enviarlas al tutor de IA. Un usuario escribe 'mi clave es MiPassword123! y mi DNI 12345678A'. ¿Qué pasa con esos dos datos, por qué tu regex no los captura, y qué estrategia defensiva adicional implementarías sabiendo que no puedes enumerar todos los secretos posibles?",
+    "pregunta_transferencia": "Supongamos que aplicas `anonimizar()` a las notas de tus usuarios antes de enviarlas al tutor de IA. Un usuario escribe: `mi clave es MiPassword123! y mi DNI 12345678A`. En este caso, la expresión regular actual no captura ni la contraseña ni el DNI, por lo que ambos datos permanecen sin enmascarar en el texto enviado. Para evitarlo, deberías ampliar la lógica de la función para que reconozca cualquier secuencia de caracteres que pueda representar una contraseña o un identificador, por ejemplo usando patrones como `\\b\\w{8,}\\b` para contraseñas y `\\b\\d{8}[A-Fa-f]\\b` para DNI, y aplicar la máscara de forma selectiva dentro de la función, de modo que cualquier dato sensible sea reemplazado independientemente de su formato específico.",
     "quiz": {
       "pregunta": "¿Qué recibe la función que pasas como segundo argumento a `re.sub(patron, FUNCION, texto)`?",
       "opciones": [
@@ -552,6 +603,57 @@
       "enmascarado",
       "anonimizacion",
       "datos-sensibles"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la principal diferencia entre usar una cadena de reemplazo y una función como segundo argumento en `re.sub`?",
+        "opciones": [
+          "La cadena solo puede reemplazar texto literal, mientras que la función solo puede devolver el mismo texto sin modificaciones.",
+          "La función permite procesar cada coincidencia de forma independiente y devolver cualquier cadena calculada, sin estar limitada a copiar solo lo capturado.",
+          "La función solo funciona cuando el patrón está compilado con `re.compile`.",
+          "Ambas opciones son equivalentes en cuanto a la capacidad de transformación."
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque una cadena de reemplazo solo copia lo que la expresión regular captura, mientras que una función recibe el objeto `Match` completo y puede devolver cualquier cadena, permitiendo transformaciones dinámicas. Las demás opciones son falsas: A subestima la capacidad de la función, C es incorrecto porque la función no depende de compilación, y D ignora la diferencia fundamental.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Por qué el código proporcionado no conserva los últimos cuatro dígitos de cada tarjeta de crédito?",
+        "opciones": [
+          "Porque `replace` sustituye la coincidencia completa por `'****'`, eliminando los dígitos finales.",
+          "Porque `findall` solo devuelve la primera aparición de cada patrón, dejando los demás sin procesar.",
+          "Porque la expresión regular no coincide con formatos que usan guiones, por lo que nunca encuentra las tarjetas.",
+          "Porque `re.sub` no puede usarse dentro de un bucle, obligando a usar `replace` repetidamente."
+        ],
+        "correcta": "A",
+        "explicacion": "A es correcta ya que `replace` reemplaza la coincidencia completa con `'****'`, perdiendo los últimos cuatro dígitos. B es incorrecta porque `findall` devuelve todas las coincidencias, no solo la primera. C es incorrecta porque el patrón exacto de espacios sí coincide con guiones si se adapta, pero el problema principal es la pérdida de datos, no la falta de coincidencia. D es falsa porque `replace` se puede llamar dentro de un bucle sin problema.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si el texto de entrada contiene números de tarjeta separados por guiones, por ejemplo `'1234-5678-9012-3456'`, ¿qué devolverá la función actual?",
+        "opciones": [
+          "Maskará correctamente la tarjeta porque la expresión regular sigue coincidiendo.",
+          "Lanzará una excepción `re.error` debido a un patrón inválido.",
+          "Devolverá el texto original sin cambios, ya que la expresión regular no encuentra coincidencias.",
+          "Maskará solo los primeros cuatro dígitos y dejará el resto sin tocar."
+        ],
+        "correcta": "C",
+        "explicacion": "C es correcta porque la expresión regular `r'\\d{4} \\d{4} \\d{4} \\d{4}'` requiere espacios entre los grupos de cuatro dígitos; al usar guiones la coincidencia falla, por lo que `replace` no se ejecuta y el texto permanece sin modificar. A es falsa porque la regex no coincide, B es falsa porque el patrón es válido, y D es falsa porque no hay coincidencia para maskar parcialmente.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones sobre `re.compile` es verdadera?",
+        "opciones": [
+          "Debe llamarse antes de cada uso de `re.sub` para que funcione.",
+          "Compilar el patrón una vez mejora el rendimiento cuando se usa el mismo patrón múltiples veces.",
+          "Solo permite reemplazo de cadena, no se puede pasar una función como segundo argumento.",
+          "Automáticamente escapa todos los caracteres especiales del patrón."
+        ],
+        "correcta": "B",
+        "explicacion": "B es correcta porque compilar el patrón una vez mejora el rendimiento cuando se usa el mismo patrón múltiples veces. A es incorrecta porque `re.sub` puede usarse directamente sin compilar el patrón. C es falsa porque la función es un argumento válido. D es falsa porque `re.compile` no escapa automáticamente los caracteres; de hecho, los trata como metacaracteres a menos que se escape.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -561,13 +663,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "El motor regex de Python es backtracking: prueba caminos y, cuando uno falla, retrocede y prueba otro. Con cuantificadores ANIDADOS (`(a+)+`, `(\\w*)*`, `(a|aa)+`) los caminos crecen EXPONENCIALMENTE sobre entradas que casi coinciden pero fallan al final. Un patrón que responde en microsegundos con datos normales puede tardar MINUTOS con un input adversarial de 30 caracteres. Esto es ReDoS (Regular Expression Denial of Service) y es una vulnerabilidad real: si el input viene del usuario, alguien puede congelar tu servidor — o tu PWA — con un string diseñado.",
+    "modelo_mental": "El motor de expresiones regulares en Python utiliza un enfoque de **backtracking**, que implica probar múltiples caminos posibles para encontrar coincidencias. Esto funciona bien con patrones simples, pero con **cuantificadores anidados** como `(a+)+` o `(\\w*)*`, el número de caminos posibles crece exponencialmente con la longitud del input. Por ejemplo, un patrón como `([a-zA-Z0-9_]+)+` puede generar 2^n posibles combinaciones para n caracteres, lo que lleva a tiempos de ejecución extremadamente largos con entradas maliciosas. Esto es ReDoS (Regular Expression Denial of Service), una vulnerabilidad crítica que puede ser explotada para causar **denegación de servicio** en aplicaciones que validan entradas sin protección. El modelo mental clave es entender que los patrones con cuantificadores anidados son inherentemente inseguros en entornos donde el input es controlado por el usuario, y que la solución no es solo ajustar el patrón, sino también implementar defensas adicionales como límites de tiempo o validación previa de longitud.",
     "codigo_roto": "import re\n\ndef validar_usuario(nombre):\n    if not isinstance(nombre, str):\n        return False\n    return bool(re.match(r'^([a-zA-Z0-9_]+)+$', nombre) and 3 <= len(nombre) <= 20)",
-    "diagnostico": "El patrón `([a-zA-Z0-9_]+)+` tiene un cuantificador DENTRO de un grupo que a su vez tiene cuantificador: ambigüedad total. Para 'aaaaaa' el motor puede repartir las letras entre las repeticiones del grupo de muchísimas formas; todas dan el mismo resultado, pero si el match FALLA (una '!' al final) el motor explora TODAS antes de rendirse: 2^n caminos. Medido: 23 caracteres + un inválido = **0.41 segundos**. Con 40 caracteres serían horas. Y hay un segundo bug funcional: `len(nombre) <= 20` se evalúa DESPUÉS del regex, así que el backtracking ocurre igual aunque el string sea demasiado largo — la validación barata debe ir primero. La IA genera este patrón constantemente porque 'se ve más explícito' que una clase de caracteres con llaves.",
+    "diagnostico": "1. El patrón `([a-zA-Z0-9_]+)+` utiliza un cuantificador `+` dentro de un grupo que a su vez está rodeado por otro `+`, creando una ambigüedad exponencial. Cuando el motor de regex falla en encontrar una coincidencia (por ejemplo, con un carácter inválido al final), prueba todas las combinaciones posibles de reparto de caracteres entre las repeticiones del grupo. Para una entrada de 23 caracteres, esto puede resultar en 2^23 caminos posibles, lo que se traduce en tiempos de ejecución de decenas o cientos de milisegundos. Python/Bash no lanza un error en sí, sino que el proceso se vuelve **extremadamente lento** debido a la complejidad computacional exponencial. 2. La segunda falla es la **ordenación incorrecta de las condiciones**. La validación `3 <= len(nombre) <= 20` se realiza después del regex, lo que significa que incluso si el string es demasiado largo, el motor de regex ya ha comenzado a procesarlo, consumiendo recursos innecesariamente. Esto permite a un atacante enviar strings largos que activan el backtracking antes de que se descarte la entrada por no cumplir con la longitud mínima. El patrón general es: siempre validar las condiciones **baratas** (como longitud, tipo de dato) antes de ejecutar operaciones costosas (como regex o cálculos complejos).",
     "codigo_corregido": "import re\n\n_USUARIO = re.compile(r'^[A-Za-z0-9_]{3,20}$')\n\ndef validar_usuario(nombre):\n    return bool(_USUARIO.match(nombre)) if isinstance(nombre, str) else False",
     "codigo_optimizado": "import re\n\n# El largo y el tipo se validan ANTES del regex: barato primero\n_USUARIO = re.compile(r'[A-Za-z0-9_]{3,20}')   # fullmatch hace el anclaje\n\ndef validar_usuario(nombre) -> bool:\n    if not isinstance(nombre, str) or not 3 <= len(nombre) <= 20:\n        return False\n    return bool(_USUARIO.fullmatch(nombre))\n\n# ============ CATÁLOGO DE PATRONES PELIGROSOS ============\n# Todos tienen AMBIGÜEDAD: múltiples formas de repartir el mismo texto.\n#\n# PELIGROSO                          SEGURO\n# (a+)+                          →   a+\n# ([a-zA-Z0-9_]+)+               →   [A-Za-z0-9_]+\n# (\\d+|\\w+)+                     →   \\w+\n# (.*)*                          →   .*\n# (a*)*b                         →   a*b\n# ([a-z]+)*\\d                    →   [a-z]*\\d\n# .*@.*\\..*@   (emails anidados)  →   validar por partes (ver M1.4-008)\n#\n# Regla de detección visual:\n#   cuantificador (* + {n,}) DENTRO de un grupo que TAMBIÉN tiene\n#   cuantificador  →  sospecha inmediata. Refactoriza a una clase.\n\n# ============ HERRAMIENTAS DEFENSIVAS ============\n\n# 1) Python 3.11+: grupos atómicos y cuantificadores posesivos\n#    Prohíben el backtracking dentro del grupo.\n_ATOMICO = re.compile(r'^(?>[a-zA-Z0-9_]+)$')        # grupo atómico\n_POSESIVO = re.compile(r'^[a-zA-Z0-9_]++$')          # cuantificador posesivo\n# Ambos resuelven el caso linealmente, pero exigen Python 3.11+\n\n# 2) re.VERBOSE + pruebas con inputs adversariales (tu checklist de seguridad)\ndef test_redos(validar):\n    \"\"\"Corre esto contra CUALQUIER regex nuevo antes de producción.\"\"\"\n    import time\n    for n in (20, 25, 30):\n        entrada = 'a' * n + '!'\n        t0 = time.perf_counter()\n        validar(entrada)\n        dt = time.perf_counter() - t0\n        assert dt < 0.1, f'ReDoS detectado con n={n}: {dt:.3f}s'\n\n# 3) Límite de longitud de entrada ANTES del regex (defensa externa)\nMAX_ENTRADA = 256\ndef validar_seguro(nombre):\n    if not isinstance(nombre, str) or len(nombre) > MAX_ENTRADA:\n        return False\n    return validar_usuario(nombre)\n\n# 4) Timeout real: señal en Linux/macOS (no disponible en Windows ni Pyodide)\n#    import signal\n#    signal.alarm(1)   # interrumpir tras 1 segundo\n#    En servidores: ejecutar el regex en un proceso/thread con timeout.\n\n# ============ COMPLEJIDAD DE LOS MOTORES REGEX ============\n# Python `re`      → backtracking, peor caso EXPONENCIAL\n# Rust/Go (RE2)    → autómata, SIEMPRE lineal (sin lookahead/backrefs)\n# PCRE             → backtracking + optimizaciones + modo posesivo\n# Por eso Go y Rust son inmunes a ReDoS por diseño, y Python no.",
     "disenso_experto": "¿Debería Python adoptar un motor lineal tipo RE2? RE2 garantiza tiempo lineal siempre, pero el precio es renunciar a backreferences y lookahead — features que el código real usa constantemente. La postura de la comunidad: mantener el motor backtracking y añadir herramientas defensivas (Python 3.11 añadió grupos atómicos y cuantificadores posesivos precisamente por esto). Postura pragmática para tu app: en el NAVEGADOR (Pyodide) un regex catastrófico congela la pestaña del usuario, no un servidor — el daño es menor pero la UX muere. Aun así, valida longitud antes y corre inputs adversariales en tus tests.",
-    "pregunta_transferencia": "Tu PWA valida el nombre de usuario con el regex roto. Un usuario malintencionado descubre que puede escribir 30 caracteres y congelar tu app. Describe la secuencia exacta: ¿qué hilo se bloquea en Pyodide, por qué la UI deja de responder por completo (no solo la validación), y qué dos defensas independientes implementarías sabiendo que `signal.alarm` no existe en el navegador?",
+    "pregunta_transferencia": "Imagina que tu PWA valida el nombre de usuario con el regex roto `([a-zA-Z0-9_]+)+`. Un usuario malintencionado introduce un string de 30 caracteres que casi coincide con el patrón, pero termina con un carácter inválido. Describe paso a paso cómo esto afecta a la aplicación: el hilo principal de Pyodide se bloquea en el motor de regex mientras intenta todos los caminos posibles, lo que congela la UI completa y evita que otros hilos o eventos se procesen. Luego, propón dos defensas independientes que podrías implementar sin depender de `signal.alarm` (que no existe en navegadores): una basada en **validación anticipada de longitud** antes del regex, y otra usando un **timeout explícito** con `Promise.race()` para cancelar la operación si excede un umbral. La clave es entender que el problema no es solo el regex, sino también cómo se integra en el flujo de validación.",
     "quiz": {
       "pregunta": "¿Qué característica estructural hace que un regex sea vulnerable a catastrophic backtracking?",
       "opciones": [
@@ -619,6 +721,57 @@
       "backtracking",
       "performance",
       "codigo-ia"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué el patrón `([a-zA-Z0-9_]+)+` es vulnerable a ReDoS?",
+        "opciones": [
+          "Porque usa un grupo con captura innecesaria",
+          "Porque tiene cuantificadores anidados que generan 2^n caminos posibles",
+          "Porque no incluye el carácter de barra invertida",
+          "Porque no usa el modificador `re.IGNORECASE`"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque los cuantificadores anidados (`+` dentro de un grupo que a su vez tiene `+`) crean una ambigüedad exponencial. Para n caracteres, hay 2^n formas de repartirlos entre las repeticiones del grupo. Las otras opciones son incorrectas: el grupo con captura no es el problema principal, la barra invertida no es necesaria en este contexto, y el modificador `re.IGNORECASE` no afecta la vulnerabilidad de ReDoS.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es el resultado de ejecutar `validar_usuario('a!')` con el código proporcionado?",
+        "opciones": [
+          "True",
+          "False",
+          "Lanza un error de sintaxis",
+          "Devuelve None"
+        ],
+        "correcta": "C",
+        "explicacion": "El código roto causa un **catastrófico backtracking** al procesar 'a!' debido al patrón `([a-zA-Z0-9_]+)+`. El motor intenta todas las combinaciones posibles de reparto de 'a' entre las repeticiones del grupo antes de fallar, lo que puede tomar un tiempo excesivo. Por lo tanto, la opción C es correcta. Las otras opciones son incorrectas porque el código no lanza un error de sintaxis, y `bool(re.match(...))` siempre devuelve True o False, nunca None.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué causa principal del rendimiento deficiente en el código?",
+        "opciones": [
+          "El uso de `re.match` en lugar de `re.search`",
+          "La validación de longitud después del regex",
+          "El uso de `+` en lugar de `*` para los cuantificadores",
+          "La ausencia del modificador `re.MULTILINE`"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque la validación de longitud (`3 <= len(nombre) <= 20`) se realiza después del regex, lo que permite que el motor de regex procese strings largos antes de descartarlos. Esto es un patrón común de error funcional y de rendimiento. Las otras opciones son incorrectas: `re.match` vs `re.search` no afecta el rendimiento en este caso, el uso de `+` es intencional para requisitos de longitud mínima, y `re.MULTILINE` no es relevante para este patrón.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál sería una defensa adecuada para mitigar ReDoS en un entorno web?",
+        "opciones": [
+          "Usar `re.fullmatch` en lugar de `re.match`",
+          "Validar la longitud del input antes de aplicar el regex",
+          "Reemplazar `+` por `*` en los cuantificadores",
+          "Usar el modificador `re.DOTALL`"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque validar la longitud del input antes de aplicar el regex evita procesar strings que claramente no cumplen con los requisitos, reduciendo el riesgo de ReDoS. Las otras opciones son incorrectas: `re.fullmatch` no resuelve el problema del backtracking, cambiar `+` por `*` altera la lógica de validación, y `re.DOTALL` no afecta la vulnerabilidad de ReDoS.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
