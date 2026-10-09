@@ -90,13 +90,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Analizar un flowchart ajeno y explicar su comportamiento",
-    "modelo_mental": "Leer un flowchart ajeno requiere seguir el hilo de ejecución de arriba a abajo, de izquierda a derecha, siguiendo las flechas y tomando las ramificaciones en los nodos de decisión. El patrón clave es rastrear el valor de las variables y la dirección del flujo en cada paso. Los errores más comunes al interpretar incluyen: perder una rama en un nodo de decisión, asumir el valor por defecto en una flecha no etiquetada, o contar incorrectamente las iteraciones en un bucle implícito. El patrón a aprender es: identifica el símbolo Start, rastrea cada símbolo Process actualizando el estado, evalúa cada decisión siguiéndote por la flecha correcta, y confirma que llegaste al símbolo End.",
+    "modelo_mental": "Interpretar un diagrama de flujo es como seguir una receta culinaria donde cada símbolo indica el siguiente paso. El **modelo mental** consiste en entender que el nodo **Start** marca el punto de entrada, los **process** representan operaciones o transformaciones, y los **decision** son puntos de bifurcación que requieren evaluar una condición. Mantener el hilo de ejecución implica seguir las flechas de izquierda a derecha y recordar el estado de las variables en cada rama, tal como se hace cuando se recorre una lista siga en un programa. Este enfoque evita errores comunes como perder la rama correcta o asumir valores por defecto sin comprobación, garantizando que la lógica del algoritmo se traduzca fielmente al código Python o Bash.\\n\\nLa importancia radica en que permite visualizar el flujo de datos antes de implementarlo, reduciendo la necesidad de retroceso durante la depuración. Cuando el flujo está bien interpretado, el estudiante detecta fácilmente patrones como bucles implícitos o condiciones redundantes, lo que previene bugs sutiles como iteraciones infinitas o salidas incorrectas. En resumen, dominar este **modelo mental** es fundamental para convertir ideas en software robusto.",
     "codigo_roto": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Error: la flecha desde el nodo de decisión no tiene etiqueta y el estudiante podría tomar la rama incorrecta -->\n</div>",
-    "diagnostico": "1. **Flecha sin etiquetar desde el nodo de decisión**: Al no tener una etiqueta ('Sí' o 'No'), el estudiante puede confundir qué rama seguir. 2. **Pérdida del hilo de ejecución**: Si el estudiante no rastrea cuidadosamente el valor de la variable en cada paso, puede perder el control de cuál es el valor actual. 3. **Asumir la rama por defecto**: Asumir que la flecha de la derecha es 'Sí' y la izquierda es 'No' sin confirmar. El patrón a aprender es: siempre etiquetar las flechas de decisión y rastrear el estado en cada paso.",
+    "diagnostico": "El primer error más evidente es la **flecha sin etiqueta** que sale del nodo de decisión. En el código roto, la flecha hacia la rama \"Sí\" carece de una etiqueta explícita, lo que obliga al lector a adivinar si corresponde a la verdadera condición o a otra opción. En Python, si el estudiante asume automáticamente que la rama derecha es \"Sí\", podría escribir `if condition:` pero si elige la rama equivocada, el programa responderá de forma incorrecta, ya que la lógica real exige evaluar la condición real.\\n\\nEl segundo error frecuente es la **pérdida del hilo de ejecución** al ignorar el valor de las variables después de tomar una decisión. Si se sigue la rama incorrecta debido a la ambigüedad anterior, el flujo posterior puede operar con un estado inconsistente (por ejemplo, usar una variable definida solo en el otro ramo). Esto produce resultados falsos cuando el código se traduce directamente, porque el programa ejecutará las instrucciones correspondientes a la rama mal elegida, generando un comportamiento distinto al descrito en el flujo.",
     "codigo_corregido": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-text' style='left:120;top:0;font-size:12px;color:#6b7280'>Sí</div>\n  <div class='flow-text' style='left:160;top:0;font-size:12px;color:#6b7280'>No</div>\n  <!-- Flujo corregido: flechas etiquetadas y clara dirección de ejecución -->\n</div>",
     "codigo_optimizado": "<div class='flowchart-container' role='img' aria-label='Diagrama de flujo con decisión etiquetada'>\n  <div class='symbol start' title='Start'>● Inicio</div>\n  <div class='flow-arrow' aria-hidden='true'>↓</div>\n  <div class='symbol process' title='Process'>□ Leer dato</div>\n  <div class='flow-arrow' aria-hidden='true'>↓</div>\n  <div class='symbol decision' title='Decision'>◇ ¿dato &gt; 0?</div>\n  <div class='flow-branch'>\n    <div class='branch si'>\n      <span class='flow-label'>Sí</span>\n      <span class='flow-arrow' aria-hidden='true'>→</span>\n      <div class='symbol process'>□ Procesar positivo</div>\n    </div>\n    <div class='branch no'>\n      <span class='flow-label'>No</span>\n      <span class='flow-arrow' aria-hidden='true'>→</span>\n      <div class='symbol process'>□ Procesar negativo</div>\n    </div>\n  </div>\n  <div class='flow-arrow' aria-hidden='true'>↓</div>\n  <div class='symbol end' title='End'>○ Fin</div>\n</div>",
     "disenso_experto": "Algunos textbooks antiguos usan flechas sin etiquetar, asumiendo que la dirección obvia es 'derecha = Sí, izquierda = No'. En la práctica moderna, siempre se recomienda etiquetar explícitamente para evitar ambigüidades, especialmente en flowcharts compartidos entre varios colaboradores. El patrón recomendado es: todo nodo de decisión debe tener al menos dos flechas salientes con etiquetas claras ('Sí', 'No', 'Verdadero', 'Falso', etc.).",
-    "pregunta_transferencia": "Si estás leyendo un flowchart en un código Python con un `if/else`, ¿cómo mapeas los nodos y flechas del flowchart a la estructura del código? Explica el mapeo entre símbolos y constructos del lenguaje.",
+    "pregunta_transferencia": "Imagina que estás analizando un diagrama de flujo que representa el proceso de autenticación de un usuario. El flujo comienza con un nodo **Start**, luego llega a un nodo de decisión que pregunta si el usuario ha ingresado su contraseña correcta, seguido de dos ramas: una que dice \"Sí\" y otra que dice \"No\". Debes traducir esta representación a código Python utilizando estructuras condicionales.\\n\\nPara hacer la traducción, identifica qué símbolos del diagrama corresponden a cada constructo de Python. El nodo **Start** se convierte en la llamada inicial de la función, el **decision** se mapea a un `if` o `elif`, y el **process** que contiene la verificación de la contraseña se traduce en el cuerpo del bloque condicional. Observa que el flujo debe continuar hasta el nodo **End**.",
     "quiz": {
       "pregunta": "Al interpretar un flowchart, ¿cuál es el error más común relacionado con las flechas de decisión?",
       "opciones": [
@@ -140,18 +140,43 @@
     ],
     "quiz_ia": [
       {
-        "pregunta": "Al interpretar un flowchart con nodos de decisión, ¿cuál es el error más frecuente?",
+        "pregunta": "En un diagrama de flujo, ¿qué representa el símbolo **Process**?",
         "opciones": [
-          "Asumir la dirección de las flechas sin etiquetas",
-          "Contar incorrectamente los nodos de proceso",
-          "Olvidar identificar el símbolo Start",
-          "Confundir el símbolo Process con Decision"
+          "El nodo de inicio",
+          "Un nodo de decisión",
+          "Una operación o proceso",
+          "El final del programa"
+        ],
+        "correcta": "B",
+        "explicacion": "El símbolo **Process** representa una acción computacional que se realiza durante la ejecución, mientras que el nodo de decisión solo indica un punto de elección y el inicio es el punto de entrada. Por lo tanto, la opción correcta es \"Una operación o proceso\".",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente código que intenta implementar la lógica del flujorojo (ver código roto), ¿cuál es el error principal?",
+        "opciones": [
+          "Falta la palabra clave `colon` después del `if`",
+          "La condición está invertida (se usa `<=` en lugar de `>`)",
+          "No se usa `else` y el programa omite el ramo de error",
+          "La variable `temperature` nunca se asigna un valor numérico"
         ],
         "correcta": "A",
-        "explicacion": "La opción A es correcta porque al no tener etiquetas en las flechas de decisión, es muy común asumir incorrectamente cuál rama representa 'Sí' y cuál 'No', especialmente en flowcharts con múltiples ramificaciones. Las otras opciones son errores posibles también, pero el faltar etiquetas es el más frecuente y evitable.",
-        "tipo": "concepto"
+        "explicacion": "El flujo del diagrama indica que cuando la temperatura es mayor que 30 °C debe mostrarse \"Muy caliente\". Sin embargo, el código presenta la condición `if temperature <= 30:` lo que invierte la lógica y muestra el mensaje de calor para temperaturas bajas, produciendo un resultado contrario a la intención del diagrama.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Al ejecutar el programa basado en el flujorojo, observa que para una temperatura de 35 °C se imprime \"Normal\" en lugar del aviso esperado. ¿Cuál es el fallo?",
+        "opciones": [
+          "El nodo de decisión carece de etiqueta, por lo que Python interpreta ambas ramas igualmente",
+          "La condición en el código está invertida, usando `<=` en vez de `>`",
+          "Se omite el bloque `else`, causando que no se muestre ningún mensaje",
+          "La función devuelve un valor sin imprimir nada en el ramo \"Sí\""
+        ],
+        "correcta": "B",
+        "explicacion": "El diagrama especifica que cuando la temperatura supera 30 °C debe mostrarse el aviso de calor. El código, sin embargo, utiliza `if temperature <= 30:` lo que invierte la condición y trata a las temperaturas altas como normales, explicando por qué el programa imprime \"Normal\" para 35 °C.",
+        "tipo": "debugging"
       }
-    ]
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.0-003",
