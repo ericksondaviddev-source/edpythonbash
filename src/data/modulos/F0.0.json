@@ -2,42 +2,79 @@
   {
     "id": "F0.0-001",
     "modulo": "F0.0 - Diagramas de Flujo",
-    "competencia": "Símbolos y convenciones básicas",
+    "competencia": "Reconocer los cuatro símbolos y las flechas de un diagrama de flujo",
     "nivel": "principiante",
     "fase": 0,
-    "microproyecto": "Crear un flowchart para un proceso simple",
-    "modelo_mental": "Un diagrama de flujo es un lenguaje visual estandarizado para representar algoritmos y procesos. Los cuatro símbolos fundamentales son: **Start/Finish** (ícono de óvalo, indica el inicio o fin de un proceso), **Process** (ícono de rectángulo, representa una acción o cálculo), **Decision** (ícono de rombo, hace una rama basada en una condición booleana), y **Flow Line** (flechas que conectan los símbolos y dirección del flujo). El patrón clave es que todo flujo debe comenzar en un símbolo Start, atravesar una secuencia de procesos y decisiones, y terminar en un símbolo Finish. Los errores más comunes incluyen omitir el símbolo Start, tener múltiples finales sin conexión lógica, o flechas que apuntan a símbolos incorrectos.",
-    "codigo_roto": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='symbol end' title='End'>○</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Error: flecha que apunta al símbolo wrong, y falta el símbolo Finish -->\n</div>",
-    "diagnostico": "1. **Falta el símbolo Finish**: El diagrama no tiene un nodo final, por lo que el proceso nunca termina formalmente. 2. **Flecha incorrecte**: La flecha del proceso apunta al símbolo de decisión en lugar de fluir hacia el final. 3. **Sin entrada del usuario**: No hay claridad sobre cuándo el proceso debe detenerse. El patrón a aprender es siempre terminar un flowchart con un símbolo Finish y asegurarse de que todas las flechas apunten a símbolos válidos.",
-    "codigo_corregido": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='symbol end' title='End'>○</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Flujo corregido: todos los símbolos conectados en secuencia Start → Process → Decision → Finish -->\n</div>",
-    "codigo_optimizado": "<div class='flowchart-container' role='img' aria-label='Diagrama de flujo: Start, Process, Decision, End'>\n  <div class='symbol start' title='Start' data-role='inicio'>● Inicio</div>\n  <div class='flow-arrow-flow-line' aria-hidden='true'>↓</div>\n  <div class='symbol process' title='Process' data-role='proceso'>□ Proceso</div>\n  <div class='flow-arrow-flow-line' aria-hidden='true'>↓</div>\n  <div class='symbol decision' title='Decision' data-role='decision'>◇ ¿Condición?</div>\n  <div class='flow-branch'>\n    <span class='flow-label' data-branch='si'>Sí → □</span>\n    <span class='flow-label' data-branch='no'>No → □</span>\n  </div>\n  <div class='flow-arrow-flow-line' aria-hidden='true'>↓</div>\n  <div class='symbol end' title='End' data-role='fin'>○ Fin</div>\n</div>",
-    "disenso_experto": "Algunos desarrolladores prefieren usar diagramas de flujo solo en la fase de planeación, mientras que otros los emplean durante toda la etapa de implementación. La realidad: para proyectos complejos, los flowcharts ayudan a visualizar la lógica antes de codificar, reduciendo errores y facilitando la colaboración. Para proyectos pequeños, pueden ser overhead innecesario. El patrón pragmático es: usarlos para procesos con más de 5 pasos o decisiones anidadas, y confiar en el código limpio para lo restante.",
-    "pregunta_transferencia": "Si estás escribiendo un bucle `for` en Python y necesitas decidir si continúa o sale, ¿cómo representarías esa lógica en un diagrama de flujo? Explica los nodos y conexiones que usarías.",
+    "microproyecto": "Leer el alta de un usuario en un diagrama y nombrar cada símbolo",
+    "modelo_mental": "Un diagrama de flujo traduce un algoritmo a **imágenes**. Cada símbolo es una categoría de instrucción y cada flecha significa «y después…». El óvalo abre y cierra el baile, el rectángulo hace, el rombo pregunta y la flecha enlaza. Si puedes señalar el inicio, las acciones, las preguntas y el fin, ya puedes leer cualquier algoritmo sin haber escrito todavía una sola línea de código.",
+    "codigo_roto": "Abrir la app\n¿Estás registrado?\nSí → Iniciar sesión\nNo → Crear cuenta\nMenú principal",
+    "diagnostico": "Esa lista enumera pasos, pero esconde la estructura: a simple vista no se distingue cuál es el principio, cuáles son las bifurcaciones ni si el flujo termina. Ese es exactamente el problema que resuelve el diagrama: convertir una lista en un mapa con forma.",
+    "codigo_corregido": "INICIO\nAbrir la app\nSI ¿Estás registrado? (Sí) ENTONCES\n    Iniciar sesión\nSINO\n    Crear cuenta\nFIN SI\nFIN",
+    "codigo_optimizado": "# INICIO\n# Abrir la app\nif ¿Estás registrado? (Sí):\n    # Iniciar sesión\nelse:\n    # Crear cuenta\n# FIN",
+    "disenso_experto": "Un experto en usabilidad diría que los diagramas son burocracia y que lo rápido es escribir el código directamente. Un diseñador de algoritmos responde que el diagrama cuesta cinco minutos y evita horas depurando una lógica mal planteada. La postura intermedia útil: dibuja a mano en una servilleta los algoritmos con decisiones o bucles, y escribe directo los algoritmos lineales de una línea.",
+    "pregunta_transferencia": "Imagina que vas a explicarle a alguien sin experiencia cómo funciona la alarma de tu casa. ¿Cuáles serían los cuatro símbolos de ese flujo y en qué orden aparecerían?",
     "quiz": {
-      "pregunta": "¿Cuál es el símbolo fundamental que debe aparecer obligatoriamente al inicio de cualquier flowchart?",
+      "pregunta": "¿Qué símbolo se usa para representar una pregunta que bifurca el camino?",
       "opciones": [
-        "Process (rectángulo)",
-        "Decision (rombo)",
-        "Start (óvalo)",
-        "Flow Line (flecha)"
+        "El rectángulo (proceso)",
+        "El rombo (decisión)",
+        "El óvalo (inicio)",
+        "La flecha (línea de flujo)"
       ],
-      "correcta": "C",
-      "explicacion": "La opción C es correcta porque todo flowchart debe comenzar obligatoriamente con un símbolo Start (óvalo). Sin un nodo de inicio, el algoritmo no tiene un punto de entrada definido y su lógica queda ambiguos. Las otras opciones son elementos del flowchart pero no son el punto de entrada obligatorio.",
-      "tipo": "concepto"
+      "correcta": "B",
+      "explicacion": "El rombo marca una condición booleana: de él salen al menos dos flechas etiquetadas (normalmente Sí y No). El rectángulo hace trabajo, el óvalo abre o cierra el flujo y la flecha solo enlaza."
     },
-    "simulador": {
-      "tipo": "fill_blank",
-      "instruccion": "Completa el flowchart arrastrando los símbolos correctos para formar un proceso completo.",
-      "solucion": "Start → Process → Decision → End",
-      "validacion": "Debe tener los 4 símbolos conectados en secuencia: Start → Process → Decision → End. Falta el símbolo Finish o flechas incorrectas invalidan el diagrama.",
-      "codigo_inicial": "<!-- Flowchart incompleto -->\n<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n</div>",
-      "engine": "none"
+    "quiz_ia": [
+      {
+        "pregunta": "En un diagrama de flujo, ¿qué significa que dos flechas lleguen al mismo símbolo?",
+        "opciones": [
+          "Que hay un error de dibujo",
+          "Que dos caminos distintos se vuelven a encontrar antes de continuar",
+          "Que el algoritmo se ejecuta dos veces",
+          "Que hace falta añadir otro símbolo de fin"
+        ],
+        "correcta": "B",
+        "explicacion": "Es una unión: varias ramas terminan recogiéndose en el mismo punto y a partir de ahí el flujo continúa una sola vez.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es la regla de oro para saber si un diagrama está terminado?",
+        "opciones": [
+          "Que tenga al menos diez símbolos",
+          "Que use los cuatro tipos de símbolo",
+          "Que exista un único inicio y al menos un fin, y que ninguna rama se quede sin salida",
+          "Que todas las flechas apunten hacia abajo"
+        ],
+        "correcta": "C",
+        "explicacion": "El criterio estructural es entrada única, salida alcanzable y ningún callejón sin salida. El número de símbolos o la dirección estética no son reglas del estándar.",
+        "tipo": "concepto"
+      }
+    ],
+    "flowchart_mode": "view",
+    "flowchart_objetivo": "Observa cómo los cuatro símbolos describen el alta de un usuario: el óvalo abre y cierra, el rectángulo ejecuta acciones y el rombo decide. Pulsa «Ver código» para ver el mismo flujo escrito como pseudocódigo.",
+    "flowchart_data": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 240, "y": 0 }, "data": { "label": "Inicio", "description": "Óvalo: punto de entrada del algoritmo." } },
+        { "id": "p1", "type": "process", "position": { "x": 230, "y": 95 }, "data": { "label": "Abrir la app", "description": "Rectángulo: acción o proceso." } },
+        { "id": "d", "type": "decision", "position": { "x": 225, "y": 195 }, "data": { "label": "¿Estás registrado?", "description": "Rombo: condición que bifurca el flujo." } },
+        { "id": "p2", "type": "process", "position": { "x": 40, "y": 330 }, "data": { "label": "Iniciar sesión" } },
+        { "id": "p3", "type": "process", "position": { "x": 415, "y": 330 }, "data": { "label": "Crear cuenta" } },
+        { "id": "e", "type": "end", "position": { "x": 245, "y": 450 }, "data": { "label": "Menú principal", "description": "Óvalo: punto de salida del algoritmo." } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "p1" },
+        { "id": "e2", "source": "p1", "target": "d" },
+        { "id": "e3", "source": "d", "target": "p2", "label": "Sí" },
+        { "id": "e4", "source": "d", "target": "p3", "label": "No" },
+        { "id": "e5", "source": "p2", "target": "e" },
+        { "id": "e6", "source": "p3", "target": "e" }
+      ]
     },
-    "audio_script": "Hoy vamos a aprender los cuatro símbolos que todo flowchart necesita. Imagina que un flowchart es como un mapa: necesitas saber dónde empiezas, qué caminos tienes en medio y dónde terminates. El símbolo de Start (círculo) es tu punto de partida. El símbolo de Process (cuadrado) son las acciones que realizas. El símbolo de Decision (rombo) es donde tomas decisiones basadas en condiciones. Y el símbolo End (círculo) es dónde terminas. Los cuatro juntos forman un camino completo y comprensible.",
-    "video_prompt": "Video de 60 segundos. animación que muestra cada símbolo uno por uno: el óvalo Start (●), el cuadrado Process (□), el rombo Decision (◘) y el círculo End (○). Cada símbolo se conecta con una flecha verde. Al final, los cuatro forman un cuadrón completo con la etiqueta 'Process completed'. Overlay: '4 símbolos. 1 camino. Tu flujo de trabajo visualizado.'",
+    "audio_script": "Un diagrama de flujo es un mapa de un algoritmo. El óvalo dice dónde empieza y dónde termina. El rectángulo representa una acción: algo que el ordenador hace sin discutir. El rombo representa una pregunta: ahí el camino se parte en dos y cada rama lleva una etiqueta, normalmente Sí y No. La flecha no es decorativa: indica el orden, y su punta dice qué ocurre después.\n\nEn este diagrama el óvalo Inicio abre el flujo. Después el rectángulo Abrir la app realiza una acción. Luego el rombo pregunta si ya estás registrado, y de ahí salen dos caminos: uno al rectángulo Iniciar sesión y otro al rectángulo Crear cuenta. Los dos caminos vuelven a unirse en el óvalo Menú principal, que cierra el flujo.\n\nFíjate en dos reglas de oro. Primera: hay un único inicio. Segunda: ninguna rama se queda sin salida, es decir, cada rectángulo y cada rombo terminan llevando a algún sitio. Si una rama se queda colgada, el algoritmo se ha quedado a medias.\n\nCuando abras la pestaña Diagrama, recorre el flujo con el ratón y ve diciendo en voz alta qué ocurre después de cada flecha. Ese ejercicio, repetido media docena de veces, te deja leer cualquier algoritmo antes de programarlo.",
+    "video_prompt": "Animación en la que aparecen uno a uno los cuatro símbolos ANSI sobre fondo oscuro con acento dorado: óvalo de inicio, rectángulo de proceso, rombo de decisión y óvalo de fin. Una flecha dorada los recorre en orden mientras se resalta la rama Sí en verde y la rama No en rojo, mostrando que ambas vuelven a unirse antes del final. Estilo limpio, tipografía sans-serif, ritmo pausado, sin caras ni personas.",
     "trazabilidad": {
       "libros_fuente": [
-        "Flowchart Standard (ANSI/ISO)",
+        "Flowchart Standard (ANSI/ISO 5807)",
         "Diseño de algoritmos visuales"
       ],
       "conceptos_clave": [
@@ -45,244 +82,538 @@
         "process",
         "decision",
         "end",
-        "flow line"
+        "flow line",
+        "bifurcación"
       ]
     },
-    "tags_rag": [
-      "flowchart",
-      "algoritmo",
-      "visual",
-      "símbolos",
-      "proceso"
-    ],
-    "_enriched": true,
-    "quiz_ia": [
-      {
-        "pregunta": "¿Qué símbolo representa una condición booleana en un flowchart?",
-        "opciones": [
-          "Start (círculo)",
-          "Process (cuadrado)",
-          "Decision (rombo)",
-          "Flow Line (flecha)"
-        ],
-        "correcta": "C",
-        "explicacion": "La opción C es correcta porque el rombo (Decision) es el símbolo estandarizado para representar una condición booleana que determina ramificaciones en el flujo. Las otras opciones representan inicio, acción y conexión respectivamente.",
-        "tipo": "concepto"
-      },
-      {
-        "pregunta": "¿Cuál es el error más común al crear un flowchart desde cero?",
-        "opciones": [
-          "Usar muchos colores diferentes",
-          "Omite el símbolo Start o Finish",
-          "Conectar flechas en direcciones aleatorias",
-          "Usar muchos símbolos Process"
-        ],
-        "correcta": "B",
-        "explicacion": "La opción B es correcta porque omitir el símbolo Start o Finish rompe la estructura lógica del diagrama: sin un punto de inicio, no se sabe por dónde comienza el proceso, y sin un punto final, no se sabe cuándo termina. Las otras opciones son decisiones de diseño, pero faltar símbolos fundamentales es un error de estructura.",
-        "tipo": "concepto"
-      }
-    ]
+    "tags_rag": ["flowchart", "algoritmo", "visual", "símbolos", "proceso", "decisión"]
   },
   {
     "id": "F0.0-002",
     "modulo": "F0.0 - Diagramas de Flujo",
-    "competencia": "Interpretar flowcharts existentes",
+    "competencia": "Construir un flujo secuencial de principio a fin",
     "nivel": "principiante",
     "fase": 0,
-    "microproyecto": "Analizar un flowchart ajeno y explicar su comportamiento",
-    "modelo_mental": "Interpretar un diagrama de flujo es como seguir una receta culinaria donde cada símbolo indica el siguiente paso. El **modelo mental** consiste en entender que el nodo **Start** marca el punto de entrada, los **process** representan operaciones o transformaciones, y los **decision** son puntos de bifurcación que requieren evaluar una condición. Mantener el hilo de ejecución implica seguir las flechas de izquierda a derecha y recordar el estado de las variables en cada rama, tal como se hace cuando se recorre una lista siga en un programa. Este enfoque evita errores comunes como perder la rama correcta o asumir valores por defecto sin comprobación, garantizando que la lógica del algoritmo se traduzca fielmente al código Python o Bash.\\n\\nLa importancia radica en que permite visualizar el flujo de datos antes de implementarlo, reduciendo la necesidad de retroceso durante la depuración. Cuando el flujo está bien interpretado, el estudiante detecta fácilmente patrones como bucles implícitos o condiciones redundantes, lo que previene bugs sutiles como iteraciones infinitas o salidas incorrectas. En resumen, dominar este **modelo mental** es fundamental para convertir ideas en software robusto.",
-    "codigo_roto": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Error: la flecha desde el nodo de decisión no tiene etiqueta y el estudiante podría tomar la rama incorrecta -->\n</div>",
-    "diagnostico": "El primer error más evidente es la **flecha sin etiqueta** que sale del nodo de decisión. En el código roto, la flecha hacia la rama \"Sí\" carece de una etiqueta explícita, lo que obliga al lector a adivinar si corresponde a la verdadera condición o a otra opción. En Python, si el estudiante asume automáticamente que la rama derecha es \"Sí\", podría escribir `if condition:` pero si elige la rama equivocada, el programa responderá de forma incorrecta, ya que la lógica real exige evaluar la condición real.\\n\\nEl segundo error frecuente es la **pérdida del hilo de ejecución** al ignorar el valor de las variables después de tomar una decisión. Si se sigue la rama incorrecta debido a la ambigüedad anterior, el flujo posterior puede operar con un estado inconsistente (por ejemplo, usar una variable definida solo en el otro ramo). Esto produce resultados falsos cuando el código se traduce directamente, porque el programa ejecutará las instrucciones correspondientes a la rama mal elegida, generando un comportamiento distinto al descrito en el flujo.",
-    "codigo_corregido": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-text' style='left:120;top:0;font-size:12px;color:#6b7280'>Sí</div>\n  <div class='flow-text' style='left:160;top:0;font-size:12px;color:#6b7280'>No</div>\n  <!-- Flujo corregido: flechas etiquetadas y clara dirección de ejecución -->\n</div>",
-    "codigo_optimizado": "<div class='flowchart-container' role='img' aria-label='Diagrama de flujo con decisión etiquetada'>\n  <div class='symbol start' title='Start'>● Inicio</div>\n  <div class='flow-arrow' aria-hidden='true'>↓</div>\n  <div class='symbol process' title='Process'>□ Leer dato</div>\n  <div class='flow-arrow' aria-hidden='true'>↓</div>\n  <div class='symbol decision' title='Decision'>◇ ¿dato &gt; 0?</div>\n  <div class='flow-branch'>\n    <div class='branch si'>\n      <span class='flow-label'>Sí</span>\n      <span class='flow-arrow' aria-hidden='true'>→</span>\n      <div class='symbol process'>□ Procesar positivo</div>\n    </div>\n    <div class='branch no'>\n      <span class='flow-label'>No</span>\n      <span class='flow-arrow' aria-hidden='true'>→</span>\n      <div class='symbol process'>□ Procesar negativo</div>\n    </div>\n  </div>\n  <div class='flow-arrow' aria-hidden='true'>↓</div>\n  <div class='symbol end' title='End'>○ Fin</div>\n</div>",
-    "disenso_experto": "Algunos textbooks antiguos usan flechas sin etiquetar, asumiendo que la dirección obvia es 'derecha = Sí, izquierda = No'. En la práctica moderna, siempre se recomienda etiquetar explícitamente para evitar ambigüidades, especialmente en flowcharts compartidos entre varios colaboradores. El patrón recomendado es: todo nodo de decisión debe tener al menos dos flechas salientes con etiquetas claras ('Sí', 'No', 'Verdadero', 'Falso', etc.).",
-    "pregunta_transferencia": "Imagina que estás analizando un diagrama de flujo que representa el proceso de autenticación de un usuario. El flujo comienza con un nodo **Start**, luego llega a un nodo de decisión que pregunta si el usuario ha ingresado su contraseña correcta, seguido de dos ramas: una que dice \"Sí\" y otra que dice \"No\". Debes traducir esta representación a código Python utilizando estructuras condicionales.\\n\\nPara hacer la traducción, identifica qué símbolos del diagrama corresponden a cada constructo de Python. El nodo **Start** se convierte en la llamada inicial de la función, el **decision** se mapea a un `if` o `elif`, y el **process** que contiene la verificación de la contraseña se traduce en el cuerpo del bloque condicional. Observa que el flujo debe continuar hasta el nodo **End**.",
+    "microproyecto": "Dibujar en el editor el flujo de encender la cafetera",
+    "modelo_mental": "Lo más simple también se dibuja: **inicio → acción → fin**. Un flujo secuencial no tiene decisiones, así que solo hay una única flecha que te lleva de un símbolo al siguiente. Aprender a construir este esqueleto en el editor te da el gesto que usarás después para cosas mucho más complicadas: añadir un símbolo, arrastrar para conectar, revisar que validé.",
+    "codigo_roto": "Inicio\nPreparar café\nFIN",
+    "diagnostico": "Falta cerrar el flujo. Sin un símbolo de fin, quien lea el diagrama no sabe si el proceso termina o si simplemente dejó de dibujarse: el algoritmo queda ambiguo.",
+    "codigo_corregido": "INICIO\nPreparar café\nFIN",
+    "codigo_optimizado": "# INICIO\n# Preparar café\n# FIN",
+    "disenso_experto": "Dibujar un flujo de tres símbolos puede parecer una pérdida de tiempo. Se defiende que el objetivo de esta lección no es el diagrama en sí, sino dominar el editor: añadir, conectar, etiquetar y validar. Ese gesto es el que después te permitirá concentrarte en la lógica y no en la herramienta.",
+    "pregunta_transferencia": "Piensa en el proceso de preparar tu desayuno. Si lo redujeras a un solo paso y dos extremos, ¿qué texto pondrías en cada uno de los tres símbolos?",
     "quiz": {
-      "pregunta": "Al interpretar un flowchart, ¿cuál es el error más común relacionado con las flechas de decisión?",
+      "pregunta": "En un flujo secuencial sin decisiones, ¿cuántas flechas de salida puede tener un símbolo de proceso?",
       "opciones": [
-        "Asumir que la flecha de la derecha siempre es 'Sí'",
-        "Perder el rastreo del valor de la variable en los nodos de proceso",
-        "No identificar el símbolo Start al final",
-        "Confundir el símbolo Process con un rombo Decision"
+        "Cero: los procesos no se conectan",
+        "Una, salvo que sea el último antes del fin",
+        "Dos siempre",
+        "Tantas como símbolos tenga el diagrama"
       ],
-      "correcta": "A",
-      "explicacion": "La opción A es correcta porque al no tener etiquetas en las flechas de decisión, es fácil confundir cuál rama representa 'Sí' y cuál 'No', especialmente en flowcharts complejos con múltiples ramificaciones. Las otras opciones son errores comunes también, pero el faltar etiquetas es el más frecuente y evitable.",
-      "tipo": "concepto"
+      "correcta": "B",
+      "explicacion": "En una secuencia lineal cada símbolo lleva al siguiente: una sola flecha de salida. Las salidas múltiples solo aparecen en los rombos de decisión.",
+      "pista": "Piensa en el orden: uno detrás de otro, sin bifurcaciones."
     },
-    "simulador": {
-      "tipo": "fill_blank",
-      "instruccion": "Completa el flowchart etiquetando las flechas de decisión como 'Sí' y 'No'.",
-      "solucion": "Sí / No",
-      "validacion": "Las dos flechas salientes del nodo de decisión deben tener las etiquetas 'Sí' y 'No' respectivamente.",
-      "codigo_inicial": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n</div>",
-      "engine": "none"
-    },
-    "audio_script": "Al interpretar un flowchart, el siguiente paso después de un símbolo de decisión es seguir la flecha correcta. Las flechas deben estar siempre etiquetadas: la típica es 'Sí' a la derecha y 'No' a la izquierda, o 'Verdadero' e 'Inexperto'. Esto elimina cualquier ambigüedad y asegura que cualquiera que lea el flowchart pueda seguir el hilo de ejecución sin confusiones. El patrón de oro es: toda flecha saliente de un rombo debe tener una etiqueta.",
-    "video_prompt": "Video de 50 segundos. Un flowchart simple con un nodo de decisión en el medio. Una flecha sale hacia la derecha con la etiqueta 'Sí' que lleva a un nodo de proceso, y otra flecha sale hacia la izquierda con la etiqueta 'No' que lleva a otro proceso. El narrador explica: 'Al leer un flowchart, siempre seguimos la flecha etiquetada. En este caso, si la condición es verdadera, seguimos la flecha Sí; si es falsa, la flecha No.' Overlay: 'Flechas etiquetadas = sin ambigüedades.'",
-    "trazabilidad": {
-      "libros_fuente": [
-        "Flowchart Standard (ANSI/ISO)",
-        "Diseño de algoritmos visuales"
-      ],
-      "conceptos_clave": [
-        "flechas etiquetadas",
-        "rama Sí/No",
-        "rastreo de estado",
-        "símbolo Start"
-      ]
-    },
-    "tags_rag": [
-      "flowchart",
-      "interpretación",
-      "ramas",
-      "decisión",
-      "ejecución"
-    ],
     "quiz_ia": [
       {
-        "pregunta": "En un diagrama de flujo, ¿qué representa el símbolo **Process**?",
+        "pregunta": "Si construyes un flujo con inicio, proceso y fin pero olvidas conectar el proceso al fin, ¿qué error detectará el validador?",
         "opciones": [
-          "El nodo de inicio",
-          "Un nodo de decisión",
-          "Una operación o proceso",
-          "El final del programa"
+          "Que falta un símbolo de inicio",
+          "Un callejón sin salida y un fin inalcanzable",
+          "Que hay demasiadas flechas",
+          "Ninguno, el diagrama es válido"
         ],
         "correcta": "B",
-        "explicacion": "El símbolo **Process** representa una acción computacional que se realiza durante la ejecución, mientras que el nodo de decisión solo indica un punto de elección y el inicio es el punto de entrada. Por lo tanto, la opción correcta es \"Una operación o proceso\".",
-        "tipo": "concepto"
-      },
-      {
-        "pregunta": "Dado el siguiente código que intenta implementar la lógica del flujorojo (ver código roto), ¿cuál es el error principal?",
-        "opciones": [
-          "Falta la palabra clave `colon` después del `if`",
-          "La condición está invertida (se usa `<=` en lugar de `>`)",
-          "No se usa `else` y el programa omite el ramo de error",
-          "La variable `temperature` nunca se asigna un valor numérico"
-        ],
-        "correcta": "A",
-        "explicacion": "El flujo del diagrama indica que cuando la temperatura es mayor que 30 °C debe mostrarse \"Muy caliente\". Sin embargo, el código presenta la condición `if temperature <= 30:` lo que invierte la lógica y muestra el mensaje de calor para temperaturas bajas, produciendo un resultado contrario a la intención del diagrama.",
-        "tipo": "codigo"
-      },
-      {
-        "pregunta": "Al ejecutar el programa basado en el flujorojo, observa que para una temperatura de 35 °C se imprime \"Normal\" en lugar del aviso esperado. ¿Cuál es el fallo?",
-        "opciones": [
-          "El nodo de decisión carece de etiqueta, por lo que Python interpreta ambas ramas igualmente",
-          "La condición en el código está invertida, usando `<=` en vez de `>`",
-          "Se omite el bloque `else`, causando que no se muestre ningún mensaje",
-          "La función devuelve un valor sin imprimir nada en el ramo \"Sí\""
-        ],
-        "correcta": "B",
-        "explicacion": "El diagrama especifica que cuando la temperatura supera 30 °C debe mostrarse el aviso de calor. El código, sin embargo, utiliza `if temperature <= 30:` lo que invierte la condición y trata a las temperaturas altas como normales, explicando por qué el programa imprime \"Normal\" para 35 °C.",
+        "explicacion": "El proceso queda sin flecha de salida (callejón) y el fin nunca se alcanza desde el inicio (inalcanzable). Las dos reglas se validan juntas.",
         "tipo": "debugging"
       }
     ],
-    "_enriched": true
+    "flowchart_mode": "build",
+    "flowchart_objetivo": "Construye desde cero un flujo de tres símbolos: un inicio, un único proceso y un fin, encadenados con flechas.",
+    "flowchart_starter": { "nodes": [], "edges": [] },
+    "flowchart_data": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 250, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "p", "type": "process", "position": { "x": 245, "y": 110 }, "data": { "label": "Preparar café" } },
+        { "id": "e", "type": "end", "position": { "x": 260, "y": 240 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "p" },
+        { "id": "e2", "source": "p", "target": "e" }
+      ]
+    },
+    "flowchart_rules": [
+      "Debe haber exactamente un símbolo de inicio (óvalo relleno).",
+      "Debe haber al menos un símbolo de fin (óvalo con borde discontinuo).",
+      "Todo símbolo necesita una flecha de salida, excepto el fin.",
+      "Todos los símbolos deben ser alcanzables desde el inicio."
+    ],
+    "audio_script": "Vamos a construir tu primer diagrama desde una página en blanco. En la paleta verás cuatro símbolos: inicio, proceso, decisión y fin. Pulsa Inicio para añadir el primer óvalo al lienzo.\n\nAhora añade un proceso. Escribe en el lateral el texto de la acción, por ejemplo Preparar café. Después añade el símbolo de fin. Todavía no hay flechas: tres símbolos sueltos no son un algoritmo.\n\nEl paso clave es conectar. Arrastra desde el punto que aparece en la parte inferior de un símbolo hasta el símbolo siguiente: así nace una flecha. Repite para unir el proceso con el fin. Cada flecha significa «y después…».\n\nPor último, pulsa Validar. Si el validador te devuelve verde, significa que hay un único inicio, un fin alcanzable y ningún símbolo colgado. Si te devuelve rojo, leerás exactamente qué falta. Ese ciclo añadir, conectar, validar es el que repetirás en todos los ejercicios siguientes.",
+    "video_prompt": "Grabación limpia del editor: un cursor añade tres símbolos uno a uno (óvalo dorado, rectángulo, óvalo de borde discontinuo), luego arrastra entre puntos para trazar dos flechas que se animan al conectar, y finalmente aparece un indicador verde de validación. Fondo oscuro solarpunk, acento dorado, sin texto explicativo superpuesto.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO 5807)",
+        "Fundamentos de programación: secuencia"
+      ],
+      "conceptos_clave": ["secuencia", "flow line", "orden de ejecución"]
+    },
+    "tags_rag": ["flowchart", "secuencia", "editor", "tutorial", "básicos"]
   },
   {
     "id": "F0.0-003",
     "modulo": "F0.0 - Diagramas de Flujo",
-    "competencia": "De flowchart a pseudocódigo y código",
+    "competencia": "Añadir una decisión con dos ramas etiquetadas Sí y No",
     "nivel": "principiante",
     "fase": 0,
-    "microproyecto": "Convertir un flowchart a pseudocódigo y código Python",
-    "modelo_mental": "Imagina un **flowchart** como un **mapa de ruta** donde cada símbolo es una instrucción precisa: el óvalo `●` (Start) es el `main()` o la inicialización de variables, el rectángulo `□` (Process) equivale a una asignación como `x = 5` o una llamada a función, y el rombo `◘` (Decision) se traduce **siempre** a una estructura `if/else` completa. La analogía central es la de **seguir las flechas como un hilo conductor**: no puedes saltarte una intersección ni decidir por tu cuenta por dónde ir; el código debe replicar *exactamente* la topología del diagrama.\n\nEsto importa porque **la ambigüedad visual se vuelve error de ejecución**: un rombo sin salida `else` es un camino sin salida en el mapa, y un rectángulo omitido es una gasolinera que olvidaste visitar y ahora el coche (el programa) se queda sin combustible (variables sin inicializar).\n\nLos errores que previene esta mentalidad son tres: **omisión de ramas** (olvidar el `else`), **desorden secuencial** (ejecutar el `if` antes de la asignación previa) y **puntos de salida implícitos** (terminar la función sin `return` explícito porque el óvalo `End` no se tradujo).",
-    "codigo_roto": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <!-- Error: la traducción omite el bloque else en la decisión, y el proceso final no tiene asignación -->\n</div>",
-    "diagnostico": "1. **Falta el bloque `else` en la traducción de la decisión**: En el `codigo_roto`, el rombo `◘` tiene dos salidas visuales (las flechas), pero el código generado probablemente solo tiene `if condicion: ...`. Python no lanza error de sintaxis por un `if` sin `else`, pero **rompe la equivalencia semántica**: si la condición es falsa, el flujo \"se cae\" silenciosamente al siguiente nodo en lugar de seguir la rama `No` del diagrama. El patrón general es: **todo rombo exige dos bloques de código** (uno por cada flecha de salida).\n\n2. **El proceso final no tiene asignación (o el `End` se ignora)**: El comentario del HTML indica que el símbolo final no se traduce a una sentencia de cierre (como `return resultado` o `sys.exit(0)`). En Python, una función sin `return` devuelve `None` implícito, lo que suele ser un **bug lógico** si el flowchart prometía un valor de salida. En Bash, omitir `exit 0` deja el código de salida al azar del último comando. El patrón es: **el óvalo `End` siempre mapea a una instrucción de terminación explícita**.\n\n3. **Saltar nodos (omisión del Process)**: Ir directo del `Start` al `Decision` sin procesar el rectángulo `□` intermedio significa que **las variables necesarias para la condición no existen aún**. Python lanzará `NameError: name 'x' is not defined` al evaluar `if x > 10:`. El patrón general es: **respeta el orden topológico estricto**; cada flecha entrante a un nodo garantiza que los nodos predecesores ya se ejecutaron.",
-    "codigo_corregido": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-text' style='left:120;top:0;font-size:12px;color:#6b7280'>if cond entonces</div>\n  <div class='flow-text' style='left:160;top:0;font-size:12px;color:#6b7280'>sino</div>\n  <!-- Flujo corregido: includes else block y proceso final con asignación -->\n</div>",
-    "codigo_optimizado": "def evaluar(x):\n    if x > 0:\n        resultado = 'positivo'\n    else:\n        resultado = 'no positivo'\n    return resultado\n\nif __name__ == '__main__':\n    print(evaluar(5))",
-    "disenso_experto": "Un error común al traducir flowcharts a código es asumir que todo flujo se traduce a `if` simple; en realidad, todo nodo de decisión debe traducirse a `if ... else` para mantener la equivalencia lógica con el flowchart. Además, el símbolo End siempre debe traducirse a una sentencia de retorno o cierre, nunca omitirse, para que el código tenga un comportamiento predecible y bien definido.",
-    "pregunta_transferencia": "Imagina un flowchart para un sistema de **acceso a servidor**: Start → Process (leer `user`, `pass`) → Decision (`user == 'admin'`) → Sí → Decision (`pass == '1234'`) → Sí → Process (`grant_access()`) → End; los caminos `No` van a Process (`deny_access()`) → End. Aquí tienes **dos rombos anidados**.\n\n**Pista**: En Python, la indentación **es** la estructura. Cada nivel de anidación en el diagrama (un rombo dentro de la rama `Sí` de otro) sube un nivel de sangría (4 espacios). Pregúntate: ¿la segunda decisión depende *estrictamente* de que la primera sea verdadera? Si sí, `if` anidado. Si fueran independientes, usarías `and` en una sola condición. Dibuja primero el esqueleto `if/else` vacío siguiendo las flechas, y *luego* rellena los bloques.",
+    "microproyecto": "Dibujar el flujo de permiso de acceso a un archivo",
+    "modelo_mental": "Una **decisión** es un semáforo: entra una sola flecha por arriba y salen al menos dos, cada una con su etiqueta. Etiquetar bien es la mitad del trabajo, porque un rombo con dos flechas sin etiqueta no es una decisión, es una duda. La regla completa es: entra una, salen dos, y las dos terminan llegando al fin.",
+    "codigo_roto": "INICIO\n¿Tienes permiso?\n    Abrir el archivo\n    Mostrar error\nFIN",
+    "diagnostico": "El rombo tiene dos flechas pero ninguna etiqueta: no se sabe qué camino corresponde a la condición verdadera. Además las dos acciones no convergen en el fin, por lo que un camino queda ambiguo.",
+    "codigo_corregido": "INICIO\nSI ¿Tienes permiso? (Sí) ENTONCES\n    Abrir el archivo\nSINO\n    Mostrar error\nFIN SI\nFIN",
+    "codigo_optimizado": "# INICIO\nif ¿Tienes permiso? (Sí):\n    # Abrir el archivo\nelse:\n    # Mostrar error\n# FIN",
+    "disenso_experto": "Algunos estándares permiten más de dos salidas en un rombo (por ejemplo un selector de menú con tres opciones). Es cierto, y conviene conocerlo. Pero para empezar, dos salidas etiquetadas Sí y No son la forma más fácil de pensar y la que mejor se traduce a un if-else.",
+    "pregunta_transferencia": "Señala una decisión real de tu día con dos respuestas posibles (por ejemplo, ¿lleva paraguas?). ¿Qué texto pondrías dentro del rombo y qué etiquetas llevarían sus dos flechas?",
     "quiz": {
-      "pregunta": "Al traducir un nodo de decisión de un flowchart a código, ¿cuál es el error más común?",
+      "pregunta": "¿Cuál es la estructura mínima correcta de un símbolo de decisión?",
       "opciones": [
-        "Traducir solo el bloque 'if' y olvidar el 'else'",
-        "Usar variables con nombres demasiado largos",
-        "Traducir el símbolo Start como un comentario",
-        "Omiter el símbolo End del flowchart"
+        "Una flecha de entrada y dos flechas de salida etiquetadas",
+        "Dos flechas de entrada y una de salida",
+        "Dos flechas de entrada y dos de salida sin etiqueta",
+        "Una flecha de entrada y una de salida"
       ],
       "correcta": "A",
-      "explicacion": "La opción A es correcta porque al traducir un nodo de decisión, es muy fácil olvidar el bloque `else`, lo que cambia completamente el comportamiento lógico del programa. Las otras opciones son errores posibles, pero olvidar el `else` es el error más frecuente y con mayores consecuencias lógicas.",
-      "tipo": "concepto"
+      "explicacion": "El rombo recibe el flujo por un único punto y lo reparte en dos ramas, cada una con su etiqueta. Las dos ramas deben continuar hasta llegar al fin o a una reunión posterior.",
+      "pista": "Piensa en un semáforo: entra un solo camino y sale decidido."
     },
-    "simulador": {
-      "tipo": "fill_blank",
-      "instruccion": "Completa el pseudocódigo traduciendo el flowchart: agrega el bloque 'sino' y la asignación final.",
-      "solucion": "si cond entonces\n  acción\nsino\n  otra_accion\nfin",
-      "validacion": "El pseudocódigo debe tener bloques 'si/sino' y una línea 'fin' al final.",
-      "codigo_inicial": "<div class='flowchart-container'>\n  <div class='symbol start' title='Start'>●</div>\n  <div class='symbol process' title='Process'>□</div>\n  <div class='symbol decision' title='Decision'>◘</div>\n  <div class='flow-line' style='left:0;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:40;top:0;width:40px;height:2px;background:#6b7280;'></div>\n  <div class='flow-line' style='left:80;top:0;width:40px;height:2px;background:#6b7280;'></div>\n</div>",
-      "engine": "none"
-    },
-    "audio_script": "Al traducir un flowchart a pseudocódigo, el paso crítico es el nodo de decisión: cada uno debe traducirse a un bloque `if ... sino`. Si omites el `sino`, el comportamiento del programa cambia drásticamente porque las condiciones falsas no tendrán acción definida. El patrón de oro es: cada decisión flowchart → `if ... sino` en código, manteniendo la indentación correcta y siguiendo el orden de ejecución de flechas de izquierda a derecha.",
-    "video_prompt": "Video de 60 segundos. Un flowchart con Start → Process → Decision → End. El narrador traduce cada símbolo a código Python en tiempo real: Start → `x = 0`, Process → `y = 1`, Decision → `if cond entonces` / `sino` → `otra_accion` → End → `print('fin')`. Overlay: 'De flowchart a código: 4 pasos, 1 traducción correcta.'",
-    "trazabilidad": {
-      "libros_fuente": [
-        "Fundamentos de algoritmo traducción",
-        "De flujo visual a código imperativo"
-      ],
-      "conceptos_clave": [
-        "traducción de flowchart",
-        "if/sino",
-        "orden de ejecución",
-        "asignación de variables"
-      ]
-    },
-    "tags_rag": [
-      "flowchart",
-      "pseudocódigo",
-      "traducción",
-      "Python",
-      "orden de ejecución"
-    ],
     "quiz_ia": [
       {
-        "pregunta": "¿Qué estructura de control de Python corresponde **siempre** a un símbolo de decisión (rombo) en un flowchart bien formado?",
+        "pregunta": "Tu decisión tiene dos flechas de salida, pero el validador sigue marcando error. ¿Qué puede faltar?",
         "opciones": [
-          "`while`",
-          "`if/else`",
-          "`for`",
-          "`def`"
+          "Que el rombo esté en el centro del lienzo",
+          "Que las flechas estén etiquetadas: sin texto no se considera rama",
+          "Que tenga tres flechas de salida",
+          "Que el proceso anterior tenga dos salidas"
         ],
         "correcta": "B",
-        "explicacion": "El rombo representa una bifurcación binaria (Sí/No). `if/else` es la única que modela exactamente dos caminos mutuamente excluyentes. `while`/`for` son bucles (ciclos), `def` define función.",
-        "tipo": "concepto"
-      },
-      {
-        "pregunta": "Dado el flujo: Start → `x = 10` → Decision `x > 5` → Sí: `print(\"A\")` → No: `print(\"B\")` → End. ¿Cuál código Python es **equivalente estricta**?",
-        "opciones": [
-          "x=10\nif x>5: print(\"A\")\nprint(\"B\")",
-          "if x>5: print(\"A\")\nelse: print(\"B\")\nx=10",
-          "x=10\nif x>5:\n    print(\"A\")\nelse:\n    print(\"B\")",
-          "x=10\nif x<5: print(\"A\")\nelse: print(\"B\")"
-        ],
-        "correcta": "C",
-        "explicacion": "C respeta orden (asignación antes de uso), indentación, y rama `else` explícita. A imprime ambos si x>5 (falta else). B falla NameError (orden incorrecto). D invierte la lógica de la condición.",
-        "tipo": "codigo"
-      },
-      {
-        "pregunta": "Un alumno traduce un flowchart con decisión y **olvida el `else`**. El código resultante es `x = 5\\nif x > 10: print(\"Grande\")\\nprint(\"Fin\")`. ¿Cuál es el **comportamiento real** vs el **esperado en el flowchart** si x=5?",
-        "opciones": [
-          "Real: imprime \"Fin\". Esperado: imprimir \"Pequeño\" (rama No) y luego \"Fin\".",
-          "Real: Error sintaxis. Esperado: \"Grande\".",
-          "Real: Imprime \"Grande\" y \"Fin\". Esperado: solo \"Fin\".",
-          "Real: Bucle infinito. Esperado: \"Pequeño\"."
-        ],
-        "correcta": "A",
-        "explicacion": "Sin `else`, la rama `No` del diagrama no tiene código asociado. El flujo continúa secuencialmente a `print(\"Fin\")`. El flowchart exige una acción en la rama `No` (ej. `print(\"Pequeño\")`), que se pierde. No hay error de sintaxis ni bucle.",
+        "explicacion": "Se exigen al menos dos salidas con etiqueta. Una flecha vacía no comunica qué condición sigue, así que el diagrama queda incompleto.",
         "tipo": "debugging"
       },
       {
-        "pregunta": "Al convertir un flowchart a código, ¿cuál es la **regla de oro** para el orden de escritura de las sentencias?",
+        "pregunta": "¿A dónde deben llegar las dos ramas de esta decisión?",
         "opciones": [
-          "Escribir primero las funciones, luego el main.",
-          "Orden alfabético de nombres de variables.",
-          "Agrupar todos los `if` al principio.",
-          "**Seguir el flujo de flechas** (topología) desde Start hasta End."
+          "A dos símbolos de fin distintos",
+          "Ninguna rama debe llegar al fin",
+          "Ambas deben llegar al fin (directa o indirectamente)",
+          "Solo la rama Sí debe llegar al fin"
         ],
-        "correcta": "D",
-        "explicacion": "El flowchart dicta el orden de ejecución temporal. Saltar nodos o reordenar rompe la lógica (ej. usar variable antes de asignarla). D es la única que garantiza equivalencia semántica.",
+        "correcta": "C",
+        "explicacion": "Las dos ramas deben terminar en un fin alcanzable. Pueden usar el mismo símbolo de fin o bien unirse antes: lo importante es que ninguna quede colgada.",
         "tipo": "concepto"
       }
     ],
-    "_enriched": true
+    "flowchart_mode": "build",
+    "flowchart_objetivo": "Completa el flujo de permisos: conecta el rombo con sus dos ramas, etiqueta cada una y haz que ambas lleguen al fin.",
+    "flowchart_starter": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 240, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "d", "type": "decision", "position": { "x": 225, "y": 110 }, "data": { "label": "¿Tienes permiso?" } },
+        { "id": "a", "type": "process", "position": { "x": 45, "y": 270 }, "data": { "label": "Abrir el archivo" } },
+        { "id": "b", "type": "process", "position": { "x": 420, "y": 270 }, "data": { "label": "Mostrar error" } },
+        { "id": "e", "type": "end", "position": { "x": 250, "y": 400 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "d" }
+      ]
+    },
+    "flowchart_data": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 240, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "d", "type": "decision", "position": { "x": 225, "y": 110 }, "data": { "label": "¿Tienes permiso?" } },
+        { "id": "a", "type": "process", "position": { "x": 45, "y": 270 }, "data": { "label": "Abrir el archivo" } },
+        { "id": "b", "type": "process", "position": { "x": 420, "y": 270 }, "data": { "label": "Mostrar error" } },
+        { "id": "e", "type": "end", "position": { "x": 250, "y": 400 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "d" },
+        { "id": "e2", "source": "d", "target": "a", "label": "Sí" },
+        { "id": "e3", "source": "d", "target": "b", "label": "No" },
+        { "id": "e4", "source": "a", "target": "e" },
+        { "id": "e5", "source": "b", "target": "e" }
+      ]
+    },
+    "flowchart_rules": [
+      "El rombo debe tener dos flechas de salida.",
+      "Etiqueta una rama «Sí» y la otra «No».",
+      "Las dos ramas deben llegar al símbolo de fin.",
+      "Ningún símbolo puede quedarse sin flecha de salida."
+    ],
+    "audio_script": "Ya tienes montado el esqueleto: inicio conectado a un rombo, y debajo dos procesos y un fin todavía sueltos. Tu misión es convertir ese montón de símbolos en un algoritmo con una decisión real.\n\nArrastra desde el punto del rombo hasta el rectángulo de la izquierda y etiqueta esa flecha Sí. Arrastra del rombo al rectángulo de la derecha y etiqueta No. Un rombo sin etiquetas no decide nada: es simplemente un dibujo raro.\n\nDespués conecta cada rectángulo con el fin. Fíjate en que los dos caminos vuelven a encontrarse en el mismo óvalo final. Eso se llama una unión, y es lo que permite que el algoritmo continúe con una sola ejecución después de haberse bifurcado.\n\nPulsa Validar. Debes leer que el diagrama cumple todas las reglas: un inicio, un fin, el rombo con dos ramas etiquetadas y ningún símbolo colgado. Si algo falla, el mensaje te dirá exactamente cuál es el nodo culpable.",
+    "video_prompt": "Animación de un rombo dorado en el centro con dos flechas que se trazan hacia los lados: la rama izquierda se ilumina en verde con la etiqueta Sí, la derecha en rojo con la etiqueta No, y ambas descienden hasta unirse en un óvalo final. Fondo oscuro, líneas limpias, tipografía monoespaciada para las etiquetas.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO 5807)",
+        "Estructuras de control: selección"
+      ],
+      "conceptos_clave": ["decision", "bifurcación", "etiqueta de rama", "unión", "if-else"]
+    },
+    "tags_rag": ["flowchart", "decisión", "bifurcación", "si-sino", "construir"]
+  },
+  {
+    "id": "F0.0-004",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "competencia": "Representar un bucle con una flecha que vuelve hacia atrás",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Dibujar un juego que se repite hasta que el jugador diga que no",
+    "modelo_mental": "Un **bucle** es una flecha que regresa. En papel y en pantalla eso se dibuja como una flecha que sube hacia un símbolo anterior: el flujo se recorre, se llega a la decisión y, si la respuesta es que hay que seguir, vuelve al punto de partida del ciclo. Traducido a código, esa flecha de vuelta es exactamente un while o un for.",
+    "codigo_roto": "INICIO\nSI ¿Otra vez? (Sí) ENTONCES\n    Pedir número\nSINO\n    Mostrar total\nFIN SI\nFIN",
+    "diagnostico": "Falta la flecha de vuelta. Sin ella, la rama Sí ejecuta el paso y se pierde: el número no vuelve a preguntarse nunca, así que el supuesto bucle no se repite ni una sola vez.",
+    "codigo_corregido": "INICIO\nSI ¿Otra vez? (Sí) ENTONCES\n    Pedir número\n    ⤴ volver a \"¿Otra vez?\"\nSINO\n    Mostrar total\nFIN SI\nFIN",
+    "codigo_optimizado": "# INICIO\nwhile ¿Otra vez?:\n    # Pedir número\n# Mostrar total\n# FIN",
+    "disenso_experto": "Hay quien prefiere escribir el bucle como REPETIR…HASTA QUE, con la condición al final. Es una alternativa legítima y a veces más legible, porque el cuerpo se ejecuta siempre al menos una vez. En los diagramas más comunes, sin embargo, se usa la decisión al principio, que equivale a un while.",
+    "pregunta_transferencia": "Cuando aprendes a tocar un instrumento, repites un ejercicio hasta que sale bien. ¿Cuál sería la pregunta del rombo y cuál sería el paso que se repite?",
+    "quiz": {
+      "pregunta": "¿Qué representa en un diagrama una flecha que vuelve desde un símbolo posterior hasta uno anterior?",
+      "opciones": [
+        "Un error de dibujo",
+        "Una unión de caminos",
+        "Un bucle: el flujo vuelve a evaluar esa parte",
+        "Un símbolo de fin alternativo"
+      ],
+      "correcta": "C",
+      "explicacion": "Esa flecha de vuelta es el ciclo. El flujo regresa al punto anterior y vuelve a recorrerse hasta que la condición de la decisión lo impide; en código eso es un while o un for.",
+      "pista": "Si la flecha sube en vez de bajar, algo se está repitiendo."
+    },
+    "quiz_ia": [
+      {
+        "pregunta": "Si la rama que vuelve atrás no estuviera etiquetada, ¿qué problema tendría el diagrama?",
+        "opciones": [
+          "Ninguno, la flecha de vuelta habla por sí sola",
+          "No se sabría en qué condición se repite ni cuándo sale",
+          "El validador rechazaría el bucle por principio",
+          "Habría que dibujar un segundo inicio"
+        ],
+        "correcta": "B",
+        "explicacion": "La etiqueta conecta la decisión con la repetición: sin ella el lector no sabe qué condición gobierna el ciclo ni qué rama lo abandona.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En pseudocódigo, ¿qué instrucción equivale a la flecha de vuelta de este diagrama?",
+        "opciones": [
+          "return",
+          "break",
+          "volver a evaluar la condición del bucle (while)",
+          "print"
+        ],
+        "correcta": "C",
+        "explicacion": "La flecha de vuelta es la cabecera del bucle: tras el cuerpo, el control regresa a la condición. En Python eso es el while.",
+        "tipo": "codigo"
+      }
+    ],
+    "flowchart_mode": "build",
+    "flowchart_objetivo": "Añade la rama que repite el juego y la flecha que regresa a la decisión, para que el bucle se cierre correctamente.",
+    "flowchart_starter": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 255, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "d", "type": "decision", "position": { "x": 245, "y": 110 }, "data": { "label": "¿Otra vez?" } },
+        { "id": "p", "type": "process", "position": { "x": 45, "y": 275 }, "data": { "label": "Pedir número" } },
+        { "id": "q", "type": "process", "position": { "x": 430, "y": 275 }, "data": { "label": "Mostrar total" } },
+        { "id": "e", "type": "end", "position": { "x": 260, "y": 405 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "d" },
+        { "id": "e2", "source": "d", "target": "q", "label": "No" },
+        { "id": "e3", "source": "q", "target": "e" }
+      ]
+    },
+    "flowchart_data": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 255, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "d", "type": "decision", "position": { "x": 245, "y": 110 }, "data": { "label": "¿Otra vez?" } },
+        { "id": "p", "type": "process", "position": { "x": 45, "y": 275 }, "data": { "label": "Pedir número" } },
+        { "id": "q", "type": "process", "position": { "x": 430, "y": 275 }, "data": { "label": "Mostrar total" } },
+        { "id": "e", "type": "end", "position": { "x": 260, "y": 405 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "d" },
+        { "id": "e2", "source": "d", "target": "p", "label": "Sí" },
+        { "id": "e3", "source": "d", "target": "q", "label": "No" },
+        { "id": "e4", "source": "p", "target": "d" },
+        { "id": "e5", "source": "q", "target": "e" }
+      ]
+    },
+    "flowchart_rules": [
+      "Etiqueta la rama que repite con «Sí» y la que termina con «No».",
+      "La rama Sí debe volver con una flecha a la decisión.",
+      "La rama No debe llegar al símbolo de fin.",
+      "Ningún símbolo puede quedarse sin flecha de salida."
+    ],
+    "audio_script": "Este ejercicio es el primero con un bucle, y el truco está en una sola flecha: la que vuelve hacia atrás.\n\nEl lienzo ya trae el inicio unido a la decisión ¿Otra vez?, y la rama No ya conectada a Mostrar total y al fin. Lo que falta es la mitad que repite.\n\nArrastra del rombo al rectángulo Pedir número y etiqueta esa flecha Sí. Ahora viene lo importante: arrastra del rectángulo Pedir número de vuelta al rombo. Esa flecha que sube es el bucle. Significa que, tras pedir un número, el programa vuelve a preguntarse si quiere seguir jugando.\n\nPulsa Validar y lee el pseudocódigo con «Ver código». Verás la marca ⤴ volver a dentro de la rama Sí: es la traducción textual de esa flecha de vuelta. Compara después con el esqueleto de Python, donde aparece un while. Un diagrama, dos representaciones, la misma lógica.",
+    "video_prompt": "Animación de un bucle dorado: un rombo en lo alto emite dos flechas, una descendente a la derecha que sale del cuadro y otra a la izquierda que sube en curva hasta volver al rombo, creando un circuito visible. La curva de vuelta brilla al completarse y se marca con el símbolo de retorno.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO 5807)",
+        "Estructuras de control: iteración"
+      ],
+      "conceptos_clave": ["bucle", "back edge", "while", "condición de salida", "iteración"]
+    },
+    "tags_rag": ["flowchart", "bucle", "while", "repetición", "iteración", "construir"]
+  },
+  {
+    "id": "F0.0-005",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "competencia": "Recorrer un diagrama ajeno y predecir su salida",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Seguir el flujo de una suma con bucle y anticipar el resultado",
+    "modelo_mental": "Leer un diagrama es **ejecutarlo con el dedo**. Empiezas en el óvalo, vas saltando de flecha en flecha y mantienes una memoria imaginaria de las variables. Cuando llegas a un rombo, miras la etiqueta y eliges la rama; cuando llegas a una flecha que sube, vuelves atrás. Si puedes decir qué imprimiría antes de mirar, has entendido el algoritmo.",
+    "codigo_roto": "INICIO\ntotal = 0\nSI ¿quedan números? (Sí) ENTONCES\n    mostrar total\nFIN SI\nFIN",
+    "diagnostico": "La rama Sí muestra el total en lugar de acumularlo, y la flecha de vuelta desapareció. El resultado sería que el bucle se ejecuta una vez y devuelve siempre lo mismo, nunca la suma real.",
+    "codigo_corregido": "INICIO\ntotal = 0\nSI ¿quedan números? (Sí) ENTONCES\n    total = total + número\n    ⤴ volver a \"¿quedan números?\"\nSINO\n    mostrar total\nFIN SI\nFIN",
+    "codigo_optimizado": "# INICIO\ntotal = 0\nwhile ¿quedan números?:\n    total = total + número\n# mostrar total\n# FIN",
+    "disenso_experto": "Un purista diría que este bucle debería probar la condición antes de entrar y que quizá el primer número se pierde. Tiene razón en que el orden importa en la vida real: el diseño con la comprobación al principio evita procesar datos que no existen. Aquí lo importante es que la flecha de vuelta y la acumulación están en su sitio.",
+    "pregunta_transferencia": "Si el diagrama tuviera la rama Sí vacía, ¿qué resultado en falsos obtendrías? Explica la diferencia entre tener la flecha de vuelta y no tenerla.",
+    "quiz": {
+      "pregunta": "Siguiendo el diagrama con la lista 4, 7, 2, ¿qué valor muestra al terminar?",
+      "opciones": [
+        "0",
+        "2",
+        "13",
+        "Se queda repitiendo para siempre"
+      ],
+      "correcta": "C",
+      "explicacion": "total empieza en 0 y suma cada número mientras quedan: 0+4=4, 4+7=11, 11+2=13. Cuando la respuesta a «¿quedan números?» es No, sale por la rama inferior y muestra 13.",
+      "pista": "Recorre el diagrama con el dedo y anota el valor de total en cada vuelta."
+    },
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la función de la flecha que sube desde «total = total + número» hasta la decisión?",
+        "opciones": [
+          "Borrar la lista de números",
+          "Volver a preguntar si quedan números, es decir, iterar",
+          "Saltar directamente al fin",
+          "Mostrar el total por pantalla"
+        ],
+        "correcta": "B",
+        "explicacion": "Es la arista de vuelta del bucle: tras acumular, el control regresa a la condición para decidir si se repite o se sale.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Si borras la flecha de vuelta, ¿qué le ocurre al algoritmo?",
+        "opciones": [
+          "Sigue igual, el resto de flechas bastan",
+          "La rama Sí se queda sin salida y el bucle deja de existir",
+          "El diagrama deja de ser válido por tener dos finales",
+          "Aparece un error de sintaxis en Python"
+        ],
+        "correcta": "B",
+        "explicacion": "Sin la flecha de vuelta, el acumulador no tiene a dónde ir: queda un callejón sin salida y la condición solo se evaluaría una vez.",
+        "tipo": "debugging"
+      }
+    ],
+    "flowchart_mode": "view",
+    "flowchart_objetivo": "Recorre este diagrama con el dedo y predice la suma antes de abrir «Ver código». Después compara tu predicción con el pseudocódigo generado.",
+    "flowchart_data": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 245, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "p1", "type": "process", "position": { "x": 240, "y": 95 }, "data": { "label": "total = 0" } },
+        { "id": "d", "type": "decision", "position": { "x": 235, "y": 195 }, "data": { "label": "¿quedan números?" } },
+        { "id": "p2", "type": "process", "position": { "x": 45, "y": 335 }, "data": { "label": "total = total + número" } },
+        { "id": "p3", "type": "process", "position": { "x": 430, "y": 335 }, "data": { "label": "mostrar total" } },
+        { "id": "e", "type": "end", "position": { "x": 255, "y": 455 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "p1" },
+        { "id": "e2", "source": "p1", "target": "d" },
+        { "id": "e3", "source": "d", "target": "p2", "label": "Sí" },
+        { "id": "e4", "source": "p2", "target": "d" },
+        { "id": "e5", "source": "d", "target": "p3", "label": "No" },
+        { "id": "e6", "source": "p3", "target": "e" }
+      ]
+    },
+    "audio_script": "Este diagrama ya tiene forma de algoritmo completo: inicializa, pregunta, acumula, repite y termina. Vamos a ejecutarlo sin ordenador, solo con el dedo y un papel.\n\nEmpieza en Inicio y baja hasta total = 0. Esa variable es tu memoria del bucle, empieza en cero. Llegas al rombo ¿quedan números?. Si la respuesta es Sí, la flecha te lleva a la izquierda y sumas el primer número. Fíjate en que justo después hay una flecha que sube de vuelta al rombo: ahí el ciclo se cierra.\n\nVuelves a preguntar. Si quedan más números, repites. Si ya no queda ninguno, tomas la rama No a la derecha, muestran el total y el óvalo Fin cierra el flujo.\n\nAntes de pulsar Ver código, para y calcula tú la suma de 4, 7 y 2. Después compara con el pseudocódigo que genera el editor. Ese instinto de predecir antes de ejecutar es exactamente lo que separa a quien lee código de quien solo lo copia.",
+    "video_prompt": "Animación de trazado de flujo: una línea dorada recorre el diagrama y, al llegar al bucle, hace tres vueltas completas destacando el acumulador total que crece 4, 11, 13. En la cuarta pasada sale por la rama No hacia el óvalo Fin. Fondo oscuro, números grandes, sin personas.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO 5807)",
+        "Trazado de algoritmos: acumuladores"
+      ],
+      "conceptos_clave": ["traza", "acumulador", "bucle", "memoria de ejecución", "dry run"]
+    },
+    "tags_rag": ["flowchart", "traza", "bucle", "acumulador", "lectura", "predict"]
+  },
+  {
+    "id": "F0.0-006",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "competencia": "Traducir un diagrama a pseudocódigo y a Python",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Convertir un diagrama de acceso en código ejecutable",
+    "modelo_mental": "Pseudocódigo y diagrama son **el mismo algoritmo en dos idiomas**. El diagrama muestra la forma con figuras; el pseudocódigo la muestra con palabras clave (INICIO, SI, SINO, FIN SI) y Python con sintaxis estricta. Las reglas de correspondencia son uno a uno: rombo con if, flecha de rama con raya de sangría y óvalo Fin con el final del programa.",
+    "codigo_roto": "if ¿Es mayor de edad? (Sí):\n# Permitir el acceso\n# Pedir un adulto",
+    "diagnostico": "Solo se escribió la rama verdadera y no se indenta nada: sin sangría, Python no sabe qué instrucciones pertenecen al if y qué instrucciones van fuera. La rama falsa desapareció por completo.",
+    "codigo_corregido": "INICIO\nSI ¿Es mayor de edad? (Sí) ENTONCES\n    Permitir el acceso\nSINO\n    Pedir un adulto\nFIN SI\nFIN",
+    "codigo_optimizado": "# INICIO\nif ¿Es mayor de edad? (Sí):\n    # Permitir el acceso\nelse:\n    # Pedir un adulto\n# FIN",
+    "disenso_experto": "La correspondencia diagrama-código no es mecánica en proyectos reales: un rombo con tres salidas se convierte en elif, un bucle anidado obliga a sangrar dos niveles y a veces conviene partir un diagrama gigante en varios subdiagramas. La traducción es una habilidad que se afina con la práctica, no una tabla que se memoriza.",
+    "pregunta_transferencia": "Si el código Python de tu traducción tuviera dos if seguidos en lugar de un if y un else, ¿qué cambiaría en el diagrama original? Dibuja la diferencia.",
+    "quiz": {
+      "pregunta": "¿Qué símbolo del diagrama corresponde a la instrucción if de Python?",
+      "opciones": [
+        "El óvalo de inicio",
+        "El rectángulo de proceso",
+        "El rombo de decisión",
+        "La flecha de rama"
+      ],
+      "correcta": "C",
+      "explicacion": "El rombo evalúa una condición y bifurca el flujo; if hace exactamente lo mismo en Python. El rectángulo se corresponde con las líneas de dentro del if, y la etiqueta de la rama con la raya de sangría.",
+      "pista": "Las dos figuras hacen la misma pregunta: ¿qué camino tomo?"
+    },
+    "quiz_ia": [
+      {
+        "pregunta": "Al traducir, ¿qué indica la sangría (indentación) del pseudocódigo o de Python?",
+        "opciones": [
+          "Que el texto es un comentario",
+          "Qué instrucciones pertenecen a una rama concreta",
+          "Que el programa está optimizado",
+          "Nada: es solo estética"
+        ],
+        "correcta": "B",
+        "explicacion": "La sangría marca pertenencia: todo lo indentado se ejecuta solo si la condición se cumple. Es el equivalente textual de lo que en el diagrama se ve como la rama que cuelga del rombo.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué traducción correcta tiene el óvalo Fin?",
+        "opciones": [
+          "Un print del mensaje final",
+          "Un break",
+          "El fin natural del programa: no se traduce a una instrucción",
+          "Un return 0 obligatorio"
+        ],
+        "correcta": "C",
+        "explicacion": "El óvalo Fin marca el final del flujo, y en Python eso es simplemente llegar al final del archivo o salir de la función. No hay una instrucción fin.",
+        "tipo": "codigo"
+      }
+    ],
+    "flowchart_mode": "view",
+    "flowchart_objetivo": "Usa «Ver código» para ver cómo este diagrama se convierte en pseudocódigo y en el esqueleto de Python. Compara rama por rama.",
+    "flowchart_data": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 245, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "d", "type": "decision", "position": { "x": 230, "y": 110 }, "data": { "label": "¿Es mayor de edad?" } },
+        { "id": "p1", "type": "process", "position": { "x": 45, "y": 270 }, "data": { "label": "Permitir el acceso" } },
+        { "id": "p2", "type": "process", "position": { "x": 430, "y": 270 }, "data": { "label": "Pedir un adulto" } },
+        { "id": "e", "type": "end", "position": { "x": 255, "y": 400 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "d" },
+        { "id": "e2", "source": "d", "target": "p1", "label": "Sí" },
+        { "id": "e3", "source": "d", "target": "p2", "label": "No" },
+        { "id": "e4", "source": "p1", "target": "e" },
+        { "id": "e5", "source": "p2", "target": "e" }
+      ]
+    },
+    "audio_script": "Hasta ahora el diagrama ha sido un lenguaje por sí mismo. Esta lección lo conecta con el código: las reglas de traducción son pocas y se pueden memorizar en un minuto.\n\nEl óvalo Inicio se convierte en la cabecera INICIO, y el óvalo Fin en la palabra FIN. El rectángulo se copia tal cual, es simplemente una instrucción. El rombo se traduce en SI, seguido del texto de la condición y la palabra ENTONCES.\n\nCada flecha que sale del rombo se convierte en un bloque. La rama etiquetada Sí abre el bloque tras SI y la rama No abre el bloque tras SINO. El anidamiento se marca con sangría, que en el pseudocódigo son cuatro espacios y en Python son cuatro espacios también.\n\nAbre «Ver código» en la pestaña Diagrama. Verás dos salidas: el pseudocódigo con palabras en mayúscula y el esqueleto de Python con if y else. Compara las líneas una a una con las flechas del diagrama. Cuando la correspondencia te resulte obvia, ya puedes leer y escribir código condicional sin susto.",
+    "video_prompt": "Animación de transformación: el rombo dorado del diagrama se contrae y se reescribe como la palabra if, las dos flechas se convierten en líneas de sangría, y el óvalo Fin se disuelve en el final del bloque. Limpio, tipografía monoespaciada, fondo oscuro.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO 5807)",
+        "Del pseudocódigo a Python: estructuras de selección"
+      ],
+      "conceptos_clave": ["pseudocódigo", "if-else", "sangría", "traducción", "sintaxis"]
+    },
+    "tags_rag": ["flowchart", "pseudocódigo", "python", "if", "else", "traducción"]
+  },
+  {
+    "id": "F0.0-007",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "competencia": "Diseñar desde cero un algoritmo completo con secuencia y decisión",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Dibujar la calculadora que aplica descuento solo por encima de 50 €",
+    "modelo_mental": "Diseñar es **resolver antes de escribir**. Primero enumeras qué ocurre en orden, luego marcas dónde hay una decisión, y solo después dibujas. Un buen diagrama responde tres preguntas de un vistazo: por dónde se entra, qué se decide y dónde se sale. Si esas tres cosas se ven sin leer los textos, el diseño está bien hecho.",
+    "codigo_roto": "INICIO\nPedir importe\nSI ¿Es mayor de 50 €? (Sí) ENTONCES\nFIN",
+    "diagnostico": "El flujo se queda a medias: la rama Sí no hace nada y no hay rama No. Un algoritmo con una sola rama no es una decisión, y sin llegada al fin el programa no terminaría nunca.",
+    "codigo_corregido": "INICIO\nPedir importe\nSI ¿Es mayor de 50 €? (Sí) ENTONCES\n    Aplicar 10 % de descuento\nSINO\n    Total = importe\nFIN SI\nMostrar total\nFIN",
+    "codigo_optimizado": "# INICIO\nimporte = pedir_importe()\nif importe > 50:\n    total = importe * 0.9\nelse:\n    total = importe\n# Mostrar total",
+    "disenso_experto": "En la vida real conviene validar el importe antes de aplicar descuentos: un número negativo o una entrada vacía romperían la lógica. Este diagrama prescinde de esa validación para centrarse en la decisión, pero un diseño profesional añadiría un rombo más antes de calcular.",
+    "pregunta_transferencia": "Diseña ahora el flujo de una app que solo permite comprar si el usuario tiene saldo suficiente. ¿Cuántos símbolos necesitas y cuál es la decisión central?",
+    "quiz": {
+      "pregunta": "¿Cuál es el orden lógico recomendado para diseñar un diagrama desde cero?",
+      "opciones": [
+        "Dibujar el fin, luego inventar procesos y por último el inicio",
+        "Escribir el código y después dibujarlo para documentarlo",
+        "Enumerar los pasos en orden, marcar las decisiones y luego dibujar y validar",
+        "Empezar por las flechas y añadir símbolos cuando encajen"
+      ],
+      "correcta": "C",
+      "explicacion": "Primero se piensa la secuencia en lenguaje natural, después se identifican los puntos donde hay que elegir camino, y solo entonces se dibuja. Dibujar primero obliga a decidir la lógica mientras todavía no la tienes clara.",
+      "pista": "Pensar, decidir, dibujar, validar."
+    },
+    "quiz_ia": [
+      {
+        "pregunta": "Tu calculadora tiene inicio, pedir importe, dos ramas y fin, pero el validador marca un callejón sin salida. ¿Dónde miras?",
+        "opciones": [
+          "En el símbolo de fin: no puede tener salida",
+          "En cualquier rectángulo o rombo que no tenga flecha saliendo",
+          "En el número total de símbolos",
+          "En el orden alfabético de las etiquetas"
+        ],
+        "correcta": "B",
+        "explicacion": "Un callejón es un símbolo sin flecha de salida (excepto el fin). Recorre los procesos y el rombo uno por uno y busca cuál no continúa.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Por qué conviene que las dos ramas de esta decisión vuelvan a encontrarse antes del fin?",
+        "opciones": [
+          "Por estética del diagrama",
+          "Para que el flujo tenga exactamente una salida y pueda continuar con un único paso final",
+          "Porque el estándar prohíbe los símbolos de fin múltiples",
+          "Para reducir el número de flechas"
+        ],
+        "correcta": "B",
+        "explicacion": "La unión permite que, haya entrado por donde haya entrado, el algoritmo continúe una sola vez con Mostrar total. Es el equivalente a dejar de ramificar y volver al flujo principal.",
+        "tipo": "concepto"
+      }
+    ],
+    "flowchart_mode": "build",
+    "flowchart_objetivo": "Diseña desde cero la calculadora: pide el importe, decide si aplica descuento, muestra el total y termina.",
+    "flowchart_starter": { "nodes": [], "edges": [] },
+    "flowchart_data": {
+      "nodes": [
+        { "id": "s", "type": "start", "position": { "x": 255, "y": 0 }, "data": { "label": "Inicio" } },
+        { "id": "p1", "type": "process", "position": { "x": 245, "y": 110 }, "data": { "label": "Pedir importe" } },
+        { "id": "d", "type": "decision", "position": { "x": 235, "y": 235 }, "data": { "label": "¿Es mayor de 50 €?" } },
+        { "id": "p2", "type": "process", "position": { "x": 45, "y": 380 }, "data": { "label": "Aplicar 10 % de descuento" } },
+        { "id": "p3", "type": "process", "position": { "x": 435, "y": 380 }, "data": { "label": "Total = importe" } },
+        { "id": "p4", "type": "process", "position": { "x": 255, "y": 510 }, "data": { "label": "Mostrar total" } },
+        { "id": "e", "type": "end", "position": { "x": 265, "y": 630 }, "data": { "label": "Fin" } }
+      ],
+      "edges": [
+        { "id": "e1", "source": "s", "target": "p1" },
+        { "id": "e2", "source": "p1", "target": "d" },
+        { "id": "e3", "source": "d", "target": "p2", "label": "Sí" },
+        { "id": "e4", "source": "d", "target": "p3", "label": "No" },
+        { "id": "e5", "source": "p2", "target": "p4" },
+        { "id": "e6", "source": "p3", "target": "p4" },
+        { "id": "e7", "source": "p4", "target": "e" }
+      ]
+    },
+    "flowchart_rules": [
+      "Empieza con un símbolo de inicio y termina con un símbolo de fin.",
+      "Incluye al menos dos procesos: pedir importe y mostrar total.",
+      "Añade una decisión que separe el caso con descuento del caso sin descuento.",
+      "Etiqueta las dos ramas de la decisión «Sí» y «No».",
+      "Ninguna rama puede quedarse sin llegar al fin."
+    ],
+    "audio_script": "Este es el ejercicio de síntesis. Ya sabes añadir símbolos, conectar, etiquetar, construir decisiones y cerrar bucles. Ahora vas a diseñar un algoritmo completo desde una página en blanco.\n\nAntes de tocar el editor, piensa en lenguaje natural. Un usuario introduce un importe. Si supera los cincuenta euros, se le aplica un diez por ciento de descuento; si no, paga lo que vale. En ambos casos se muestra el total y el programa termina. Ese párrafo ya es tu algoritmo.\n\nAhora tradúcelo al lienzo: un óvalo de inicio, un rectángulo para pedir el importe, un rombo con la pregunta del límite, un rectángulo en cada rama y el óvalo final. Conecta todo y etiqueta las ramas con Sí y No.\n\nCuando pulses Validar, lee con atención el resultado. Si está en verde, abre «Ver código» y comprueba cómo tus figuras se convierten en un if con sangría. Ese paso de ida y vuelta entre el diagrama y el código es el hábito que queremos instalar.",
+    "video_prompt": "Animación de diseño desde cero: aparecen vacíos los puntos del lienzo, luego se materializan los símbolos uno a uno (óvalo, rectángulo, rombo, dos rectángulos, óvalo) y las flechas se trazan en cadena hasta formar el diagrama completo, que se sella con un check verde. Fondo oscuro, acento dorado, ritmo creciente.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "Flowchart Standard (ANSI/ISO 5807)",
+        "Diseño de algoritmos: pensamiento previo a la codificación"
+      ],
+      "conceptos_clave": ["diseño", "secuencia", "decisión", "unión", "validación"]
+    },
+    "tags_rag": ["flowchart", "diseño", "algoritmo", "capstone", "decisión", "construir"]
   }
 ]
