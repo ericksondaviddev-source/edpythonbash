@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "API backend para tu app de notas/tareas",
-    "modelo_mental": "FastAPI es un framework que convierte funciones Python en endpoints HTTP usando type hints. El decorador `@app.get('/path')` mapea una URL a una función. Los parámetros en la URL (como `{id}`) se validan automáticamente contra los type hints de la función. Si el tipo es `int` y la URL trae 'abc', FastAPI retorna 422 Unprocessable Entity automáticamente — sin que escribas validación manual. Esta es la ventaja sobre Flask: la validación viene gratis con los type hints.",
+    "modelo_mental": "**FastAPI** es un framework que transforma funciones Python en endpoints HTTP utilizando *type hints*. Cuando defines `user_id: int` en la firma, FastAPI sabe que la URL debe enviar un entero y valida automáticamente, convirtiendo valores string a int cuando es posible. Esta capa de validación se ejecuta antes de llegar a tu función, evitando que errores de tipo se conviertan en excepciones en tiempo de ejecución. Es similar a tener un contrato de datos que se comprueba automáticamente, reduciendo drásticamente la necesidad de escribir validaciones manuales en cada endpoint.",
     "codigo_roto": "from fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get('/users/{user_id}')\ndef get_user(user_id):\n    # Sin type hint: FastAPI trata user_id como string SIEMPRE\n    # '123' en la URL llega como string, no como int\n    users = {1: 'Ana', 2: 'Bob'}\n    return {'user': users[user_id]}  # KeyError: '123' no es clave del dict",
-    "diagnostico": "Sin type hint en `user_id`, FastAPI lo trata como `str` por defecto. La URL `/users/123` pasa el string `'123'`, pero el diccionario tiene clave `1` (int). `KeyError: '123'` — el endpoint crashea con 500 Internal Server Error en producción. Además, `/users/abc` NO falla en validación (porque `abc` es string válido) y llega al dict lookup, crasheando igual. Con `user_id: int`, FastAPI valida antes de llamar la función: `/users/abc` retorna 422 con mensaje claro, y `/users/123` convierte a int automáticamente.",
+    "diagnostico": "1. Al omitir el type hint, FastAPI trata `user_id` como cadena por defecto. La URL `/users/123` se parsea como la cadena `'123'`, mientras que el diccionario `users` usa la clave entera `1`. El acceso `users['123']` produce un `KeyError: '123'` y el servidor responde con 500.\n2. Si el tipo fuera `int`, FastAPI intenta convertir la cadena a entero. En este caso `/users/123` funciona porque la conversión es exitosa, pero si la URL fuera `/users/abc`, la validación falla antes de la llamada a la función y FastAPI retorna un 422 con mensaje claro.\n3. El patrón general es que FastAPI utiliza los *type hints* para validar los parámetros de las rutas. Sin ellos, cualquier string válido (incluidos caracteres no numéricos) causa una ruptura al intentar usarla como clave de diccionario o argumento de función, generando errores 500 o 422 dependiendo de si el error se detecta en la validación o en la ejecución.",
     "codigo_corregido": "from fastapi import FastAPI\n\napp = FastAPI()\nUSERS = {1: 'Ana', 2: 'Bob'}\n\n@app.get('/users/{user_id}')\ndef get_user(user_id: int):  # type hint = validación automática\n    if user_id not in USERS:\n        return {'error': 'not found'}\n    return {'user': USERS[user_id]}",
     "codigo_optimizado": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel\n\napp = FastAPI(title='Mi API de Notas', version='1.0.0')\n\n# Datos simulados (en Fase 2.2 esto vendrá de SQLite)\nUSERS = {1: {'name': 'Ana', 'email': 'ana@mail.com'}, 2: {'name': 'Bob', 'email': 'bob@mail.com'}}\n\n@app.get('/')\ndef root():\n    return {'message': 'API de notas activa', 'version': '1.0.0'}\n\n@app.get('/users')\ndef list_users():\n    \"\"\"Lista todos los usuarios registrados.\"\"\"\n    return {'users': [uid: u for uid, u in USERS.items()]}\n\n@app.get('/users/{user_id}')\ndef get_user(user_id: int):\n    \"\"\"Obtiene un usuario por ID.\"\"\"\n    if user_id not in USERS:\n        raise HTTPException(status_code=404, detail='Usuario no encontrado')\n    return {'user': USERS[user_id]}\n\n# Path parameters con validación avanzada\nfrom fastapi import Path\n\n@app.get('/users/{user_id}/profile')\ndef get_user_profile(\n    user_id: int = Path(..., ge=1, le=1000, description='ID del usuario (1-1000)')\n):\n    \"\"\"ge=greater/equal, le=less/equal: validación de rango.\"\"\"\n    if user_id not in USERS:\n        raise HTTPException(status_code=404, detail='Usuario no encontrado')\n    return {'profile': USERS[user_id]}\n\n# Múltiples path parameters\n@app.get('/users/{user_id}/posts/{post_id}')\ndef get_user_post(user_id: int, post_id: int):\n    return {'user_id': user_id, 'post_id': post_id}",
     "disenso_experto": "¿Type hints estrictos o `Any`? Los type hints estrictos (`user_id: int`) dan validación automática y documentación Swagger precisa. Usar `Any` o omitir el hint hace que FastAPI trate todo como string, perdiendo validación. El único caso donde `Any` es aceptable es en endpoints que reciben JSON arbitrario (webhooks, proxies). Para el 99% de los casos: type hints estrictos siempre.",
-    "pregunta_transferencia": "Tu endpoint `/users/{user_id}` recibe la petición `/users/007`. ¿Qué valor llega a la función si el type hint es `int` vs `str`? ¿Y si el type hint es `int` pero la URL es `/users/0x7` (hexadecimal)?",
+    "pregunta_transferencia": "El endpoint se invoca con la URL `/users/007`. ¿Qué valor llegará a la función si el tipo de `user_id` está definido como `int` versus `str`? ¿Y si el tipo hint es `int` pero la URL es `/users/0x7` (hexadecimal)?",
     "quiz": {
       "pregunta": "¿Qué código HTTP retorna FastAPI si un path parameter con type hint `int` recibe 'abc' en la URL?",
       "opciones": [
@@ -64,6 +64,45 @@
       "path-parameters",
       "type-hints",
       "validacion"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Si el parámetro `user_id` tiene tipo `int` en FastAPI, ¿qué valor se obtendrá al llamar a `/users/123`?",
+        "opciones": [
+          "A) '123' (string)",
+          "B) 123 (entero)",
+          "C) KeyError: '123' (crash)",
+          "D) 422 Unprocessable Entity"
+        ],
+        "correcta": "B",
+        "explicacion": "Con el type hint `int`, FastAPI convierte la cadena de la URL a entero antes de ejecutar la función. Por lo tanto, `/users/123` se resuelve con la clave `1` del diccionario `users`, y la función devuelve `{'user': 'Ana'}`. Sin el type hint, la URL pasaría como la cadena `'123'` y causaría un KeyError porque el diccionario usa claves enteras.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto, ¿cuál línea contiene el error principal que provoca el KeyError al usar `/users/123`?",
+        "opciones": [
+          "A) Línea 5: falta de tipo hint en `user_id`",
+          "B) Línea 6: uso incorrecto del índice en el diccionario",
+          "C) El decorador `@app.get` está mal escrito",
+          "D) La función no retorna nada"
+        ],
+        "correcta": "A",
+        "explicacion": "El tipo de `user_id` no está especificado. FastAPI trata el parámetro como cadena por defecto, así que la URL `/users/123` se interpreta como la cadena `'123'`. Al intentar acceder a `users['123']`, ocurre un KeyError porque el diccionario contiene la clave `1` (entero). El error proviene de la ausencia de validación mediante type hints.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Al recibir la petición `/users/007` y tener el tipo `int` en la definición, ¿qué valor llegará a la función?",
+        "opciones": [
+          "A) 7 (se truncó el cero)",
+          "B) 007 (se mantiene como string)",
+          "C) ValueError: invalid literal for int()",
+          "D) 422 Bad Request"
+        ],
+        "correcta": "B",
+        "explicacion": "El tipo `int` fuerza la conversión de la cadena de la URL a número. `/users/007` se convierte en el entero `7` (Python elimina los ceros a la izquierda). Por lo tanto, la función recibirá `user_id == 7`. Si el type hint fuera `str`, la función recibiría la cadena `'007'` y podría mostrar el mismo dato sin errores.",
+        "tipo": "codigo"
+      }
     ]
   },
   {
@@ -414,13 +453,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "API backend para tu app de notas/tareas",
-    "modelo_mental": "CORS (Cross-Origin Resource Sharing) es una restricción de seguridad de los navegadores que bloquea peticiones desde un origen (dominio+puerto+protocolo) a otro distinto. Tu PWA corre en `http://localhost:3000` y tu API en `http://localhost:8000` — son orígenes distintos, así que el navegador bloquea la petición por defecto. FastAPI tiene un middleware CORS que agrega los headers necesarios (`Access-Control-Allow-Origin`, etc.) para permitir orígenes específicos. Sin CORS configurado, tu PWA no puede consumir tu API local.",
+    "modelo_mental": "CORS funciona como un guardia de seguridad que verifica la procedencia de cada solicitud entrante. Es como una puerta con etiqueta que solo permite pasar personas que pertenecen a la empresa de tu PWA (el origen `http://localhost:3000`). Si intentas entrar desde otra dirección, incluso si ambos están en la misma red, el guardia bloquea la entrada automáticamente. Sin configurar estos permisos, tu aplicación web no puede leer los datos de tu API local, lo cual evita accesos no autorizados y posibles ataques CSRF.",
     "codigo_roto": "from fastapi import FastAPI\n\napp = FastAPI()\n\n@app.get('/notas')\ndef list_notas():\n    return {'notas': []}\n\n# Sin CORS middleware: la PWA en localhost:3000 no puede llamar a localhost:8000",
-    "diagnostico": "La PWA corre en un origen (ej. `http://localhost:3000` o `file://`) y la API en otro (`http://localhost:8000`). El navegador bloquea la petición por CORS: el error en consola es 'Access to fetch at 'http://localhost:8000/notas' from origin 'http://localhost:3000' has been blocked by CORS policy'. El código de la API funciona perfecto si lo pruebas con curl o Postman, pero la PWA no puede consumirlo. FastAPI tiene `CORSMiddleware` que agrega los headers necesarios para permitir orígenes específicos.",
+    "diagnostico": "1. Falta configurar el middleware CORS. El servidor FastAPI no añade los encabezados `Access-Control-Allow-Origin` ni otros requeridos, por lo que el navegador bloquea cualquier petición proveniente de `http://localhost:3000` hacia `http://localhost:8000`. Este error se reproduce al usar la API desde una PWA que se ejecuta en otro origen.\n\n2. Como resultado, cuando la PWA intenta llamar a `/notas`, obtiene un error en la consola: 'Access to fetch at ... has been blocked by CORS policy'. La causa es que el origen de la PWA (`http://127.0.0.1:3000`) no está permitido explícitamente en la configuración de CORS. En Python/Bash el código puede ejecutarse sin problemas, pero la política del navegador impide la transacción sin esta señal adicional.",
     "codigo_corregido": "from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSMiddleware\n\napp = FastAPI()\n\n# Configurar CORS para permitir la PWA\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=['http://localhost:3000', 'http://localhost:8080'],\n    allow_credentials=True,\n    allow_methods=['*'],\n    allow_headers=['*'],\n)\n\n@app.get('/notas')\ndef list_notas():\n    return {'notas': []}",
     "codigo_optimizado": "from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSMiddleware\nfrom pydantic import BaseModel\n\napp = FastAPI()\n\n# ===== CONFIGURACIÓN CORS PROFESIONAL =====\n# En desarrollo: permitir localhost en varios puertos\n# En producción: solo el dominio real de tu PWA\n\nORIGINS_DEV = [\n    'http://localhost:3000',   # PWA en dev\n    'http://localhost:8080',   # PWA en otro puerto\n    'http://127.0.0.1:3000',  # Variante con IP\n]\n\nORIGINS_PROD = [\n    'https://miapp.com',\n    'https://www.miapp.com',\n]\n\n# Detectar entorno (en producción, usar variable de entorno)\nimport os\nENV = os.getenv('ENV', 'development')\nORIGINS = ORIGINS_PROD if ENV == 'production' else ORIGINS_DEV\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=ORIGINS,           # Lista explícita de orígenes permitidos\n    allow_credentials=True,          # Permitir cookies/autenticación\n    allow_methods=['GET', 'POST', 'PUT', 'DELETE'],  # Métodos permitidos\n    allow_headers=['*'],             # Headers permitidos (* = todos)\n)\n\n# ===== ANATOMÍA DEL FLUJO CORS =====\n# 1. El navegador hace una petición OPTIONS (preflight) antes de la petición real\n# 2. El servidor responde con headers Access-Control-Allow-*\n# 3. Si el origen está permitido, el navegador hace la petición real\n# 4. Si no, el navegador bloquea y muestra error en consola\n#\n# Headers clave:\n# Access-Control-Allow-Origin: http://localhost:3000  (o * para todos)\n# Access-Control-Allow-Methods: GET, POST, PUT, DELETE\n# Access-Control-Allow-Headers: Content-Type, Authorization\n# Access-Control-Allow-Credentials: true\n\n# ===== SEGURIDAD: NUNCA uses allow_origins=['*'] en producción =====\n# allow_origins=['*'] permite CUALQUIER origen, lo que es peligroso\n# si tu API usa cookies/autenticación (allow_credentials=True).\n# La combinación origins=['*'] + credentials=True es inválida según\n# el spec CORS y los navegadores la rechazan.\n\n# Configuración segura para producción:\n# - Lista explícita de orígenes (no '*')\n# - Solo los métodos necesarios (no '*')\n# - Solo los headers necesarios (no '*')\n\n# Ejemplo de endpoint que funciona con CORS\nclass NotaCreate(BaseModel):\n    texto: str\n    tag: str\n\nNOTAS = []\n\n@app.post('/notas')\ndef crear_nota(nota: NotaCreate):\n    nueva = {'id': len(NOTAS) + 1, **nota.dict()}\n    NOTAS.append(nueva)\n    return nueva\n\n# Ahora la PWA en localhost:3000 puede hacer:\n# fetch('http://localhost:8000/notas', {method: 'POST', body: ...})\n# Y el navegador permite la petición porque CORS está configurado.",
     "disenso_experto": "¿`allow_origins=['*']` o lista explícita? En desarrollo local con datos de prueba, `['*']` es aceptable por conveniencia. En producción NUNCA, especialmente si usas cookies/autenticación. La combinación `origins=['*'] + credentials=True` es inválida según el spec CORS. Siempre usa lista explícita en producción.",
-    "pregunta_transferencia": "Tu API tiene CORS configurado con `allow_origins=['http://localhost:3000']`. La PWA corre en `http://127.0.0.1:3000` (IP en vez de localhost). ¿Funciona? ¿Por qué `localhost` y `127.0.0.1` son orígenes distintos aunque apunten a la misma máquina?",
+    "pregunta_transferencia": "Escenario: Configuras tu API con `allow_origins=['http://localhost:3000']` y lanzas tu PWA también en `http://127.0.0.1:3000`. ¿La llamada a la API funcionará y por qué `localhost` y `127.0.0.1` se consideran orígenes distintos aunque apunten a la misma máquina?\nHint: Los navegadores tratan diferentes nombres IP o dominio como orígenes separados, independientemente de que residan en el mismo dispositivo físico.",
     "quiz": {
       "pregunta": "¿Por qué el navegador bloquea una petición de tu PWA (localhost:3000) a tu API (localhost:8000)?",
       "opciones": [
@@ -469,6 +508,45 @@
       "cross-origin",
       "seguridad",
       "pwa"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué significa CORS y cuál es su propósito principal en FastAPI?",
+        "opciones": [
+          "Cross-Origin Resource Sharing, permite que una petición desde un origen distinto acceda a recursos de otro origen con las debidas verificaciones.",
+          "Common Origin Routing System, asegura que el tráfico sea monolítico dentro de un mismo dominio.",
+          "Cookie Relocation Service, gestiona cambios de cookies cuando se cambia el contexto de la solicitud.",
+          "Container Orchestration Server, coordina contenedores en entornos como Kubernetes."
+        ],
+        "correcta": "A",
+        "explicacion": "CORS (Cross-Origin Resource Sharing) define un mecanismo de seguridad que permite que solicitudes desde dominios diferentes soliciten recursos de otros orígenes siempre que se cumplan ciertas políticas de autenticación y autorización. Su objetivo es evitar accesos no autorizados y proteger contra ataques CSRF, siendo esencial en aplicaciones web modernas donde las APIs se comparten entre frontend y backend.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto, ¿qué línea debe modificarse o añadirse para habilitar CORS en FastAPI?",
+        "opciones": [
+          "@app.middleware(\"http\")",
+          "app.add_middleware(CORSMiddleware)",
+          "app.configure_cors()",
+          "import cors from fastapi"
+        ],
+        "correcta": "B",
+        "explicacion": "El middleware CORSMiddleware de FastAPI agrega automáticamente los encabezados `Access-Control-Allow-Origin` y otros necesarios. Sin él, el servidor responde sin indicar qué orígenes están permitidos, provocando que el navegador bloquee las peticiones. Las otras opciones son métodos inexistentes o incorrectos para configurar CORS en FastAPI.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Dado el mensaje de error 'Access to fetch at ... has been blocked by CORS policy', ¿cuál de las siguientes cabeceras debería estar presente en la respuesta del servidor para resolver el problema?",
+        "opciones": [
+          "Access-Control-Allow-Origin: *",
+          "Access-Control-Allow-Methods: GET",
+          "X-CORS-Headers: Enabled",
+          "Ninguna, el error se corrige en cliente"
+        ],
+        "correcta": "A",
+        "explicacion": "La cabecera `Access-Control-Allow-Origin` indica al navegador qué origen está permitido hacer peticiones CORS. Al establecerla (por ejemplo `Access-Control-Allow-Origin: http://127.0.0.1:3000`), el servidor informa al cliente que la petición es segura, eliminando el bloqueo. Las otras opciones son cabeceras incompletas o irrelevantes para solucionar el problema de CORS.",
+        "tipo": "codigo"
+      }
     ]
   },
   {

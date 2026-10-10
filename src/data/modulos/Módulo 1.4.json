@@ -361,13 +361,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "Un grupo de captura `(...)` convierte una coincidencia en DATOS ESTRUCTURADOS: `m.group(1)` por posición es frágil (agregar un grupo desplaza todos los índices), `m.group('nombre')` con `(?P<nombre>...)` es auto-documentado y resistente al cambio. El método que conecta regex con el resto de tu app es `m.groupdict()`: retorna un dict listo para serializar a JSON. Regla: si tu regex tiene 2 o más grupos, nómbralos. Y si el parsing puede fallar, retorna None y deja que el llamador decida — nunca lances dentro de una función de parseo masivo.",
+    "modelo_mental": "Un grupo de captura en regex es como una caja etiquetada que convierte una coincidencia en datos estructurados. La analogía central es imaginar que estás empaquetando objetos: con grupos posicionales `(...)`, estás usando cajas sin etiquetas, y para recuperar un objeto debes recordar su posición (ej. `m.group(1)`), lo cual es frágil porque agregar una nueva caja desplaza todas las posiciones, rompiendo tu código. En cambio, con grupos nombrados `(?P<nombre>...)`, estás usando cajas con etiquetas, así que puedes acceder por nombre (`m.group('nombre')`), lo que hace el código auto-documentado y resistente a cambios. Esto importa porque en projects reales, los patrones regex evolucionan, y evitar errores de índice es crucial para mantenibilidad. Además, previene errores comunes como desplazamientos silenciosos que causan datos incorrectos sin lanzar excepciones.\n\nEl método `m.groupdict()` actúa como el puente entre regex y el resto de la aplicación, retornando un diccionario donde cada clave es el nombre de un grupo nombrado, listo para serializar a JSON o procesar fácilmente. Esto es especialmente útil cuando trabajas con datos estructurados como logs, donde necesitas extraer campos específicos de manera fiable. La regla de oro es: si tu regex tiene dos o más grupos, siempre nómbralos para evitar confusión. Y si el parsing puede fallar (ej. por una línea malformada), la función debe retornar `None` en lugar de lanzar una excepción, dejando que el llamador decida cómo manejar el error. Esto evita que un solo elemento ruine el procesamiento masivo, como en el caso de parsear logs where one bad line shouldn't crash the whole system.\n\nEn resumen, los grupos nombrados no son solo una comodidad; son una práctica esencial para escribir código robusto. Sin ellos, te arriesgas a errores sutiles que son difíciles de detectar, especialmente cuando el regex se modifica. Recuerda: la claridad en el código de parsing se paga con menor debugging futuro.",
     "codigo_roto": "def parsear_logs(lineas):\n    resultado = []\n    for linea in lineas:\n        partes = linea.split(' ')\n        resto = linea.split(':')\n        modulo = resto[0].split(' ')[-1]\n        mensaje = resto[1].strip()\n        resultado.append({\n            'fecha': partes[0],\n            'nivel': partes[1],\n            'modulo': modulo,\n            'mensaje': mensaje,\n        })\n    return resultado",
-    "diagnostico": "Parsing posicional sin validación, tres puntos de rotura. (1) `resto[1]` asume que hay exactamente un dos puntos: el log `'WARNING red: timeout en API: reintentando'` tiene dos, y `split(':')[1]` entrega solo `' timeout en API'` — TRUNCAMIENTO SILENCIO del mensaje. (2) La línea malformada `'PING'` produce `resto` de 1 elemento → `resto[1]` lanza IndexError y tumba el procesamiento completo. (3) `partes[1]` asume que el segundo token es siempre el nivel. Un regex con grupos nombrados y `(?P<mensaje>.*)$` captura todo lo que sigue al primer dos puntos (incluidos los demás), y el `match` fallido se salta con un `if`.",
+    "diagnostico": "1. **Truncamiento silencioso debido a múltiples dos puntos**: El código original usa `resto = linea.split(':')` y luego accede a `resto[1]`, lo que asume que hay exactamente un dos punto en la línea. Sin embargo, en logs como `'WARNING red: timeout en API: reintentando'`, hay dos dos puntos, por lo que `split(':')` divide la línea en tres partes, y `resto[1]` solo captura `' timeout en API'`, truncando el mensaje real. Esto es un error silencioso porque no lanza una excepción, sino que simplemente devuelve datos incompletos, lo que puede llevar a análisis incorrectos sin que se note inmediatamente. El patrón general es: asumir una estructura fija sin validación previa, lo que es común en parsing posicional donde no se verifica la cantidad de elementos antes de acceder.\n\n2. **IndexError por líneas malformadas**: Cuando una línea como `'PING'` no contiene ningún dos punto, `split(':')` retorna una lista con un solo elemento, y al intentar acceder a `resto[1]`, Python lanza un `IndexError` porque el índice 1 está fuera de rango. Esto rompe el procesamiento completo, ya que la función no maneja excepciones, y una sola línea incorrecta puede detener todo el bucle. El patrón aquí es la falta de manejo de errores en operaciones de parsing, que es típico en código que no anticipa entradas inesperadas. En Python, acceder a índices de lista sin verificar la longitud es una fuente común de crashes, especialmente en datos del mundo real donde la consistencia no está garantizada.\n\n3. **Asunción inflexible del nivel de log**: El código asume que `partes[1]` siempre es el nivel del log, pero esto depende de que la línea tenga al menos dos tokens separados por espacio. Si la línea tiene un formato diferente, como `'ERROR Solo mensaje'`, entonces `partes[1]` podría ser `'Solo'` en lugar del nivel, o si la línea tiene más tokens, el nivel podría estar en otra posición. Esto refleja el patrón de parsing posicional, que es frágil ante variaciones en el formato. En general, sin un esquema definido, asumir posiciones fijas lleva a errores de interpretación, y la solución es usar regex con grupos nombrados que capturen explícitamente cada campo, como `(?P<nivel>\\w+)`, para hacer el parsing más estructurado y menos dependiente de la posición.",
     "codigo_corregido": "import re\n\n_PATRON_LOG = re.compile(\n    r'^(?P<fecha>\\d{4}-\\d{2}-\\d{2})\\s+(?P<nivel>[A-Z]+)\\s+(?P<modulo>[\\w.]+):\\s*(?P<mensaje>.*)$'\n)\n\ndef parsear_logs(lineas):\n    resultado = []\n    for linea in lineas:\n        m = _PATRON_LOG.match(linea)\n        if m:\n            resultado.append(m.groupdict())\n    return resultado",
     "codigo_optimizado": "import re\nfrom typing import Iterator, Optional\n\n# re.VERBOSE hace que el patrón sea legible y documentable\n_PATRON_LOG = re.compile(r\"\"\"\n    ^\n    (?P<fecha>  \\d{4}-\\d{2}-\\d{2} )\n    \\s+\n    (?P<nivel>  DEBUG|INFO|WARNING|ERROR|CRITICAL )\n    \\s+\n    (?P<modulo> [\\w.]+ )\n    :\n    \\s*\n    (?P<mensaje> .* )\n    $\n\"\"\", re.VERBOSE)\n\ndef parsear_logs(lineas) -> Iterator[dict]:\n    \"\"\"Generator: procesa logs de任意 tamaño con memoria O(1).\"\"\"\n    for linea in lineas:\n        if m := _PATRON_LOG.match(linea):   # walrus + match\n            yield m.groupdict()\n\n# Separar lo válido de lo inválido (no descartar en silencio)\ndef parsear_con_diagnostico(lineas):\n    validos, invalidos = [], []\n    for i, linea in enumerate(lineas, 1):\n        m = _PATRON_LOG.match(linea)\n        if m:\n            validos.append(m.groupdict())\n        elif linea.strip():\n            invalidos.append((i, linea.rstrip()))\n    return validos, invalidos\n\n# Grupos posicionales vs nombrados: por qué nombrar siempre\npatron_fragil = re.compile(r'(\\d{4}-\\d{2}-\\d{2})\\s+([A-Z]+)\\s+(\\w+):\\s*(.*)')\nm = patron_fragil.match('2026-09-29 ERROR db: fallo')\nm.group(3)      # 'db' — ¿qué era el 3? hay que contar paréntesis\n# Si mañana agregas un grupo para la hora, TODOS los índices se desplazan.\n\npatron_robusto = re.compile(r'(?P<fecha>\\d{4}-\\d{2}-\\d{2})\\s+(?P<nivel>[A-Z]+)\\s+(?P<modulo>\\w+):\\s*(?P<msg>.*)')\nm = patron_robusto.match('2026-09-29 ERROR db: fallo')\nm.group('modulo')      # 'db' — se lee solo, sobrevive a cambios\nm.groupdict()          # {'fecha': ..., 'nivel': ..., 'modulo': ..., 'msg': ...}\n\n# groupdict() es el puente regex → JSON → tu PWA:\nimport json\nregistros = list(parsear_logs(open('app.log', encoding='utf-8')))\njson.dumps(registros, ensure_ascii=False, indent=2)\n\n# Grupos de referencia hacia atrás (backreferences): detectar duplicados\n_DUPLICADO = re.compile(r'\\b(?P<palabra>\\w+)\\s+\\1\\b')\n_DUPLICADO.sub(lambda m: m.group('palabra'), 'el el gato gato')   # 'el gato'\n\n# Lookahead (sin consumir): extraer números que preceden a ' USD'\nre.findall(r'\\d+(?=\\s*USD)', 'pago 50 USD y 30 EUR')   # ['50']",
     "disenso_experto": "¿Regex o un parser real para formatos estructurados? Para logs de línea simple, regex con grupos nombrados es la herramienta correcta y estándar de la industria. Para logs que pueden contener saltos de línea dentro de un campo, comillas escapadas o JSON anidado (logs modernos de Docker/Kubernetes), regex se vuelve frágil y lo correcto es un parser de estado o una librería. La regla de decisión: si el formato está definido línea por línea y sin quoting, regex. Si hay anidamiento o escapes, parser. Y para datos tabulares siempre existe un módulo dedicado (csv, json, tomllib).",
-    "pregunta_transferencia": "Necesitas parsear líneas de un log donde el mensaje puede contener saltos de línea embebidos (un traceback de Python completo). Tu patrón con `.*$` solo captura la primera línea. ¿Qué bandera y qué cambio en el anclaje necesitas, y por qué `re.DOTALL` sin `re.MULTILINE` puede romper el `$` final?",
+    "pregunta_transferencia": "Imagina que estás parseando logs de una aplicación donde los mensajes pueden incluir tracebacks de Python completos, que abarcan múltiples líneas. Tu patrón regex actual usa `.*$` para capturar el mensaje, pero como `.` no coincide con saltos de línea por defecto, solo captura la primera línea del traceback, perdiendo la información restante. El escenario requiere un regex que pueda traversar líneas para capturar el mensaje completo, lo cual es común en logs de depuración donde los errores se registran con detalles multilinea.\n\nLa pista para resolverlo está en las banderas de regex: necesitas usar `re.DOTALL` para que el punto `.` coincida también con saltos de línea, pero debes tener cuidado porque, sin `re.MULTILINE`, el anclaje `$` solo coincide con el final de la cadena, no con el final de cada línea. Esto puede romper el patrón si el mensaje tiene múltiples líneas, ya que `$` no se comportará como esperas en un contexto multilinea. Piensa en cómo ajustar el anclaje para que funcione correctamente con `re.DOTALL`, evitando que el regex falle al encontrar el final del mensaje embebido.",
     "quiz": {
       "pregunta": "¿Qué retorna `m.groupdict()` en un Match de un patrón con grupos nombrados?",
       "opciones": [
@@ -418,6 +418,57 @@
       "groupdict",
       "parsing",
       "logs"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué es recomendable usar grupos nombrados en regex en lugar de grupos posicionales?",
+        "opciones": [
+          "A) Los grupos nombrados son más rápidos en tiempo de ejecución",
+          "B) Los grupos nombrados hacen el código más legible y resistente a cambios",
+          "C) Los grupos nombrados son necesarios para usar groupdict()",
+          "D) Los grupos nombrados evitan la necesidad de validación"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción correcta es B porque los grupos nombrados permiten accrer a las coincidencias por nombre, lo que mejora la legibilidad del código y reduce el riesgo de errores cuando se modifica el regex, como al agregar nuevos grupos. La opción A es incorrecta porque el rendimiento no es significativamente diferente. La opción C es parcialmente verdadera pero no es la razón principal; groupdict() puede usarse con grupos posicionales, pero es menos útil. La opción D es falsa porque la validación es independiente del tipo de grupo.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el patrón regex r'(?P<fecha>\\d{4}-\\d{2}-\\d{2}) (?P<nivel>\\w+)' aplicado a la cadena '2023-10-05 INFO', ¿qué returned m.groupdict()?",
+        "opciones": [
+          "A) {'fecha': '2023-10-05', 'nivel': 'INFO'}",
+          "B) ['2023-10-05', 'INFO']",
+          "C) '2023-10-05 INFO'",
+          "D) None"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque groupdict() retorna un diccionario con los grupos nombrados como claves y sus coincidencias como valores. La opción B es incorrecta porque groupdict() retorna un dict, no una lista. La opción C es el texto completo de la coincidencia, no el dict. La opción D es falsa porque el match es exitoso.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código roto, ¿qué problema principal ocurre al parsear un log con múltiples dos puntos como 'WARNING red: timeout en API: reintentando'?",
+        "opciones": [
+          "A) IndexError",
+          "B) Truncamiento silencioso del mensaje",
+          "C) KeyError",
+          "D) ValueError"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque el uso de split(':') y luego acceder a resto[1] solo obtiene la parte entre el primer y segundo dos punto, truncando el mensaje real sin lanzar un error. La opción A es incorrecta porque IndexError ocurre con líneas sin dos puntos, no con múltiples. Las opciones C y D no son aplicables aquí.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es el resultado de usar m.group(1) en un regex con grupos posicionales si se agrega un nuevo grupo al inicio del patrón?",
+        "opciones": [
+          "A) group(1) ahora se refiere al nuevo grupo",
+          "B) group(1) sigue siendo el mismo, pero los índices se desplazan",
+          "C) group(1) lanza un error",
+          "D) group(1) retorna None"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque al agregar un grupo al inicio, todos los índices se desplazan, por lo que group(1) ahora corresponde al primer grupo, que es el nuevo. La opción B es falsa porque los índices cambian. La opción C es incorrecta no lanza error, solo cambia el significado. La opción D no es correcta.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
