@@ -31,17 +31,40 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()\nUSERS = {1: 'Ana', 2: 'Bob'}",
       "codigo_inicial": "@app.get('/users/{user_id}')\ndef get_user(user_id):\n    return {'user': USERS[user_id]}",
       "test_code": "client = TestClient(app)\n\n# Test 1: ID válido debe retornar 200\nresponse = client.get('/users/1')\nassert response.status_code == 200, f'Esperaba 200, obtuve {response.status_code}'\nassert response.json() == {'user': 'Ana'}, f'Respuesta incorrecta: {response.json()}'\n\n# Test 2: ID inexistente debe retornar 404\nresponse = client.get('/users/999')\nassert response.status_code == 404, f'ID inexistente debe retornar 404, obtuve {response.status_code}'\n\n# Test 3: ID inválido (no numérico) debe retornar 422\nresponse = client.get('/users/abc')\nassert response.status_code == 422, f'ID no numérico debe retornar 422, obtuve {response.status_code}'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["def get_user(user_id):"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "def get_user(user_id):"
+      ],
       "solucion": "from fastapi import HTTPException\n\n@app.get('/users/{user_id}')\ndef get_user(user_id: int):\n    if user_id not in USERS:\n        raise HTTPException(status_code=404, detail='Usuario no encontrado')\n    return {'user': USERS[user_id]}"
     },
     "audio_script": "FastAPI convierte funciones Python en endpoints HTTP usando type hints. El decorador app punto get define la ruta, y los parámetros en llaves como user_id se extraen automáticamente de la URL. La magia está en los type hints: si declaras user_id dos puntos int, FastAPI valida que el valor sea numérico antes de llamar tu función, y lo convierte automáticamente. Si llega abc, retorna error cuarenta y veintidós sin que tú escribas validación. Sin el type hint, todo llega como string, y tu código crashea con errores crípticos. La segunda regla: maneja los casos de no encontrado explícitamente con HTTPException status code cuatrocientos cuatro. Si no lo haces, tu función crashea con KeyError y FastAPI retorna quinientos, que es genérico y no ayuda al cliente a entender qué pasó.",
     "video_prompt": "Video de 70 segundos. Animación de una petición HTTP GET /users/123 llegando a FastAPI. El framework inspecciona el type hint int, convierte '123' a 123, y llama la función. Escena de error: GET /users/abc con type hint int → FastAPI retorna 422 con JSON detallando el error antes de llamar la función. Escena de 404: GET /users/999 con ID inexistente → HTTPException(status_code=404) retorna JSON con mensaje claro. Overlay: 'Type hints = validación automática. HTTPException = errores claros.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation", "Flask Web Development (adaptado a FastAPI)", "Automate the Boring Stuff Cap 12"],
-      "conceptos_clave": ["fastapi", "rutas", "path-parameters", "type-hints", "validacion", "http-404", "http-422"]
+      "libros_fuente": [
+        "FastAPI documentation",
+        "Flask Web Development (adaptado a FastAPI)",
+        "Automate the Boring Stuff Cap 12"
+      ],
+      "conceptos_clave": [
+        "fastapi",
+        "rutas",
+        "path-parameters",
+        "type-hints",
+        "validacion",
+        "http-404",
+        "http-422"
+      ]
     },
-    "tags_rag": ["fastapi", "api", "rutas", "path-parameters", "type-hints", "validacion"]
+    "tags_rag": [
+      "fastapi",
+      "api",
+      "rutas",
+      "path-parameters",
+      "type-hints",
+      "validacion"
+    ]
   },
   {
     "id": "M2.1-002",
@@ -50,13 +73,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "API backend para tu app de notas/tareas",
-    "modelo_mental": "Los query parameters son los valores después del `?` en la URL: `/notas?tag=python&limit=10`. FastAPI los detecta automáticamente: cualquier parámetro de función que NO esté en la ruta se trata como query parameter. Los valores por defecto (`limit: int = 10`) son opcionales; si el cliente no los envía, usan el default. La validación es automática: si declaras `limit: int` y llega `limit=abc`, retorna 422. Los query parameters son perfectos para filtros, búsqueda, paginación y opciones opcionales.",
+    "modelo_mental": "**Analogía central**: Imagina que eres un bibliotecario y un usuario te pide libros sobre un tema específico, además de indicar cuántos quiere ver y en qué página está. Los **query parameters** son esas indicaciones que van después del signo `?` en la URL, como `/notas?tag=python&limit=10&offset=20`. En FastAPI, cualquier argumento de la función que no forme parte de la ruta se interpreta automáticamente como un query parameter; por ejemplo `def list_notas(tag: str | None = None, limit: int = 10):` captura `tag` y `limit` desde la consulta.\n\n**Por qué importa**: Sin query parameters, cada petición devolvería todo el recurso, lo que es ineficiente y no escala. Al permitir filtros, paginación y valores por defecto, reducimos el tráfico de red, mejoramos el tiempo de respuesta y evitamos que el cliente tenga que hacer filtrado pesado en memoria. Además, los valores por defecto (`limit: int = 10`) hacen que la API sea usable incluso cuando el cliente no especifica nada, mientras que la validación automática de tipos (`limit: int`) devuelve un error 422 si llega un valor no convertible (como `limit=abc`).\n\n**Qué errores previene**: Al usar query parameters evitamos devolver payloads gigantes que consumen ancho de banda y memoria, eliminamos la necesidad de que el cliente implemente lógica de filtrado y paginación, y prevenimos errores de validación que podrían pasar desapercibidos si se tratara de strings libres. En resumen, los query parameters convierten una endpoint rígido en una interfaz flexible, segura y performante.",
     "codigo_roto": "from fastapi import FastAPI\n\napp = FastAPI()\nNOTAS = [\n    {'id': 1, 'texto': 'Aprender Python', 'tag': 'python'},\n    {'id': 2, 'texto': 'Estudiar Bash', 'tag': 'bash'},\n    {'id': 3, 'texto': 'FastAPI', 'tag': 'python'},\n]\n\n@app.get('/notas')\ndef list_notas():\n    # Sin query parameters: retorna TODAS las notas siempre\n    return {'notas': NOTAS}",
-    "diagnostico": "El endpoint retorna todas las notas sin opción de filtrar, buscar o paginar. Con 10,000 notas, el cliente recibe 10,000 registros en cada petición — ineficiente y lento. Además, no hay forma de buscar notas por tag o texto. Los query parameters resuelven esto: `/notas?tag=python` filtra, `/notas?limit=10` pagina, `/notas?search=bash` busca. Cada uno es opcional con un default sensato.",
+    "diagnostico": "1. **Ausencia de filtrado**: El endpoint actual ignora cualquier query parameter y devuelve la lista completa de notas. Si la colección crece a decenas de miles de elementos, cada respuesta puede ser de varios megabytes, saturando la red y aumentando la latencia. Python/FastAPI no lanza una excepción; simplemente serializa todo el objeto, lo que provoca un uso excesivo de recursos y un patrón típico de *over‑fetching*.\n\n2. **Falta de paginación**: No existe un parámetro `limit` o `offset` que permita al cliente solicitar solo un subconjunto. Sin paginación, el cliente no puede mostrar resultados de forma incremental y debe procesar todo el conjunto en el frontend, lo que ralentiza la interfaz de usuario y consume memoria innecesariamente. Este es el mismo patrón de sobre‑carga que se observa en APIs que no soportan rangos.\n\n3. **No hay búsqueda por tag o texto**: Los usuarios no pueden preguntar por notas de un determinado tema (por ejemplo, `tag=python`) ni por palabras clave dentro del texto. En ausencia de estos query parameters, el filtro debe hacerse del lado del cliente, lo que vuelve a transferir datos innecesarios y viola el principio de que el servidor debe encargarse de la selección de datos según los criterios de la consulta.",
     "codigo_corregido": "from fastapi import FastAPI, Query\n\napp = FastAPI()\nNOTAS = [\n    {'id': 1, 'texto': 'Aprender Python', 'tag': 'python'},\n    {'id': 2, 'texto': 'Estudiar Bash', 'tag': 'bash'},\n    {'id': 3, 'texto': 'FastAPI', 'tag': 'python'},\n]\n\n@app.get('/notas')\ndef list_notas(\n    tag: str | None = None,           # Query param opcional\n    limit: int = Query(default=10, ge=1, le=100),  # Con validación\n    offset: int = Query(default=0, ge=0),\n):\n    notas = NOTAS\n    if tag:\n        notas = [n for n in notas if n['tag'] == tag]\n    return {'notas': notas[offset:offset + limit]}",
     "codigo_optimizado": "from fastapi import FastAPI, Query\nfrom pydantic import BaseModel\nfrom typing import Optional\n\napp = FastAPI()\n\nNOTAS = [\n    {'id': 1, 'texto': 'Aprender Python', 'tag': 'python', 'completada': False},\n    {'id': 2, 'texto': 'Estudiar Bash', 'tag': 'bash', 'completada': True},\n    {'id': 3, 'texto': 'FastAPI avanzado', 'tag': 'python', 'completada': False},\n    {'id': 4, 'texto': 'Regex', 'tag': 'python', 'completada': True},\n]\n\n@app.get('/notas')\ndef list_notas(\n    tag: Optional[str] = None,\n    completada: Optional[bool] = None,\n    search: Optional[str] = None,\n    limit: int = Query(default=10, ge=1, le=100, description='Máximo de resultados'),\n    offset: int = Query(default=0, ge=0, description='Desde qué resultado empezar'),\n    sort: str = Query(default='id', regex='^(id|texto|tag)$', description='Campo de ordenamiento'),\n):\n    \"\"\"\n    Lista notas con filtros, búsqueda y paginación.\n    \n    - **tag**: filtra por etiqueta\n    - **completada**: filtra por estado\n    - **search**: busca en el texto (case-insensitive)\n    - **limit**: máximo de resultados (1-100)\n    - **offset**: paginación\n    - **sort**: campo para ordenar\n    \"\"\"\n    notas = NOTAS\n    \n    # Filtros\n    if tag:\n        notas = [n for n in notas if n['tag'] == tag]\n    if completada is not None:\n        notas = [n for n in notas if n['completada'] == completada]\n    if search:\n        notas = [n for n in notas if search.lower() in n['texto'].lower()]\n    \n    # Ordenamiento\n    notas = sorted(notas, key=lambda n: n[sort])\n    \n    # Paginación\n    total = len(notas)\n    notas = notas[offset:offset + limit]\n    \n    return {\n        'notas': notas,\n        'total': total,\n        'limit': limit,\n        'offset': offset,\n        'has_more': offset + limit < total,\n    }\n\n# Ejemplos de uso:\n# GET /notas                          → primeras 10 notas\n# GET /notas?tag=python               → solo notas de Python\n# GET /notas?tag=python&completada=false  → Python sin completar\n# GET /notas?search=bash              → búsqueda de texto\n# GET /notas?limit=5&offset=10        → paginación: notas 11-15\n# GET /notas?sort=texto               → ordenadas por texto",
     "disenso_experto": "¿Query parameters o body JSON para filtros complejos? GET con query parameters es idempotente y cacheable (los CDNs y navegadores lo cachean), perfecto para lecturas. POST con body JSON permite estructuras complejas (filtros anidados, operadores lógicos), pero no es cacheable y semánticamente es incorrecto para lecturas. Regla: GET + query params para el 95% de los casos; POST con body solo para búsquedas muy complejas (tipo Elasticsearch).",
-    "pregunta_transferencia": "Tu endpoint `/notas?tag=python&tag=bash` recibe el mismo parámetro dos veces. ¿Qué valor llega a la función si el type hint es `str` vs `list[str]`? ¿Cómo implementas filtros múltiples (notas que tengan CUALQUIERA de los tags)?",
+    "pregunta_transferencia": "Imagina que tu endpoint recibe la URL `/notas?tag=python&tag=bash`. Si el parámetro de la función está declarado como `tag: str` (un solo string), FastAPI asignará el último valor proporcionado, es decir, `tag` recibirá `'bash'`. Si en cambio lo declaras como `tag: list[str]` (o `List[str]`), FastAPI agrupará todas las ocurrencias y `tag` será `['python', 'bash']`. Para implementar un filtro que devuelva notas que tengan **cualquiera** de los tags enviados, puedes usar el tipo `list[str]` y luego comprobar si el tag de cada nota está en esa lista.\n\n**Pista**: No necesitas cambiar la ruta; solo modifica el tipo del parámetro y usa la función `in` dentro de la lógica de filtrado. Recuerda que si el cliente no envía el parámetro, el valor por defecto debe ser una lista vacía (`list[str] = []`) para que el filtro no excluya ninguna nota.",
     "quiz": {
       "pregunta": "¿Cuál es la diferencia entre `limit: int = 10` y `limit: int = Query(default=10, ge=1, le=100)`?",
       "opciones": [
@@ -75,17 +98,90 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()\nNOTAS = [\n    {'id': 1, 'texto': 'Aprender Python', 'tag': 'python'},\n    {'id': 2, 'texto': 'Estudiar Bash', 'tag': 'bash'},\n    {'id': 3, 'texto': 'FastAPI', 'tag': 'python'},\n    {'id': 4, 'texto': 'Regex', 'tag': 'python'},\n]",
       "codigo_inicial": "@app.get('/notas')\ndef list_notas():\n    return {'notas': NOTAS}",
       "test_code": "client = TestClient(app)\n\n# Test 1: sin parámetros, retorna todas\nresponse = client.get('/notas')\nassert response.status_code == 200\nassert len(response.json()['notas']) == 4\n\n# Test 2: filtro por tag\nresponse = client.get('/notas?tag=python')\nassert response.status_code == 200\nnotas = response.json()['notas']\nassert len(notas) == 3, f'Esperaba 3 notas con tag python, obtuve {len(notas)}'\nassert all(n['tag'] == 'python' for n in notas)\n\n# Test 3: paginación con limit\nresponse = client.get('/notas?limit=2')\nassert response.status_code == 200\nassert len(response.json()['notas']) == 2\n\n# Test 4: validación de rango (limit fuera de rango)\nresponse = client.get('/notas?limit=200')\nassert response.status_code == 422, f'limit=200 debe fallar validación (422), obtuve {response.status_code}'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["def list_notas():"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "def list_notas():"
+      ],
       "solucion": "from fastapi import Query\n\n@app.get('/notas')\ndef list_notas(\n    tag: str | None = None,\n    limit: int = Query(default=10, ge=1, le=100),\n    offset: int = Query(default=0, ge=0),\n):\n    notas = NOTAS\n    if tag:\n        notas = [n for n in notas if n['tag'] == tag]\n    return {'notas': notas[offset:offset + limit]}"
     },
     "audio_script": "Los query parameters son los valores después del signo de interrogación en la URL, y FastAPI los detecta automáticamente: cualquier parámetro de tu función que no esté en la ruta se trata como query parameter. Los valores por defecto los hacen opcionales: si el cliente no los envía, usan el default. Pero la verdadera potencia está en la clase Query, que te permite agregar validación de rango con ge y le, regex para strings, y descripciones que aparecen en la documentación Swagger. Así tu endpoint de notas puede filtrar por tag, buscar texto, paginar con limit y offset, y ordenar por cualquier campo. Todo con validación automática: si alguien envía limit igual a doscientos, FastAPI retorna error cuarenta y veintidós antes de que tu código se ejecute. Y recuerda: GET con query parameters es cacheable y idempotente, perfecto para lecturas. Solo usa POST con body JSON cuando los filtros sean tan complejos que no quepan en query parameters.",
     "video_prompt": "Video de 75 segundos. Animación de una URL /notas?tag=python&limit=10 llegando a FastAPI. El framework extrae tag='python' y limit=10, los pasa a la función como argumentos. La función filtra la lista de notas y retorna solo las que coinciden. Escena de validación: /notas?limit=200 → FastAPI detecta que 200 > 100 (violación de le=100) y retorna 422 con JSON detallando el error. Overlay: 'Query params = filtros opcionales con validación automática.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - Query Parameters", "REST API Design (Fielding)", "Automate the Boring Stuff Cap 12"],
-      "conceptos_clave": ["query-parameters", "filtros", "paginacion", "validacion", "query-class", "optional"]
+      "libros_fuente": [
+        "FastAPI documentation - Query Parameters",
+        "REST API Design (Fielding)",
+        "Automate the Boring Stuff Cap 12"
+      ],
+      "conceptos_clave": [
+        "query-parameters",
+        "filtros",
+        "paginacion",
+        "validacion",
+        "query-class",
+        "optional"
+      ]
     },
-    "tags_rag": ["fastapi", "query-parameters", "filtros", "paginacion", "api", "get"]
+    "tags_rag": [
+      "fastapi",
+      "query-parameters",
+      "filtros",
+      "paginacion",
+      "api",
+      "get"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué ocurre en FastAPI cuando un parámetro de función no está presente en la ruta y no tiene valor por defecto?",
+        "opciones": [
+          "A: Se trata como path parameter y lanza 404 si falta.",
+          "B: Se trata como query parameter y es requerido; si falta devuelve 422.",
+          "C: Se ignora y se usa None automáticamente.",
+          "D: Se convierte en header automático."
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta porque FastAPI interpreta cualquier argumento de la función que no forme parte de la ruta como un query parameter. Si no se le asigna un valor por defecto, el parámetro es requerido y su ausencia provoca un error de validación 422 (Unprocessable Entity). La opción A es incorrecta porque los path parameters se definen en la ruta, no en la firma de la función. La opción C es falsa: FastAPI no asume None automáticamente; requiere un valor explícito o un default. La opción D es errónea porque los headers se declaran con Header, no por omisión.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente código, ¿qué JSON devuelve la petición GET /notas?tag=python&limit=2?",
+        "opciones": [
+          "A: {'notas': [{'id':1,'texto':'Aprender Python','tag':'python'}, {'id':3,'texto':'FastAPI','tag':'python'}]},",
+          "B: {'notas': [{'id':1,'texto':'Aprender Python','tag':'python'}]},",
+          "C: {'notas': [{'id':2,'texto':'Estudiar Bash','tag':'bash'}, {'id':3,'texto':'FastAPI','tag':'python'}]},",
+          "D: {'notas': []}"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque el filtro por tag='python' selecciona las notas con id 1 y 3, y el limit=2 devuelve ambas en el orden original. La opción B es incorrecta porque omite la segunda nota que también cumple el filtro. La opción C incluye una nota de tag bash que no debería aparecer. La opción D estaría vacía solo si el filtro excluyera todas las notas, lo que no ocurre.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué error devuelve FastAPI si el cliente envía la URL /notas?limit=abc?",
+        "opciones": [
+          "A: 200 OK con limit ignorado.",
+          "B: 404 Not Found.",
+          "C: 422 Unprocessable Entity con mensaje de validación.",
+          "D: 500 Internal Server Error."
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C es correcta porque FastAPI valida el tipo declarado (int) y, al no poder convertir 'abc' a entero, lanza un error de validación 422. La opción A es falsa: la validación ocurre antes de ejecutar la función, por lo que el parámetro no se ignora. La opción B sería para una ruta inexistente, no para un error de tipo. La opción D indicaría una falla del servidor, pero aquí el fallo es de entrada del cliente.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones describe correctamente el comportamiento de un query parameter sin valor por defecto cuando el cliente no lo envía?",
+        "opciones": [
+          "A: Se usa un valor vacío string.",
+          "B: Se lanza una excepción 500.",
+          "C: Se omite y se usa None si el tipo es Optional.",
+          "D: FastAPI devuelve un error 422 porque el parámetro es requerido."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D es correcta: un query parameter sin default es requerido; su ausencia provoca un error de validación 422. La opción A es incorrecta porque no se asume una cadena vacía; se necesita un valor explícito. La opción B es falsa: un 500 indica un error interno del servidor, no un fallo de validación. La opción C solo sería cierta si el parámetro estuviera tipado como Optional (por ejemplo, tag: str | None = None), pero en la premisa se especificó que no tiene valor por defecto, por lo que no es Optional y se trata como requerido.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M2.1-003",
@@ -94,13 +190,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "API backend para tu app de notas/tareas",
-    "modelo_mental": "Pydantic es la librería de validación que FastAPI usa internamente. Un modelo Pydantic (heredando de `BaseModel`) define la estructura de datos con type hints, y Pydantic valida automáticamente el JSON entrante contra ese esquema. Si el cliente envía `{'texto': 123}` cuando esperabas `str`, Pydantic retorna 422 con detalle del error. Los modelos también validan rangos (`Field(ge=0, le=100)`), regex, y custom validators. Son la capa de defensa que previene que datos inválidos lleguen a tu lógica de negocio.",
+    "modelo_mental": "Pydantic actúa como un **esquema de datos** que define la estructura esperada en las solicitudes de tu API. Cuando un cliente envía un JSON, FastAPI utiliza los modelos Pydantic para **validar y parsear** los datos automáticamente. Esto es crucial porque garantiza que solo datos que cumplan con el esquema definido lleguen a tu lógica de negocio, evitando errores en tiempo de ejecución. Por ejemplo, si defines un modelo con `texto: str`, Pydantic rechazará cualquier valor que no sea una cadena, retornando un error 422 con detalles del problema. Además, Pydantic permite validaciones más avanzadas como rangos (`Field(ge=0, le=100)`), expresiones regulares, e incluso validadores personalizados. Esto convierte a Pydantic en una capa de defensa robusta contra datos inválidos.\n\nSin esta capa, tu endpoint se convierte en un **blindaje ausente**: cualquier estructura de datos, por más inconsistente que sea, será aceptada y procesada. Esto no solo riska fallos de tipo (como intentar usar `.upper()` en un número) sino también inconsistencias de negocio (como campos obligatorios ausentes o valores fuera de rango). Pydantic también se integra con la documentación automática de FastAPI (OpenAPI), mostrando el esquema esperado a los desarrolladores de la API. En resumen, es la diferencia entre una API que **confía** en sus clientes y una que **valida** cada entrada.",
     "codigo_roto": "from fastapi import FastAPI\nfrom pydantic import BaseModel\n\napp = FastAPI()\nNOTAS = []\n\n@app.post('/notas')\ndef crear_nota(data: dict):\n    # Sin validación: acepta CUALQUIER dict\n    # {'texto': 123, 'tag': None, 'extra': 'basura'} pasa sin error\n    nota = {'id': len(NOTAS) + 1, **data}\n    NOTAS.append(nota)\n    return {'nota': nota}",
-    "diagnostico": "El endpoint acepta `dict` sin validación, así que el cliente puede enviar cualquier estructura: `{'texto': 123}` (tipo incorrecto), `{'tag': None}` (campo requerido ausente), o campos extra no esperados. Todo pasa sin error y se guarda en la base de datos. Cuando otro endpoint intenta usar `nota['texto'].upper()`, crashea con AttributeError porque `texto` es un int. Pydantic previene esto: con un modelo `NotaCreate(texto: str, tag: str)`, FastAPI valida antes de llamar la función y retorna 422 si algo no cumple el esquema.",
+    "diagnostico": "1. **Falta de validación de tipos y estructura**: El endpoint acepta `dict` sin restricciones, lo que permite que el cliente envíe cualquier estructura de datos. Esto incluye campos faltantes, tipos incorrectos (como `{'texto': 123}`) o campos adicionales no esperados. Python no lanza error en este punto porque `dict` es genérico, pero el problema emerge al usar los datos: si otro endpoint ejecuta `nota['texto'].upper()`, fallará con `AttributeError` porque `texto` es un `int`, no un `str`. El patrón general es que, sin validación, el sistema confía ciegamente en el cliente, posponiendo fallos hasta que los datos se usen.\n\n2. **Inconsistencia de datos y fallos encadenados**: Al no validar campos requeridos (como `tag` ausente) o valores nulos, la base de datos puede guardando entradas corruptas. Más adelante, cuando una función espere que `nota['tag']` sea un string, podría fallar con `KeyError` si el campo no existe o con `TypeError` si es `None`. Esto crea un **efecto dominó** de errores: un único dato inválido puede causar múltiples fallos en diferentes partes de la aplicación. Pydantic evita esto validando antes de que los datos alcancen cualquier lógica de negocio.\n\n3. **Campos extra no controlados**: El modelo actual tampoco rechaza campos adicionales (como `{'extra': 'basura'}`), lo que puede llenar la base de datos con información irrelevante o malinterpretada por otros endpoints. Esto viola el principio de **contrato de API**: el esquema debe ser estricto para evitar que clientes envíen datos que no se espera. El patrón general es que la validación debe ser estricta por defecto, permitiendo solo lo definido en el modelo.",
     "codigo_corregido": "from fastapi import FastAPI\nfrom pydantic import BaseModel\n\napp = FastAPI()\nNOTAS = []\n\nclass NotaCreate(BaseModel):\n    texto: str\n    tag: str\n\n@app.post('/notas')\ndef crear_nota(nota: NotaCreate):\n    nueva = {'id': len(NOTAS) + 1, **nota.dict()}\n    NOTAS.append(nueva)\n    return {'nota': nueva}",
     "codigo_optimizado": "from fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel, Field, validator\nfrom typing import Optional\nfrom datetime import datetime\n\napp = FastAPI()\nNOTAS = []\n\n# Modelo de entrada (lo que el cliente envía al crear)\nclass NotaCreate(BaseModel):\n    texto: str = Field(..., min_length=1, max_length=500, description='Texto de la nota')\n    tag: str = Field(..., min_length=1, max_length=50, regex='^[a-z0-9-]+$', description='Etiqueta (solo minúsculas, números y guiones)')\n    completada: bool = Field(default=False, description='Estado de la nota')\n    \n    @validator('texto')\n    def texto_no_vacio(cls, v):\n        if not v.strip():\n            raise ValueError('El texto no puede estar vacío o solo espacios')\n        return v.strip()\n\n# Modelo de salida (lo que la API retorna)\nclass NotaResponse(BaseModel):\n    id: int\n    texto: str\n    tag: str\n    completada: bool\n    creada: datetime\n    \n    class Config:\n        orm_mode = True  # Permite convertir desde objetos ORM (SQLAlchemy) en Fase 2.2\n\n# Modelo para actualizar (todos los campos opcionales)\nclass NotaUpdate(BaseModel):\n    texto: Optional[str] = Field(None, min_length=1, max_length=500)\n    tag: Optional[str] = Field(None, min_length=1, max_length=50, regex='^[a-z0-9-]+$')\n    completada: Optional[bool] = None\n\n@app.post('/notas', response_model=NotaResponse, status_code=201)\ndef crear_nota(nota_in: NotaCreate):\n    \"\"\"\n    Crea una nueva nota.\n    \n    - **texto**: requerido, 1-500 caracteres\n    - **tag**: requerido, solo minúsculas/números/guiones\n    - **completada**: opcional, default False\n    \"\"\"\n    nueva = {\n        'id': len(NOTAS) + 1,\n        'texto': nota_in.texto,\n        'tag': nota_in.tag,\n        'completada': nota_in.completada,\n        'creada': datetime.now(),\n    }\n    NOTAS.append(nueva)\n    return nueva\n\n@app.put('/notas/{nota_id}', response_model=NotaResponse)\ndef actualizar_nota(nota_id: int, nota_in: NotaUpdate):\n    \"\"\"Actualiza una nota existente. Solo los campos enviados se modifican.\"\"\"\n    for nota in NOTAS:\n        if nota['id'] == nota_id:\n            # Solo actualizar campos que fueron enviados (no None)\n            update_data = nota_in.dict(exclude_unset=True)\n            nota.update(update_data)\n            return nota\n    raise HTTPException(status_code=404, detail='Nota no encontrada')\n\n# Ejemplos de validación automática:\n# POST /notas {'texto': 'Aprender', 'tag': 'python'}  → 201 Created ✓\n# POST /notas {'texto': 123, 'tag': 'python'}          → 422 (texto debe ser str)\n# POST /notas {'texto': '', 'tag': 'python'}            → 422 (texto vacío)\n# POST /notas {'texto': 'Aprender', 'tag': 'PYTHON'}    → 422 (tag debe ser minúsculas)\n# POST /notas {'texto': 'A' * 600, 'tag': 'python'}     → 422 (texto > 500 chars)",
     "disenso_experto": "¿Pydantic o validación manual? Pydantic añade ~1-2ms de overhead por validación, pero previene bugs de datos inválidos que pueden costar horas de debugging. Para APIs públicas o con datos de usuarios, Pydantic es obligatorio. Para endpoints internos entre microservicios donde confías en el emisor, validación manual puede ser aceptable. La regla: si el dato viene de fuera de tu sistema, Pydantic siempre.",
-    "pregunta_transferencia": "Tu modelo `NotaCreate` tiene `texto: str` con `min_length=1`. Un cliente envía `{'texto': '   ', 'tag': 'python'}` (solo espacios). ¿Pasa la validación? ¿Cómo agregas un custom validator que rechace strings que son solo whitespace?",
+    "pregunta_transferencia": "Imagina que has definido el modelo `NotaCreate` con el campo `texto: str` y una restricción `min_length=1`. Un cliente envía una solicitud con el cuerpo `{'texto': '   ', 'tag': 'python'}`, donde el valor de `texto` consiste únicamente en espacios en blanco. Aunque la longitud del string es al menos 1, el contenido es solo espacios, lo que podría no ser válido para tu negocio (por ejemplo, si requieres texto meaningful).\n\nPara evitar que esto pase la validación, necesitarías implementar un validador personalizado que verifique que el string, después de eliminar espacios al inicio y al final, no esté vacío. Una pista: puedes usar el método `str.strip()` dentro de un validador de Pydantic para detectar si el contenido después de limpiar espacios tiene longitud cero, y luego lanzar un error de validación personalizado.",
     "quiz": {
       "pregunta": "¿Qué código HTTP retorna FastAPI si un POST envía JSON que no cumple el modelo Pydantic?",
       "opciones": [
@@ -119,17 +215,79 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()\nNOTAS = []",
       "codigo_inicial": "@app.post('/notas')\ndef crear_nota(data: dict):\n    nota = {'id': len(NOTAS) + 1, **data}\n    NOTAS.append(nota)\n    return {'nota': nota}",
       "test_code": "from pydantic import BaseModel\n\nclient = TestClient(app)\n\n# Test 1: datos válidos\nresponse = client.post('/notas', json={'texto': 'Aprender Python', 'tag': 'python'})\nassert response.status_code == 200, f'Esperaba 200, obtuve {response.status_code}'\nnota = response.json()['nota']\nassert nota['texto'] == 'Aprender Python'\nassert nota['tag'] == 'python'\nassert nota['id'] == 1\n\n# Test 2: tipo incorrecto (texto como int)\nresponse = client.post('/notas', json={'texto': 123, 'tag': 'python'})\nassert response.status_code == 422, f'texto=int debe retornar 422, obtuve {response.status_code}'\n\n# Test 3: campo requerido ausente\nresponse = client.post('/notas', json={'texto': 'Aprender'})\nassert response.status_code == 422, f'tag ausente debe retornar 422, obtuve {response.status_code}'\n\n# Test 4: texto vacío\nresponse = client.post('/notas', json={'texto': '', 'tag': 'python'})\nassert response.status_code == 422, f'texto vacío debe retornar 422, obtuve {response.status_code}'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["data: dict"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "data: dict"
+      ],
       "solucion": "from pydantic import BaseModel, Field\n\nclass NotaCreate(BaseModel):\n    texto: str = Field(..., min_length=1, max_length=500)\n    tag: str = Field(..., min_length=1, max_length=50)\n\n@app.post('/notas')\ndef crear_nota(nota: NotaCreate):\n    nueva = {'id': len(NOTAS) + 1, **nota.dict()}\n    NOTAS.append(nueva)\n    return {'nota': nueva}"
     },
     "audio_script": "Pydantic es la capa de defensa que previene que datos inválidos lleguen a tu lógica de negocio. Un modelo Pydantic hereda de BaseModel y define la estructura con type hints. FastAPI valida automáticamente el JSON entrante contra ese esquema: si el cliente envía texto como número en vez de string, o omite un campo requerido, FastAPI retorna error cuarenta y veintidós con detalle de qué falló, antes de que tu código se ejecute. Field te permite agregar validación de rango con min y max length, regex para patrones, y valores por defecto. Y los custom validators con el decorador validator te dejan agregar lógica de validación compleja, como rechazar strings que son solo espacios. La regla es simple: si el dato viene de fuera de tu sistema, Pydantic siempre. Si es interno entre microservicios donde confías en el emisor, validación manual puede ser aceptable.",
     "video_prompt": "Video de 80 segundos. Animación de JSON entrante {'texto': 123, 'tag': 'python'} llegando a FastAPI. El framework lo pasa a Pydantic, que inspecciona el modelo NotaCreate(texto: str). Pydantic detecta que 123 no es string y retorna 422 con JSON detallando: 'texto: value is not a valid string'. Escena de éxito: {'texto': 'Aprender', 'tag': 'python'} → validación pasa → función se ejecuta → 200 OK. Overlay: 'Pydantic = validación automática en la frontera.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - Pydantic", "Pydantic documentation", "Effective Python Item 24 (dataclasses vs Pydantic)"],
-      "conceptos_clave": ["pydantic", "validacion", "basemodel", "field", "validator", "request-body", "http-422"]
+      "libros_fuente": [
+        "FastAPI documentation - Pydantic",
+        "Pydantic documentation",
+        "Effective Python Item 24 (dataclasses vs Pydantic)"
+      ],
+      "conceptos_clave": [
+        "pydantic",
+        "validacion",
+        "basemodel",
+        "field",
+        "validator",
+        "request-body",
+        "http-422"
+      ]
     },
-    "tags_rag": ["fastapi", "pydantic", "validacion", "request-body", "api", "post"]
+    "tags_rag": [
+      "fastapi",
+      "pydantic",
+      "validacion",
+      "request-body",
+      "api",
+      "post"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es el propósito principal de usar modelos Pydantic en FastAPI?",
+        "opciones": [
+          "A) Proporcionar una interfaz para la base de datos.",
+          "B) Validar y parsear el cuerpo de la solicitud (request body) según un esquema definido.",
+          "C) Gestionar las respuestas HTTP.",
+          "D) Autenticar a los usuarios de la API."
+        ],
+        "correcta": "B",
+        "explicacion": "Pydantic se utiliza para definir la estructura de los datos que espera tu endpoint y realizar validaciones automáticas. Esto asegura que los datos cumplan con ciertas reglas antes de que lleguen a tu lógica de negocio. Las otras opciones son incorrectas: A) Pydantic no se encarga de la base de datos, C) las respuestas HTTP se gestionan con otros componentes de FastAPI, y D) la autenticación requiere librerías o módulos adicionales.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el código roto proporcionado, ¿qué respuesta obtendrías si envías una solicitud POST a '/notas' con el cuerpo `{'texto': 'hola', 'tag': 'python'}`?",
+        "opciones": [
+          "A) 200 OK con la nota creada.",
+          "B) 422 Unprocessable Entity.",
+          "C) 500 Internal Server Error.",
+          "D) 404 Not Found."
+        ],
+        "correcta": "A",
+        "explicacion": "El endpoint actual no realiza validación alguna y acepta cualquier diccionario. Al enviar un dict con las claves 'texto' y 'tag', el endpoint lo procesará sin errores y devolverá 200 OK. Las otras opciones son incorrectas porque: B) 422 ocurre cuando hay error de validación, pero aquí no hay modelo Pydantic, C) 500 indicaría un error interno del servidor, pero el código no falla, y D) 404 es para rutas no encontradas, pero la ruta existe.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el código roto, si un cliente envía `{'texto': 'hola', 'tag': 'python', 'extra': 'campo_extra'}` y luego intentamos acceder a `nota['campo_que_no_existe']`, ¿qué error ocurrirá?",
+        "opciones": [
+          "A) TypeError: unsupported operand type(s) for +: 'int' and 'str'.",
+          "B) AttributeError: 'dict' object has no attribute 'campo_que_no_existe'.",
+          "C) KeyError: 'campo_que_no_existe'",
+          "D) ValueError: invalid literal for int() with base 10: 'hola'"
+        ],
+        "correcta": "C",
+        "explicacion": "Al intentar acceder a una clave que no existe en el diccionario, se lanza un KeyError. Esto es independiente de la validación de datos y ocurre al intentar acceder a una clave ausente. Las otras opciones son incorrectas: A) TypeError ocurriría si intentaras sumar un int y un str, B) AttributeError es para objetos que no tienen un atributo, no para claves de dict, y D) ValueError es para conversiones de tipo fallidas.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M2.1-004",
@@ -138,13 +296,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "API backend para tu app de notas/tareas",
-    "modelo_mental": "Los códigos HTTP comunican el resultado de la petición sin necesidad de leer el body. FastAPI retorna 200 OK por defecto, pero puedes especificar otros con `status_code` en el decorador o `HTTPException`. Los códigos esenciales: 200 OK (lectura exitosa), 201 Created (recurso creado con POST), 204 No Content (eliminación exitosa, sin body), 400 Bad Request (error del cliente), 404 Not Found (recurso no existe), 409 Conflict (conflicto de estado, ej. duplicado), 422 Unprocessable Entity (validación falló). Retornar 200 con error dentro es un anti-patrón que confunde a los clientes.",
+    "modelo_mental": "Los códigos de estado HTTP son la primera capa de comunicación entre un cliente y un servidor. Imagina que el servidor es un recepcionista de hotel: en lugar de que el cliente tenga que abrir la puerta de la habitación para descubrir si todo salió bien o mal, el recepcionista le entrega una tarjeta que dice claramente \"200 OK, aquí tiene su habitación\" o \"409 Conflict, esa habitación ya está ocupada\". Esta analogía central permite que los clientes, los proxies y los navegadores actúen de inmediato sin necesidad de inspeccionar el contenido del mensaje. FastAPI respeta esta filosofía: por defecto retorna `200 OK`, pero permite personalizar el código usando `status_code` en el decorador o lanzando `HTTPException`. Los códigos esenciales —`201 Created` para recursos nuevos, `404 Not Found` para ausencia, `409 Conflict` para colisiones, `422 Unprocessable Entity` para validaciones fallidas— forman un lenguaje universal que evita ambigüedades.",
     "codigo_roto": "from fastapi import FastAPI\n\napp = FastAPI()\nNOTAS = []\n\n@app.post('/notas')\ndef crear_nota(nota: dict):\n    # Siempre retorna 200 OK, incluso si falla\n    if not nota.get('texto'):\n        return {'error': 'texto requerido'}  # 200 OK con error\n    if any(n['texto'] == nota['texto'] for n in NOTAS):\n        return {'error': 'ya existe'}  # 200 OK con error\n    NOTAS.append(nota)\n    return {'nota': nota}  # 200 OK con éxito",
-    "diagnostico": "El endpoint siempre retorna 200 OK, incluso cuando hay errores. El cliente no puede distinguir éxito de fallo sin parsear el JSON y buscar la clave `error`. Esto rompe la semántica HTTP: los códigos de estado están diseñados precisamente para esto. Además, POST que crea un recurso debería retornar 201 Created, no 200. Y cuando hay conflicto (duplicado), debería ser 409 Conflict. El cliente tiene que adivinar qué pasó leyendo el body.",
+    "diagnostico": "1. El endpoint retorna siempre 200 OK incluso cuando ocurre un error. Python no lanza una excepción porque el código no usa `raise HTTPException`; simplemente ejecuta `return {'error': 'texto requerido'}` y FastAPI convierte ese diccionario en una respuesta con código 200. El patrón general es: el desarrollador confunde 'retornar un error' con 'lanzar un error'. 2. Cuando el texto ya existe, se retorna 200 OK con `{'error': 'ya existe'}`. El código debería usar 409 Conflict, pero al no hacerlo, el cliente no puede distinguir un conflicto real de una operación exitosa sin parsear el cuerpo. 3. Al crear una nota nueva, se retorna 200 OK en lugar de 201 Created. Aunque funcionalmente el recurso se crea, el código 200 sugiere 'lectura exitosa', no 'creación exitosa', lo que rompe la semántica RESTful.",
     "codigo_corregido": "from fastapi import FastAPI, HTTPException\n\napp = FastAPI()\nNOTAS = []\n\n@app.post('/notas', status_code=201)\ndef crear_nota(nota: dict):\n    if not nota.get('texto'):\n        raise HTTPException(status_code=400, detail='texto es requerido')\n    if any(n['texto'] == nota['texto'] for n in NOTAS):\n        raise HTTPException(status_code=409, detail='ya existe una nota con ese texto')\n    NOTAS.append(nota)\n    return {'nota': nota}",
     "codigo_optimizado": "from fastapi import FastAPI, HTTPException, status\nfrom pydantic import BaseModel, Field\n\napp = FastAPI()\nNOTAS = []\n\nclass NotaCreate(BaseModel):\n    texto: str = Field(..., min_length=1, max_length=500)\n    tag: str = Field(..., min_length=1, max_length=50)\n\n@app.get('/notas/{nota_id}')\ndef get_nota(nota_id: int):\n    \"\"\"GET exitoso → 200 OK (default)\"\"\"\n    for nota in NOTAS:\n        if nota['id'] == nota_id:\n            return nota\n    raise HTTPException(status_code=404, detail='Nota no encontrada')\n\n@app.post('/notas', status_code=status.HTTP_201_CREATED)\ndef crear_nota(nota_in: NotaCreate):\n    \"\"\"POST exitoso → 201 Created\"\"\"\n    # Validar unicidad\n    if any(n['texto'] == nota_in.texto for n in NOTAS):\n        raise HTTPException(\n            status_code=status.HTTP_409_CONFLICT,\n            detail=f'Ya existe una nota con el texto: {nota_in.texto}'\n        )\n    nueva = {'id': len(NOTAS) + 1, **nota_in.dict()}\n    NOTAS.append(nueva)\n    return nueva\n\n@app.put('/notas/{nota_id}')\ndef actualizar_nota(nota_id: int, nota_in: NotaCreate):\n    \"\"\"PUT exitoso → 200 OK (default)\"\"\"\n    for nota in NOTAS:\n        if nota['id'] == nota_id:\n            nota.update(nota_in.dict())\n            return nota\n    raise HTTPException(status_code=404, detail='Nota no encontrada')\n\n@app.delete('/notas/{nota_id}', status_code=status.HTTP_204_NO_CONTENT)\ndef eliminar_nota(nota_id: int):\n    \"\"\"DELETE exitoso → 204 No Content (sin body)\"\"\"\n    for i, nota in enumerate(NOTAS):\n        if nota['id'] == nota_id:\n            del NOTAS[i]\n            return  # Sin body, solo el código 204\n    raise HTTPException(status_code=404, detail='Nota no encontrada')\n\n# ===== TABLA DE CÓDIGOS HTTP ESENCIALES =====\n# 2xx ÉXITO\n# 200 OK                    → Lectura/actualización exitosa\n# 201 Created               → Recurso creado (POST exitoso)\n# 204 No Content            → Eliminación exitosa, sin body\n#\n# 4xx ERROR DEL CLIENTE\n# 400 Bad Request           → Error genérico del cliente (datos inválidos)\n# 401 Unauthorized          → Autenticación requerida/fallida\n# 403 Forbidden             → Autenticado pero sin permisos\n# 404 Not Found             → Recurso no existe\n# 409 Conflict              → Conflicto de estado (duplicado, versión)\n# 422 Unprocessable Entity  → Validación de Pydantic falló\n#\n# 5xx ERROR DEL SERVIDOR\n# 500 Internal Server Error → Bug en tu código (excepción no manejada)\n# 503 Service Unavailable   → Servicio temporalmente caído",
     "disenso_experto": "¿200 con error en body o códigos HTTP correctos? Algunos argumentan que 200 + `{success: false, error: '...'}` es más simple. Pero esto rompe la semántica HTTP: los clientes (navegadores, CDNs, proxies) usan los códigos para decisiones automáticas (reintentos, cacheo). Un 500 indica bug del servidor y no debe cachearse; un 200 con error se cachea como éxito. La práctica profesional: códigos HTTP correctos siempre, con detalles en el body cuando sea útil.",
-    "pregunta_transferencia": "Tu endpoint POST /notas retorna 200 OK con `{'error': 'duplicado'}`. El navegador del usuario cachea la respuesta. Cuando el usuario reintenta con texto distinto, el navegador sirve la respuesta cacheada (200 con error) en vez de hacer la petición real. ¿Por qué pasa esto y qué código HTTP previene el cacheo incorrecto?",
+    "pregunta_transferencia": "Imagina que tu endpoint POST /notas retorna 200 OK con {'error': 'duplicado'} cuando el usuario envía un texto repetido. El navegador, al recibir una respuesta 200, la cachea automáticamente. Cuando el usuario corrige el texto y reenvía la solicitud, el navegador sirve la respuesta cacheada anterior en lugar de contactar al servidor nuevamente, mostrando el error 'duplicado' aunque el nuevo texto sea único. Esto ocurre porque el cacheo se basa en el código de estado: 200 es cacheable por defecto, mientras que códigos como 409 Conflict o 422 Unprocessable Entity indican al navegador que la respuesta no debe almacenarse. Usar el código HTTP correcto no solo comunica el resultado al cliente, sino que también controla el comportamiento de intermediarios como proxies y navegadores.",
     "quiz": {
       "pregunta": "¿Qué código HTTP debe retornar un POST exitoso que crea un recurso nuevo?",
       "opciones": [
@@ -163,17 +321,91 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()\nNOTAS = []",
       "codigo_inicial": "@app.post('/notas')\ndef crear_nota(nota: dict):\n    if not nota.get('texto'):\n        return {'error': 'texto requerido'}\n    if any(n['texto'] == nota['texto'] for n in NOTAS):\n        return {'error': 'ya existe'}\n    NOTAS.append(nota)\n    return {'nota': nota}",
       "test_code": "client = TestClient(app)\n\n# Test 1: éxito debe retornar 201 Created\nresponse = client.post('/notas', json={'texto': 'Aprender Python', 'tag': 'python'})\nassert response.status_code == 201, f'Esperaba 201 Created, obtuve {response.status_code}'\n\n# Test 2: falta texto debe retornar 400 Bad Request\nresponse = client.post('/notas', json={'tag': 'python'})\nassert response.status_code == 400, f'Esperaba 400 Bad Request, obtuve {response.status_code}'\n\n# Test 3: duplicado debe retornar 409 Conflict\nresponse = client.post('/notas', json={'texto': 'Aprender Python', 'tag': 'python'})\nassert response.status_code == 409, f'Esperaba 409 Conflict, obtuve {response.status_code}'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["return {'error':"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "return {'error':"
+      ],
       "solucion": "from fastapi import HTTPException\n\n@app.post('/notas', status_code=201)\ndef crear_nota(nota: dict):\n    if not nota.get('texto'):\n        raise HTTPException(status_code=400, detail='texto es requerido')\n    if any(n['texto'] == nota['texto'] for n in NOTAS):\n        raise HTTPException(status_code=409, detail='ya existe una nota con ese texto')\n    NOTAS.append(nota)\n    return {'nota': nota}"
     },
     "audio_script": "Los códigos HTTP comunican el resultado de la petición sin necesidad de leer el body, y FastAPI te deja especificarlos con status code en el decorador o con HTTPException. El anti-patrón más común es retornar doscientos OK con error dentro del JSON, lo que confunde a los clientes y rompe la semántica HTTP. Los códigos esenciales que debes conocer: doscientos uno Created para POST exitoso, cuatrocientos cuatro Not Found cuando el recurso no existe, cuatrocientos nueve Conflict cuando hay un duplicado, y cuatrocientos veintidós Unprocessable Entity cuando la validación de Pydantic falla. La regla es simple: si hay error, lanza HTTPException con el código correcto. Si es éxito, usa el código semántico adecuado. Los clientes, navegadores y CDNs usan estos códigos para decisiones automáticas como reintentos y cacheo.",
     "video_prompt": "Video de 75 segundos. Animación de tres peticiones POST llegando a un endpoint. Primera: datos válidos → endpoint retorna 201 Created con el recurso. Segunda: falta campo requerido → endpoint lanza HTTPException(400) → cliente ve 400 Bad Request. Tercera: duplicado → endpoint lanza HTTPException(409) → cliente ve 409 Conflict. Overlay: '200 con error = anti-patrón. Códigos HTTP correctos = semántica clara.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - Response Status Codes", "HTTP/1.1 RFC 7231", "REST API Design (Fielding)"],
-      "conceptos_clave": ["codigos-http", "201-created", "404-not-found", "409-conflict", "422-unprocessable", "httpexception"]
+      "libros_fuente": [
+        "FastAPI documentation - Response Status Codes",
+        "HTTP/1.1 RFC 7231",
+        "REST API Design (Fielding)"
+      ],
+      "conceptos_clave": [
+        "codigos-http",
+        "201-created",
+        "404-not-found",
+        "409-conflict",
+        "422-unprocessable",
+        "httpexception"
+      ]
     },
-    "tags_rag": ["fastapi", "codigos-http", "httpexception", "201", "404", "409", "api"]
+    "tags_rag": [
+      "fastapi",
+      "codigos-http",
+      "httpexception",
+      "201",
+      "404",
+      "409",
+      "api"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la diferencia semántica entre retornar 200 OK y 201 Created en un endpoint POST que crea un nuevo recurso?",
+        "opciones": [
+          "201 Created indica que se creó un nuevo recurso, mientras que 200 OK solo confirma que la solicitud fue procesada",
+          "200 OK es más rápido que 201 Created porque no requiere encabezados adicionales",
+          "201 Created siempre incluye un cuerpo JSON, mientras que 200 OK no",
+          "No hay diferencia, ambos son intercambiables en FastAPI"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque 201 Created comunica explícitamente que un nuevo recurso fue creado en el servidor, lo cual es la semántica adecuada para un POST exitoso. La opción B es incorrecta: la velocidad no depende del código de estado. La opción C es falsa: ambos códigos pueden incluir o no cuerpo. La opción D es un error común: aunque funcionan técnicamente, no son intercambiables desde el punto de vista semántico y de caché.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué código de estado HTTP debería retornar el endpoint POST /notas cuando el texto ya existe en la lista?",
+        "opciones": [
+          "200 OK",
+          "400 Bad Request",
+          "409 Conflict",
+          "422 Unprocessable Entity"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción C (409 Conflict) es correcta porque el recurso ya existe y hay un conflicto de estado. La opción A (200 OK) es el error actual del código roto. La opción B (400 Bad Request) implicaría que la solicitud es inválida, pero el problema no está en la solicitud, sino en el estado del servidor. La opción D (422) es para errores de validación de esquema, no para conflictos de estado.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué sucede si un cliente recibe 200 OK con {'error': 'texto requerido'} en lugar de 422 Unprocessable Entity?",
+        "opciones": [
+          "El cliente debe parsear el JSON para detectar el error, lo que rompe la semántica HTTP",
+          "FastAPI automáticamente convierte el error en 422 sin necesidad de cambios",
+          "El cliente ignora el error porque el código 200 indica éxito",
+          "El navegador muestra una página de error estándar"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta: al retornar 200 OK, el cliente no puede confiar en el código de estado y debe inspeccionar el cuerpo de la respuesta para determinar si hubo un error. La opción B es falsa: FastAPI no interviene en el contenido del retorno del endpoint. La opción C es parcialmente cierta pero exagerada: el cliente podría ignorar el error si no inspecciona el cuerpo. La opción D es incorrecta: no hay una página de error estándar para respuestas 200.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Dado el siguiente código modificado, ¿qué código de estado retornará al crear una nota válida y única?\n\n@app.post('/notas', status_code=201)\ndef crear_nota(nota: dict):\n    if not nota.get('texto'):\n        return {'error': 'texto requerido'}\n    if any(n['texto'] == nota['texto'] for n in NOTAS):\n        return {'error': 'ya existe'}\n    NOTAS.append(nota)\n    return {'nota': nota}",
+        "opciones": [
+          "200 OK",
+          "201 Created",
+          "400 Bad Request",
+          "409 Conflict"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B (201 Created) es correcta porque el decorador especifica `status_code=201`, y al retornar exitosamente, FastAPI usará ese código. La opción A (200 OK) sería el comportamiento por defecto sin el parámetro. Las opciones C y D no se aplican porque no se lanzan excepciones ni se retornan errores en este caso de éxito.",
+        "tipo": "codigo"
+      }
+    ]
   },
   {
     "id": "M2.1-005",
@@ -207,17 +439,37 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()",
       "codigo_inicial": "@app.get('/notas')\ndef list_notas():\n    return {'notas': []}",
       "test_code": "client = TestClient(app)\n\n# Test: simular petición CORS desde http://localhost:3000\nresponse = client.get(\n    '/notas',\n    headers={'Origin': 'http://localhost:3000'}\n)\nassert response.status_code == 200\n\n# Verificar que el header CORS está presente\nassert 'access-control-allow-origin' in response.headers, 'Falta header CORS'\nassert response.headers['access-control-allow-origin'] == 'http://localhost:3000', f'Origen incorrecto: {response.headers.get(\"access-control-allow-origin\")}'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "from fastapi.middleware.cors import CORSMiddleware\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=['http://localhost:3000'],\n    allow_credentials=True,\n    allow_methods=['*'],\n    allow_headers=['*'],\n)\n\n@app.get('/notas')\ndef list_notas():\n    return {'notas': []}"
     },
     "audio_script": "CORS es una restricción de seguridad de los navegadores que bloquea peticiones desde un origen a otro distinto. Un origen es la combinación de protocolo, dominio y puerto. Tu aplicación web en localhost tres mil y tu API en localhost ocho mil son orígenes distintos, así que el navegador bloquea la petición por defecto. El error en consola es claro: blocked by CORS policy. FastAPI tiene un middleware CORS que agrega los headers necesarios para permitir orígenes específicos. Lo configuras con app punto add middleware, pasando la lista de orígenes permitidos, si permites credenciales como cookies, qué métodos HTTP, y qué headers. En desarrollo puedes usar asterisco para permitir todos, pero en producción siempre usa una lista explícita por seguridad. Y recuerda: la combinación de origins igual asterisco con credentials igual true es inválida según el spec CORS y los navegadores la rechazan.",
     "video_prompt": "Video de 80 segundos. Animación de una PWA en localhost:3000 intentando hacer fetch a localhost:8000. El navegador bloquea la petición y muestra error CORS en consola. Luego el servidor agrega CORSMiddleware con allow_origins=['http://localhost:3000']. El navegador hace una petición OPTIONS (preflight), el servidor responde con Access-Control-Allow-Origin: http://localhost:3000, y el navegador permite la petición real. Overlay: 'Orígenes distintos = CORS bloquea. CORSMiddleware = permite orígenes específicos.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - CORS", "MDN Web Docs - CORS", "Web Security (OWASP)"],
-      "conceptos_clave": ["cors", "cross-origin", "middleware", "preflight", "access-control", "seguridad"]
+      "libros_fuente": [
+        "FastAPI documentation - CORS",
+        "MDN Web Docs - CORS",
+        "Web Security (OWASP)"
+      ],
+      "conceptos_clave": [
+        "cors",
+        "cross-origin",
+        "middleware",
+        "preflight",
+        "access-control",
+        "seguridad"
+      ]
     },
-    "tags_rag": ["fastapi", "cors", "middleware", "cross-origin", "seguridad", "pwa"]
+    "tags_rag": [
+      "fastapi",
+      "cors",
+      "middleware",
+      "cross-origin",
+      "seguridad",
+      "pwa"
+    ]
   },
   {
     "id": "M2.1-006",
@@ -251,17 +503,40 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI, Depends, HTTPException\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()\nNOTAS = []",
       "codigo_inicial": "@app.get('/notas')\ndef list_notas():\n    # Lógica de autenticación duplicada y rota\n    auth_header = request.headers.get('Authorization')\n    if not auth_header or not auth_header.startswith('Bearer '):\n        raise HTTPException(status_code=401, detail='No autenticado')\n    token = auth_header.split(' ')[1]\n    if token != 'secret-token':\n        raise HTTPException(status_code=401, detail='Token inválido')\n    \n    return {'notas': NOTAS}",
       "test_code": "from fastapi.security import HTTPBearer\n\nclient = TestClient(app)\n\n# Test 1: sin token debe retornar 401\nresponse = client.get('/notas')\nassert response.status_code == 401, f'Sin token debe retornar 401, obtuve {response.status_code}'\n\n# Test 2: token inválido debe retornar 401\nresponse = client.get('/notas', headers={'Authorization': 'Bearer invalid-token'})\nassert response.status_code == 401, f'Token inválido debe retornar 401, obtuve {response.status_code}'\n\n# Test 3: token válido debe retornar 200\nresponse = client.get('/notas', headers={'Authorization': 'Bearer secret-token'})\nassert response.status_code == 200, f'Token válido debe retornar 200, obtuve {response.status_code}'\nassert 'notas' in response.json()\nassert 'user' in response.json()\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["request.headers"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "request.headers"
+      ],
       "solucion": "from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n\nsecurity = HTTPBearer()\n\ndef get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):\n    token = credentials.credentials\n    if token != 'secret-token':\n        raise HTTPException(status_code=401, detail='Token inválido')\n    return {'user_id': 1, 'username': 'ana'}\n\n@app.get('/notas')\ndef list_notas(user: dict = Depends(get_current_user)):\n    return {'notas': NOTAS, 'user': user}"
     },
     "audio_script": "Las dependencias en FastAPI son funciones que se ejecutan antes del endpoint y pueden inyectar valores en los parámetros de la función. Se declaran con Depends. Los casos de uso principales son conexión a base de datos, autenticación, validación compartida y parámetros comunes. Las dependencias se componen: una dependencia puede depender de otra, como get admin user que primero verifica autenticación con get current user y luego verifica que el rol sea admin. El patrón de base de datos usa yield en vez de return: la dependencia crea la conexión, la yield al endpoint, y en el finally la cierra automáticamente después, incluso si el endpoint lanza una excepción. Esto previene fugas de conexiones. La regla es simple: si tienes lógica duplicada en varios endpoints, extráela a una dependencia.",
     "video_prompt": "Video de 85 segundos. Animación de una petición HTTP llegando a FastAPI. El framework ejecuta las dependencias en orden: get_db() crea la conexión, get_current_user() verifica el token, get_pagination() valida los parámetros. Cada dependencia pasa su resultado al endpoint como argumento. El endpoint ejecuta su lógica usando db, user y pagination. Después del endpoint, el finally de get_db() cierra la conexión. Overlay: 'Dependencias = lógica compartida ejecutada automáticamente antes del endpoint.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - Dependencies", "Dependency Injection (Martin Fowler)", "Clean Architecture (Uncle Bob)"],
-      "conceptos_clave": ["dependencias", "dependency-injection", "depends", "yield", "autenticacion", "db-connection", "composicion"]
+      "libros_fuente": [
+        "FastAPI documentation - Dependencies",
+        "Dependency Injection (Martin Fowler)",
+        "Clean Architecture (Uncle Bob)"
+      ],
+      "conceptos_clave": [
+        "dependencias",
+        "dependency-injection",
+        "depends",
+        "yield",
+        "autenticacion",
+        "db-connection",
+        "composicion"
+      ]
     },
-    "tags_rag": ["fastapi", "dependencias", "depends", "autenticacion", "db", "inyeccion"]
+    "tags_rag": [
+      "fastapi",
+      "dependencias",
+      "depends",
+      "autenticacion",
+      "db",
+      "inyeccion"
+    ]
   },
   {
     "id": "M2.1-007",
@@ -295,17 +570,43 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()",
       "codigo_inicial": "from fastapi.middleware.cors import CORSMiddleware\n\n# Bug 1: CORS inválido\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=['*'],\n    allow_credentials=True,\n    allow_methods=['*'],\n    allow_headers=['*'],\n)\n\nNOTAS = []\n\n# Bug 2: 200 OK con error\n@app.post('/notas')\ndef crear_nota(nota: dict):\n    if not nota.get('texto'):\n        return {'error': 'texto requerido'}\n    NOTAS.append(nota)\n    return {'nota': nota}\n\n# Bug 3: try/except genérico\n@app.get('/notas/{nota_id}')\ndef get_nota(nota_id: int):\n    try:\n        nota = NOTAS[nota_id - 1]\n        return {'nota': nota}\n    except:\n        return {'error': 'nota no encontrada'}",
       "test_code": "from pydantic import BaseModel\n\nclient = TestClient(app)\n\n# Test 1: CORS debe tener lista explícita de orígenes\nresponse = client.options('/notas', headers={'Origin': 'http://localhost:3000'})\nassert 'access-control-allow-origin' in response.headers\nassert response.headers['access-control-allow-origin'] == 'http://localhost:3000', f'CORS incorrecto: {response.headers.get(\"access-control-allow-origin\")}'\n\n# Test 2: POST con datos válidos debe retornar 201 Created\nresponse = client.post('/notas', json={'texto': 'Aprender', 'tag': 'python'})\nassert response.status_code == 201, f'POST exitoso debe retornar 201, obtuve {response.status_code}'\n\n# Test 3: POST sin texto debe retornar 400 o 422 (no 200)\nresponse = client.post('/notas', json={'tag': 'python'})\nassert response.status_code in (400, 422), f'POST sin texto debe retornar 4xx, obtuve {response.status_code}'\n\n# Test 4: GET de nota inexistente debe retornar 404 (no 200)\nresponse = client.get('/notas/999')\nassert response.status_code == 404, f'GET inexistente debe retornar 404, obtuve {response.status_code}'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["allow_origins=['*']", "return {'error':", "except:"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "allow_origins=['*']",
+        "return {'error':",
+        "except:"
+      ],
       "solucion": "from fastapi import HTTPException\nfrom fastapi.middleware.cors import CORSMiddleware\nfrom pydantic import BaseModel, Field\n\n# Fix 1: CORS válido\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=['http://localhost:3000'],\n    allow_credentials=True,\n    allow_methods=['GET', 'POST', 'PUT', 'DELETE'],\n    allow_headers=['*'],\n)\n\nclass NotaCreate(BaseModel):\n    texto: str = Field(..., min_length=1)\n    tag: str = Field(..., min_length=1)\n\nNOTAS = []\n\n# Fix 2: código HTTP correcto\n@app.post('/notas', status_code=201)\ndef crear_nota(nota: NotaCreate):\n    nueva = {'id': len(NOTAS) + 1, **nota.dict()}\n    NOTAS.append(nueva)\n    return nueva\n\n# Fix 3: HTTPException en vez de try/except\n@app.get('/notas/{nota_id}')\ndef get_nota(nota_id: int):\n    for nota in NOTAS:\n        if nota['id'] == nota_id:\n            return nota\n    raise HTTPException(status_code=404, detail='Nota no encontrada')"
     },
     "audio_script": "La inteligencia artificial genera código FastAPI con tres defectos sistemáticos que pasan pruebas unitarias pero fallan en integración real. Primero: CORS con origins igual asterisco más credentials igual true. Esta combinación es inválida según el spec CORS y los navegadores la rechazan. Tu aplicación web no puede consumir la API. La solución es lista explícita de orígenes permitidos. Segundo: endpoints que retornan doscientos OK con error dentro del JSON. Esto rompe la semántica HTTP y confunde a los clientes, que tienen que parsear el JSON para saber si falló. La solución es usar HTTPException con el código correcto: cuatrocientos para error del cliente, cuatrocientos cuatro para no encontrado, cuatrocientos nueve para conflicto. Tercero: try except genérico que captura todo y retorna doscientos con error. Esto oculta bugs de programación y hace que los errores sean invisibles en los logs. La solución es dejar que las excepciones propaguen o usar HTTPException específico. Cuando revises código FastAPI generado por IA, busca estos tres patrones. Si los encuentras, refactoriza antes de desplegar.",
     "video_prompt": "Video de 100 segundos estilo 'autopsia de código'. Pantalla con el código roto. Cursor marca 3 bugs en rojo: (1) CORS con origins=['*'] + credentials=True (alerta: combinación inválida), (2) return {'error': '...'} con status 200 (alerta: rompe semántica HTTP), (3) try/except genérico (alerta: oculta bugs). Cada bug se refactoriza en tiempo real: CORS con lista explícita, HTTPException con códigos correctos, validación con Pydantic. Overlay final: '3 bugs que la IA genera. 3 patrones que debes auditar.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - CORS, Error Handling", "MDN Web Docs - CORS", "OWASP API Security Top 10"],
-      "conceptos_clave": ["codigo-ia", "cors", "http-codes", "error-handling", "auditoria", "pydantic", "httpexception"]
+      "libros_fuente": [
+        "FastAPI documentation - CORS, Error Handling",
+        "MDN Web Docs - CORS",
+        "OWASP API Security Top 10"
+      ],
+      "conceptos_clave": [
+        "codigo-ia",
+        "cors",
+        "http-codes",
+        "error-handling",
+        "auditoria",
+        "pydantic",
+        "httpexception"
+      ]
     },
-    "tags_rag": ["fastapi", "codigo-ia", "cors", "errores", "auditoria", "httpexception", "pydantic"]
+    "tags_rag": [
+      "fastapi",
+      "codigo-ia",
+      "cors",
+      "errores",
+      "auditoria",
+      "httpexception",
+      "pydantic"
+    ]
   },
   {
     "id": "M2.1-008",
@@ -339,17 +640,40 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()\nNOTAS = []",
       "codigo_inicial": "@app.post('/notas')\ndef crear_nota(data):\n    return {'nota': data}",
       "test_code": "from pydantic import BaseModel\nfrom fastapi.testclient import TestClient\n\nclient = TestClient(app)\n\n# Test 1: endpoint debe aceptar NotaCreate y retornar NotaResponse\nresponse = client.post('/notas', json={'texto': 'Aprender', 'tag': 'python'})\nassert response.status_code == 201, f'Esperaba 201, obtuve {response.status_code}'\ndata = response.json()\nassert 'id' in data, 'La respuesta debe incluir id'\nassert 'texto' in data and 'tag' in data\n\n# Test 2: validación de Pydantic (sin texto debe fallar)\nresponse = client.post('/notas', json={'tag': 'python'})\nassert response.status_code == 422, f'Sin texto debe retornar 422, obtuve {response.status_code}'\n\n# Test 3: verificar que la app tiene metadata (título, descripción)\nassert app.title, 'La app debe tener título'\nassert app.description, 'La app debe tener descripción'\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["def crear_nota(data):"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "def crear_nota(data):"
+      ],
       "solucion": "from pydantic import BaseModel, Field\n\nclass NotaCreate(BaseModel):\n    texto: str = Field(..., min_length=1)\n    tag: str = Field(..., min_length=1)\n\nclass NotaResponse(BaseModel):\n    id: int\n    texto: str\n    tag: str\n\napp.title = 'API de Notas'\napp.description = 'API para gestionar notas de aprendizaje'\n\n@app.post('/notas', response_model=NotaResponse, status_code=201)\ndef crear_nota(nota: NotaCreate):\n    \"\"\"Crea una nueva nota con texto y tag.\"\"\"\n    nueva = {'id': len(NOTAS) + 1, **nota.dict()}\n    NOTAS.append(nueva)\n    return nueva"
     },
     "audio_script": "FastAPI genera documentación Swagger automáticamente a partir de los type hints y docstrings. Si tu endpoint no tiene type hints, la documentación muestra parámetros vacíos y los clientes tienen que adivinar qué espera. Si usas modelos Pydantic, la documentación incluye el esquema completo del request body con tipos, validaciones y ejemplos. Los docstrings con formato Markdown aparecen como descripciones ricas. Y response model filtra la respuesta para incluir solo los campos definidos en el modelo de salida. Para testing, TestClient simula peticiones HTTP sin levantar un servidor real, así que los tests son rápidos y verifican que los endpoints retornen los códigos y datos esperados. La documentación interactiva está en slash docs y te permite probar cada endpoint directamente desde el navegador con el botón Try it out.",
     "video_prompt": "Video de 85 segundos. Pantalla dividida: arriba código sin type hints ni docstring, abajo documentación Swagger vacía (parámetros: vacío, request body: vacío). Luego el código se refactoriza agregando modelos Pydantic, docstrings y response_model. La documentación se actualiza en tiempo real mostrando esquemas completos, descripciones y ejemplos. Escena de testing: TestClient ejecutando tests que verifican códigos HTTP y estructura de respuestas. Overlay: 'Type hints + docstrings = documentación rica automática.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - Swagger UI, Testing", "pytest documentation", "OpenAPI Specification"],
-      "conceptos_clave": ["swagger", "documentacion", "testclient", "testing", "pydantic", "response-model", "docstrings"]
+      "libros_fuente": [
+        "FastAPI documentation - Swagger UI, Testing",
+        "pytest documentation",
+        "OpenAPI Specification"
+      ],
+      "conceptos_clave": [
+        "swagger",
+        "documentacion",
+        "testclient",
+        "testing",
+        "pydantic",
+        "response-model",
+        "docstrings"
+      ]
     },
-    "tags_rag": ["fastapi", "swagger", "documentacion", "testclient", "testing", "api"]
+    "tags_rag": [
+      "fastapi",
+      "swagger",
+      "documentacion",
+      "testclient",
+      "testing",
+      "api"
+    ]
   },
   {
     "id": "M2.1-009",
@@ -383,17 +707,44 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient\n\napp = FastAPI()\nNOTAS = []",
       "codigo_inicial": "@app.post('/notas/crear')\ndef crear(data):\n    NOTAS.append(data)\n    return {'status': 'ok'}\n\n@app.post('/notas/obtener')\ndef obtener(data):\n    return {'notas': NOTAS}\n\n@app.post('/notas/actualizar')\ndef actualizar(data):\n    for nota in NOTAS:\n        if nota['id'] == data['id']:\n            nota.update(data)\n    return {'status': 'ok'}\n\n@app.post('/notas/eliminar')\ndef eliminar(data):\n    for i, nota in enumerate(NOTAS):\n        if nota['id'] == data['id']:\n            del NOTAS[i]\n    return {'status': 'ok'}",
       "test_code": "from pydantic import BaseModel\n\nclient = TestClient(app)\n\n# Test 1: CREATE con POST /notas (no /notas/crear)\nresponse = client.post('/notas', json={'texto': 'Aprender', 'tag': 'python'})\nassert response.status_code == 201, f'POST /notas debe retornar 201, obtuve {response.status_code}'\nnota_id = response.json()['id']\n\n# Test 2: READ con GET /notas (no POST /notas/obtener)\nresponse = client.get('/notas')\nassert response.status_code == 200\nassert len(response.json()) >= 1\n\n# Test 3: READ uno con GET /notas/{id}\nresponse = client.get(f'/notas/{nota_id}')\nassert response.status_code == 200\n\n# Test 4: UPDATE con PUT /notas/{id} (no POST /notas/actualizar)\nresponse = client.put(f'/notas/{nota_id}', json={'texto': 'Actualizado'})\nassert response.status_code == 200\n\n# Test 5: DELETE con DELETE /notas/{id} (no POST /notas/eliminar)\nresponse = client.delete(f'/notas/{nota_id}')\nassert response.status_code == 204\n\n# Test 6: validación Pydantic\nresponse = client.post('/notas', json={'tag': 'python'})  # Falta texto\nassert response.status_code == 422\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["/notas/crear", "/notas/obtener", "/notas/actualizar", "/notas/eliminar"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "/notas/crear",
+        "/notas/obtener",
+        "/notas/actualizar",
+        "/notas/eliminar"
+      ],
       "solucion": "from fastapi import HTTPException, status\nfrom pydantic import BaseModel, Field\n\nclass NotaCreate(BaseModel):\n    texto: str = Field(..., min_length=1)\n    tag: str = Field(..., min_length=1)\n\nclass NotaUpdate(BaseModel):\n    texto: str | None = None\n    tag: str | None = None\n\nclass NotaResponse(BaseModel):\n    id: int\n    texto: str\n    tag: str\n\n@app.post('/notas', response_model=NotaResponse, status_code=status.HTTP_201_CREATED)\ndef crear(nota: NotaCreate):\n    nueva = {'id': len(NOTAS) + 1, **nota.dict()}\n    NOTAS.append(nueva)\n    return nueva\n\n@app.get('/notas', response_model=list[NotaResponse])\ndef obtener():\n    return NOTAS\n\n@app.get('/notas/{nota_id}', response_model=NotaResponse)\ndef obtener_uno(nota_id: int):\n    for nota in NOTAS:\n        if nota['id'] == nota_id:\n            return nota\n    raise HTTPException(status_code=404, detail='Nota no encontrada')\n\n@app.put('/notas/{nota_id}', response_model=NotaResponse)\ndef actualizar(nota_id: int, nota_in: NotaUpdate):\n    for nota in NOTAS:\n        if nota['id'] == nota_id:\n            update_data = nota_in.dict(exclude_unset=True)\n            nota.update(update_data)\n            return nota\n    raise HTTPException(status_code=404, detail='Nota no encontrada')\n\n@app.delete('/notas/{nota_id}', status_code=status.HTTP_204_NO_CONTENT)\ndef eliminar(nota_id: int):\n    for i, nota in enumerate(NOTAS):\n        if nota['id'] == nota_id:\n            del NOTAS[i]\n            return\n    raise HTTPException(status_code=404, detail='Nota no encontrada')"
     },
     "audio_script": "Este es el proyecto que integra toda la Fase dos punto uno, y el patrón que debes llevarte es REST puro: cada operación usa el método HTTP semánticamente correcto. POST para crear recursos nuevos, GET para leer, PUT para actualizar, DELETE para eliminar. Las URLs son recursos, no acciones: slash notas, no slash notas crear. Los códigos HTTP comunican el resultado: doscientos uno Created para POST exitoso, doscientos OK para GET y PUT, doscientos cuatro No Content para DELETE exitoso, cuatrocientos cuatro Not Found cuando el recurso no existe. Pydantic valida los datos de entrada y genera documentación Swagger automática. CORS permite que tu aplicación web consuma la API desde otro origen. Y TestClient permite escribir tests rápidos que verifican el comportamiento sin levantar un servidor real. Este es el esqueleto de cualquier API profesional.",
     "video_prompt": "Video de 110 segundos. Animación de las 4 operaciones CRUD. CREATE: POST /notas con body JSON → servidor crea recurso con ID asignado → retorna 201 Created. READ: GET /notas (lista) y GET /notas/1 (uno) → retorna 200 OK con datos. UPDATE: PUT /notas/1 con body JSON → servidor actualiza → retorna 200 OK. DELETE: DELETE /notas/1 → servidor elimina → retorna 204 No Content. Overlay: 'REST puro: recursos + métodos HTTP semánticos.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - Full Example", "REST API Design (Fielding)", "Flask Web Development (adaptado a FastAPI)"],
-      "conceptos_clave": ["microproyecto", "crud", "rest", "api-completa", "pydantic", "cors", "testclient", "integrador"]
+      "libros_fuente": [
+        "FastAPI documentation - Full Example",
+        "REST API Design (Fielding)",
+        "Flask Web Development (adaptado a FastAPI)"
+      ],
+      "conceptos_clave": [
+        "microproyecto",
+        "crud",
+        "rest",
+        "api-completa",
+        "pydantic",
+        "cors",
+        "testclient",
+        "integrador"
+      ]
     },
-    "tags_rag": ["fastapi", "microproyecto", "crud", "rest", "api", "integrador"]
+    "tags_rag": [
+      "fastapi",
+      "microproyecto",
+      "crud",
+      "rest",
+      "api",
+      "integrador"
+    ]
   },
   {
     "id": "M2.1-010",
@@ -427,16 +778,37 @@
       "setup_code": "# Setup: instalar FastAPI y httpx en Pyodide\nimport micropip\nawait micropip.install(['fastapi', 'httpx'])\n\nfrom fastapi import FastAPI\nfrom fastapi.testclient import TestClient",
       "codigo_inicial": "# main.py (todo en un archivo)\napp = FastAPI()\nNOTAS = []\n\n@app.post('/notas')\ndef crear_nota(data):\n    NOTAS.append(data)\n    return data\n\n@app.get('/notas')\ndef listar_notas():\n    return NOTAS",
       "test_code": "# Simular estructura modular\nfrom fastapi import APIRouter\n\n# Crear router de notas\nnotas_router = APIRouter(prefix='/notas', tags=['notas'])\n\nNOTAS = []\n\n@notas_router.post('/')\ndef crear_nota(data):\n    NOTAS.append(data)\n    return data\n\n@notas_router.get('/')\ndef listar_notas():\n    return NOTAS\n\n# Registrar router en la app\napp = FastAPI()\napp.include_router(notas_router)\n\nclient = TestClient(app)\n\n# Test: endpoints deben funcionar a través del router\nresponse = client.post('/notas/', json={'texto': 'Test'})\nassert response.status_code == 200\n\nresponse = client.get('/notas/')\nassert response.status_code == 200\nassert len(response.json()) == 1\n\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "from fastapi import APIRouter\n\n# Crear router de notas\nnotas_router = APIRouter(prefix='/notas', tags=['notas'])\n\nNOTAS = []\n\n@notas_router.post('/')\ndef crear_nota(data):\n    NOTAS.append(data)\n    return data\n\n@notas_router.get('/')\ndef listar_notas():\n    return NOTAS\n\n# Registrar router en la app\napp = FastAPI()\napp.include_router(notas_router)"
     },
     "audio_script": "Uvicorn es el servidor ASGI que ejecuta tu aplicación FastAPI. El comando uvicorn main dos puntos app menos menos reload levanta el servidor en modo desarrollo con recarga automática cuando cambias el código. Para producción, quitas el reload y agregas workers para manejar más peticiones concurrentes. La estructura de proyecto profesional separa la app en módulos: main punto py es el entry point que crea la app y registra routers. Cada router es un archivo con los endpoints de un recurso: slash notas en routers slash notas punto py, slash usuarios en routers slash usuarios punto py. Los modelos Pydantic van en models slash, las dependencias compartidas en dependencies punto py. Esto escala mucho mejor que tener todo en un solo archivo de quinientas líneas. Cuando tengas diez recursos, cada uno en su propio archivo, main punto py será una lista de diez include router y el código será navegable.",
     "video_prompt": "Video de 80 segundos. Animación de estructura de proyecto: árbol de archivos expandiéndose (main.py, routers/, models/, dependencies.py). Cada archivo se abre mostrando su contenido. main.py registra routers con include_router. Escena de Uvicorn: terminal ejecutando 'uvicorn main:app --reload', servidor levantándose en localhost:8000, navegador abriendo /docs con Swagger UI. Overlay: 'Estructura modular + Uvicorn = API profesional.'",
     "trazabilidad": {
-      "libros_fuente": ["FastAPI documentation - Deployment, Project Structure", "Uvicorn documentation", "Clean Architecture (Uncle Bob)"],
-      "conceptos_clave": ["uvicorn", "estructura-proyecto", "routers", "modular", "deploy", "asgi", "reload"]
+      "libros_fuente": [
+        "FastAPI documentation - Deployment, Project Structure",
+        "Uvicorn documentation",
+        "Clean Architecture (Uncle Bob)"
+      ],
+      "conceptos_clave": [
+        "uvicorn",
+        "estructura-proyecto",
+        "routers",
+        "modular",
+        "deploy",
+        "asgi",
+        "reload"
+      ]
     },
-    "tags_rag": ["fastapi", "uvicorn", "estructura", "routers", "deploy", "modular"]
+    "tags_rag": [
+      "fastapi",
+      "uvicorn",
+      "estructura",
+      "routers",
+      "deploy",
+      "modular"
+    ]
   }
 ]

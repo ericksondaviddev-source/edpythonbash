@@ -31,17 +31,39 @@
       "setup_code": "",
       "codigo_inicial": "import sqlite3\n\ndef guardar_nota(ruta, texto):\n    conn = sqlite3.connect(ruta)\n    conn.execute(\"CREATE TABLE IF NOT EXISTS notas (id INTEGER PRIMARY KEY, texto TEXT)\")\n    conn.execute(\"INSERT INTO notas (texto) VALUES (?)\", (texto,))",
       "test_code": "import tempfile, os, sqlite3\nruta = os.path.join(tempfile.mkdtemp(), 'notas.db')\nguardar_nota(ruta, 'Primera nota')\nguardar_nota(ruta, 'Segunda nota')\nconn = sqlite3.connect(ruta)\nfilas = conn.execute('SELECT texto FROM notas ORDER BY id').fetchall()\nconn.close()\nassert len(filas) == 2, f'Los datos se perdieron: hay {len(filas)} filas, esperaba 2 (¿falta commit?)'\nassert filas[0][0] == 'Primera nota'\nassert filas[1][0] == 'Segunda nota'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "import sqlite3\nfrom contextlib import closing\n\ndef guardar_nota(ruta, texto):\n    with closing(sqlite3.connect(ruta)) as conn, conn:\n        conn.execute(\"CREATE TABLE IF NOT EXISTS notas (id INTEGER PRIMARY KEY, texto TEXT)\")\n        conn.execute(\"INSERT INTO notas (texto) VALUES (?)\", (texto,))"
     },
     "audio_script": "SQLite es una base de datos completa que vive en un archivo, sin servidor. Viene en la biblioteca estándar de Python y es la forma más rápida de darle persistencia real a tus scripts y a tu aplicación. Pero hay dos trampas que la inteligencia artificial pisa constantemente. Primera: sin commit, tus datos se evaporan. Cuando insertas una fila, SQLite abre una transacción implícita; si el programa termina sin confirmarla, todo lo escrito se descarta en silencio. El archivo queda con la tabla creada pero vacía, y no ves ningún error. Segunda trampa, más sutil: el bloque with sobre la conexión gestiona la transacción, hace commit o rollback automáticamente, pero NO cierra la conexión. Para cerrarla necesitas contextlib punto closing, o conn punto close explícito. El patrón profesional que te voy a enseñar combina los dos: un context manager propio que abre, activa foreign keys, gestiona la transacción y cierra. Lo escribes una vez y lo reusas en toda la aplicación. Y un multiplicador de rendimiento gratis: executemany con un solo commit es cien veces más rápido que un bucle de inserts con commit por fila.",
     "video_prompt": "Video de 80 segundos. Animación de una transacción SQLite como un carrito de compras: execute() agrega productos al carrito (transacción pendiente), commit() pasa por caja y los productos entran al almacén (archivo). Escena del bug: el script termina sin commit, el carrito se vacía en la puerta y los productos desaparecen — el almacén muestra tabla creada pero 0 filas. Segunda escena: 'with conn' como un cajero automático que sella el carrito (commit) o lo devuelve (rollback) si hay error, pero la puerta del almacén (conexión) sigue abierta hasta que llega contextlib.closing a cerrarla. Overlay: 'with conn = transacción. closing = conexión. Dos recursos distintos.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 10 (persistencia)", "Python docs - sqlite3", "Linux Command Line Bible (concepto de archivos como estado)"],
-      "conceptos_clave": ["sqlite", "conexion", "commit", "transaccion", "closing", "row-factory", "executemany"]
+      "libros_fuente": [
+        "Python Crash Course Cap 10 (persistencia)",
+        "Python docs - sqlite3",
+        "Linux Command Line Bible (concepto de archivos como estado)"
+      ],
+      "conceptos_clave": [
+        "sqlite",
+        "conexion",
+        "commit",
+        "transaccion",
+        "closing",
+        "row-factory",
+        "executemany"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "sql", "commit", "transacciones", "conexion", "persistencia"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "sql",
+      "commit",
+      "transacciones",
+      "conexion",
+      "persistencia"
+    ]
   },
   {
     "id": "M2.2-002",
@@ -50,13 +72,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Migrar la app de notas/tareas de JSON a SQLite conectada a la API FastAPI",
-    "modelo_mental": "SQL injection ocurre cuando los DATOS del usuario se interpretan como CÓDIGO SQL. La causa raíz es construir queries con f-strings o concatenación: el motor no distingue tu estructura del contenido del usuario. La defensa es estructural, no de filtrado: las QUERIES PARAMETRIZADAS (`WHERE nombre = ?` + tupla de valores) envían el código y los datos por canales SEPARADOS — el driver jamás interpreta el valor como SQL. Regla absoluta: el input del usuario NUNCA toca el string SQL. Ni 'sanitizado', ni 'escapado': separado.",
+    "modelo_mental": "**Analogía central:** Imagine una receta de cocina. La instrucción SQL es el texto de la receta, con marcadores de posición como **`?`** que indican “colocar ingrediente aquí”. Los valores reales (nombre de usuario, contraseña) son los ingredientes. Si mezclas los ingredientes directamente en el texto de la receta usando una f-string, el chef (el motor de la base de datos) no puede distinguir entre las instrucciones y los ingredientes, y puede ejecutar accidentalmente el ingrediente como parte de la receta.\n\n**Por qué importa:** Las consultas parametrizadas envían el código SQL y los datos por canales **separados**. El controlador envía la estructura de la consulta primero, luego envía los valores brutos como datos, sin procesarlos como código. Esto elimina la raíz del problema de inyección: la interpretación de los datos del usuario como SQL.\n\n**Errores que previene:** Al mantener el valor del usuario fuera del string SQL, se evitan ataques de inyección (bypass de autenticación, extracción de datos, inyección de sentencias destructivas como **`DROP TABLE`**), y se previene la corrupción accidental de consultas por caracteres especiales que coinciden con la sintaxis SQL.",
     "codigo_roto": "import sqlite3\n\ndef login(conn, usuario, password):\n    query = f\"SELECT * FROM usuarios WHERE nombre = '{usuario}' AND password = '{password}'\"\n    return conn.execute(query).fetchone()",
-    "diagnostico": "Vulnerabilidad crítica verificada en sandbox: con `usuario = \"admin' --\"` y cualquier password, el SQL resultante es `WHERE nombre = 'admin' --' AND password = '...'` — el `--` comenta TODO lo que sigue, la condición de password desaparece y la función retorna la fila de admin. Autenticación completamente bypaseada con 10 caracteres. Este es EL ataque clásico que aparece en cada lista OWASP, y la IA lo genera cuando le pides 'un login rápido con SQLite'. Peor aún: variantes como `'; DROP TABLE usuarios; --` borran datos. Si tu PWA expone una API sobre estos datos, el atacante ni necesita acceso físico.",
+    "diagnostico": "1. **Interpolación directa con f-string:** El código construye la consulta con `f\"SELECT * FROM usuarios WHERE nombre = '{usuario}' ...\"`. Python no lanza un error de sintaxis; simplemente concatena las cadenas, permitiendo que el input del usuario se vuelva parte de la sentecia SQL. Esto permite la inyección porque el motor ejecuta el SQL resultante.\n\n2. **Falta de declaraciones preparadas:** Al no usar `?` y una tupla de parámetros, la consulta nunca se separa en partes de código y datos. Esto significa que un atacante puede cerrar el literal de cadena y agregar comentarios (`--`) para anular el resto de la condición de la contraseña, logrando un bypass de autenticación.\n\n3. **Posibilidad de inyección destructiva:** La misma interpolación permite enviar sentencias completas como `'; DROP TABLE usuarios; --`. SQLite ejecutaría el `DROP`, borrando la tabla. La falta de separación hace que el motor trate la inyección como parte de la sentencia original.",
     "codigo_corregido": "import sqlite3\n\ndef login(conn, usuario, password):\n    # Los ? son placeholders: el driver NUNCA interpreta los valores como SQL\n    return conn.execute(\n        \"SELECT * FROM usuarios WHERE nombre = ? AND password = ?\",\n        (usuario, password)\n    ).fetchone()",
     "codigo_optimizado": "import sqlite3\nimport hashlib\nimport os\n\n# ===== Defensa 1: parametrización SIEMPRE (incluido el LIKE) =====\ndef buscar(conn, termino):\n    # MAL:  f\"... LIKE '%{termino}%'\"          ← inyectable\n    # BIEN: el comodín se construye en Python, el valor viaja parametrizado\n    return conn.execute(\n        \"SELECT * FROM notas WHERE texto LIKE ?\", (f'%{termino}%',)\n    ).fetchall()\n\n# ===== Defensa 2: lo que NO se puede parametrizar =====\n# Nombres de tablas/columnas no aceptan placeholders.\n# Si el usuario elige el campo de ordenamiento, valida contra WHITELIST:\nCOLUMNAS_ORDEN = {'id', 'texto', 'creada'}   # lista blanca explícita\n\ndef listar_ordenado(conn, columna):\n    if columna not in COLUMNAS_ORDEN:\n        raise ValueError(f'Columna no permitida: {columna}')\n    return conn.execute(f\"SELECT * FROM notas ORDER BY {columna}\").fetchall()\n# El f-string aquí es SEGURO: la variable ya pasó la whitelist.\n\n# ===== Defensa 3: passwords jamás en texto plano =====\n# (hash+salt con hashlib de stdlib; en producción real: bcrypt/argon2)\ndef hash_password(password: str, salt: bytes | None = None) -> tuple:\n    if salt is None:\n        salt = os.urandom(16)\n    dk = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100_000)\n    return salt, dk\n\ndef login_seguro(conn, usuario, password):\n    row = conn.execute(\n        \"SELECT salt, hash FROM usuarios WHERE nombre = ?\", (usuario,)\n    ).fetchone()\n    if row is None:\n        return None\n    _, dk = hash_password(password, row['salt'])\n    return dk == row['hash']   # comparación de hashes, nunca del password\n\n# ===== Checklist de auditoría de inyección (30 segundos) =====\n# □ ¿Hay algún f-string, % o + con variables dentro de un SQL?  → BUG\n# □ ¿LIKE construido pegando el término?                         → BUG\n# □ ¿ORDER BY / nombre de tabla dinámico sin whitelist?          → BUG\n# □ ¿Passwords comparados en texto plano?                        → BUG",
     "disenso_experto": "¿Parametrizar basta o hace falta más? Para SQL injection pura, la parametrización correcta es suficiente — es consenso absoluto (OWASP la lista como defensa #1). El debate real está en las capas exteriores: ¿almacenas passwords con PBKDF2 de la stdlib (suficiente para aprender) o bcrypt/argon2 (estándar de producción, requiere dependencia)? ¿Agregas rate limiting al login? La regla: parametrización es obligatoria e innegociable; el hashing fuerte es obligatorio en cuanto hay usuarios reales; todo lo demás escala con el riesgo.",
-    "pregunta_transferencia": "Encuentras este código en producción: `conn.execute(f\"SELECT * FROM logs WHERE fecha > '{fecha_ini}'\")` donde `fecha_ini` viene de un formulario. El autor se defiende: 'valido que la fecha tenga formato YYYY-MM-DD con una regex, así que es seguro'. ¿Tiene razón? ¿Qué principio de defensa en profundidad viola y qué pasa si mañana otro desarrollador reusa su 'función segura' sin la validación?",
+    "pregunta_transferencia": "Encuentras este código en producción: `conn.execute(f\"SELECT * FROM logs WHERE fecha > '{fecha_ini}'\")` donde `fecha_ini` viene de un formulario web. El autor afirma: \"Valido que la fecha tenga formato `YYYY-MM-DD` con una regex, así que es seguro\".\n\n**Pista:** ¿Tiene razón el desarrollador? ¿Qué principio de defensa en profundidad está siendo violado al confiar sólo en la validación? ¿Qué podría pasar mañana si otro desarrollador reutiliza su 'función segura' sin la validación de regex?",
     "quiz": {
       "pregunta": "Con `usuario = \"admin' --\"`, ¿por qué falla el login construido con f-string?",
       "opciones": [
@@ -75,17 +97,81 @@
       "setup_code": "import sqlite3\n\ndef setup_db():\n    conn = sqlite3.connect(':memory:')\n    conn.execute(\"CREATE TABLE usuarios (id INTEGER PRIMARY KEY, nombre TEXT, password TEXT)\")\n    conn.execute(\"INSERT INTO usuarios (nombre, password) VALUES ('admin', 's3cr3t0')\")\n    conn.execute(\"INSERT INTO usuarios (nombre, password) VALUES ('ana', 'python')\")\n    conn.commit()\n    return conn\n\nconn = setup_db()",
       "codigo_inicial": "def login(conn, usuario, password):\n    query = f\"SELECT * FROM usuarios WHERE nombre = '{usuario}' AND password = '{password}'\"\n    return conn.execute(query).fetchone()",
       "test_code": "# Ataque 1: comentario SQL\nassert login(conn, \"admin' --\", 'cualquier_cosa') is None, '¡VULNERABLE! La inyeccion admin\\' -- entro como admin'\n# Ataque 2: OR verdadero\nassert login(conn, \"admin\", \"' OR '1'='1\") is None, '¡VULNERABLE! OR 1=1 bypaseo el password'\n# Credenciales válidas siguen funcionando\nrow = login(conn, 'ana', 'python')\nassert row is not None and row[1] == 'ana', 'las credenciales validas deben funcionar'\n# Credenciales inválidas\nassert login(conn, 'ana', 'clave_mala') is None\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["f\"SELECT", "f'SELECT", "' + ", "% ("],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "f\"SELECT",
+        "f'SELECT",
+        "' + ",
+        "% ("
+      ],
       "solucion": "def login(conn, usuario, password):\n    return conn.execute(\n        \"SELECT * FROM usuarios WHERE nombre = ? AND password = ?\",\n        (usuario, password)\n    ).fetchone()"
     },
     "audio_script": "SQL injection es el ataque más viejo y más vigente del mundo web, y funciona por una sola razón: cuando construyes queries pegando strings, el motor de base de datos no puede distinguir tu código de los datos del usuario. Imagina el ataque clásico contra un login. El atacante escribe como nombre de usuario: admin, apóstrofo, espacio, dos guiones. Con tu f-string, el SQL resultante queda: where nombre igual admin apóstrofo — y los dos guiones convierten todo el resto de la línea en un comentario, incluyendo la verificación de password. El atacante entra como administrador sin saber la clave. Con queries parametrizadas, el signo de interrogación es un agujero por donde el valor cae directamente al motor como DATO puro: nunca se interpreta como código. El apóstrofo pierde su poder mágico. La regla es absoluta y no tiene excepciones: el input del usuario jamás toca el string SQL. No lo sanitices, no lo escapes: sepáralo. Y ojo con el único lugar donde los placeholders no funcionan: nombres de tablas y columnas. Ahí la defensa es una lista blanca explícita en tu código.",
     "video_prompt": "Video de 90 segundos estilo hacker ético. Terminal mostrando un login. El atacante teclea \"admin' --\" y la cámara sigue el string hacia el constructor f-string: los caracteres se ENSAMBLAN en la sentencia SQL, el apóstrofo cierra la comilla, los guiones pintan de gris todo lo siguiente (comentario) y la condición de password se desvanece. Puerta verde: ACCESO CONCEDIDO. Rewind. Segunda toma con query parametrizada: el string malicioso viaja por un TUBO SELLADO separado del código SQL, llega al motor como dato inofensivo, la búsqueda no encuentra ningún usuario llamado literalmente \"admin' --\" y retorna None. Puerta roja: ACCESO DENEGADO. Overlay: 'Código y datos: canales separados. Siempre.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 10", "OWASP Top 10 - Injection", "Fluent Python (interpolación segura)"],
-      "conceptos_clave": ["sql-injection", "queries-parametrizadas", "seguridad", "owasp", "whitelist", "password-hashing"]
+      "libros_fuente": [
+        "Python Crash Course Cap 10",
+        "OWASP Top 10 - Injection",
+        "Fluent Python (interpolación segura)"
+      ],
+      "conceptos_clave": [
+        "sql-injection",
+        "queries-parametrizadas",
+        "seguridad",
+        "owasp",
+        "whitelist",
+        "password-hashing"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "sql-injection", "seguridad", "parametrizacion", "owasp"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "sql-injection",
+      "seguridad",
+      "parametrizacion",
+      "owasp"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Por qué las consultas parametrizadas protegen contra la inyección de SQL?",
+        "opciones": [
+          "Separan el código SQL del dato del usuario, enviándolos por canales diferentes.",
+          "Escapan automáticamente todos los caracteres especiales en los valores.",
+          "Cifran el input del usuario antes de incluirlo en la consulta.",
+          "Validan la longitud y el formato del input del usuario."
+        ],
+        "correcta": "A",
+        "explicacion": "Las consultas parametrizadas envían la estructura SQL y los valores brutos por canales separados; el controlador nunca interpreta el valor como SQL, eliminando la causa principal de la inyección. Las otras opciones describen mecanismos que no son la defensa principal (escapado, cifrado, validación) y no prevendrían una inyección bien formada.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente login con interpolación f-string, qué ocurre cuando `usuario = \"admin' --\"` y cualquier contraseña?",
+        "opciones": [
+          "Devuelve `None` porque la contraseña no coincide.",
+          "Devuelve la fila del administrador, bypassando la contraseña.",
+          "Lanza un error de sintaxis en SQLite.",
+          "Devuelve todas las filas de la tabla `usuarios`."
+        ],
+        "correcta": "B",
+        "explicacion": "El SQL generado se convierte en `SELECT * FROM usuarios WHERE nombre = 'admin' --' AND password = '...'`, comentando la condición de la contraseña. SQLite ejecuta la consulta y devuelve la fila del administrador, permitiendo el acceso sin conocer la contraseña.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es el error en este fragmento que intenta usar consultas seguras?",
+        "opciones": [
+          "Usar `?` como marcador de posición.",
+          "Usar `.format()` en su lugar de una f-string.",
+          "Usar una f-string en lugar de un marcador de posición, lo que reintroduce la inyección.",
+          "Llamar a `execute` en lugar de `executemany`."
+        ],
+        "correcta": "C",
+        "explicacion": "El código sigue usando una f-string para incrustar directamente el input del usuario, lo que anula cualquier beneficio de seguridad que deberían proporcionar los placeholders. La corrección es reemplazar la interpolación con `?` y pasar el valor como un parámetro separado.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M2.2-003",
@@ -119,17 +205,39 @@
       "setup_code": "import sqlite3\n\nconn = sqlite3.connect(':memory:')",
       "codigo_inicial": "def crear_esquema(conn):\n    conn.executescript(\"\"\"\n    CREATE TABLE IF NOT EXISTS usuarios (\n        id INTEGER PRIMARY KEY,\n        nombre TEXT\n    );\n    CREATE TABLE IF NOT EXISTS notas (\n        id INTEGER PRIMARY KEY,\n        texto TEXT,\n        usuario_id INTEGER REFERENCES usuarios(id)\n    );\n    \"\"\")",
       "test_code": "crear_esquema(conn)\nconn.execute(\"INSERT INTO usuarios (nombre) VALUES ('ana')\")\n# Huérfano DEBE fallar con FK activadas\ntry:\n    conn.execute(\"INSERT INTO notas (texto, usuario_id) VALUES ('huerfana', 999)\")\n    assert False, 'La nota huerfana entro sin error: faltan PRAGMA foreign_keys = ON'\nexcept sqlite3.IntegrityError:\n    pass\n# Nota válida DEBE funcionar\nconn.execute(\"INSERT INTO notas (texto, usuario_id) VALUES ('nota real', 1)\")\nn = conn.execute(\"SELECT COUNT(*) FROM notas\").fetchone()[0]\nassert n == 1, f'esperaba 1 nota valida, hay {n}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def crear_esquema(conn):\n    conn.execute(\"PRAGMA foreign_keys = ON\")\n    conn.executescript(\"\"\"\n    CREATE TABLE IF NOT EXISTS usuarios (\n        id INTEGER PRIMARY KEY,\n        nombre TEXT NOT NULL\n    );\n    CREATE TABLE IF NOT EXISTS notas (\n        id INTEGER PRIMARY KEY,\n        texto TEXT NOT NULL,\n        usuario_id INTEGER NOT NULL REFERENCES usuarios(id)\n    );\n    \"\"\")"
     },
     "audio_script": "El esquema de tu base de datos es un contrato, y SQLite tiene una trampa exclusiva que debes tatuarte: las foreign keys vienen desactivadas por defecto en cada conexión nueva. Puedes escribir references usuarios paréntesis id en tu create table, y SQLite lo guarda… pero no lo aplica. Verificado: una nota apuntando al usuario noventa y nueve que no existe entra sin ningún error. Para activar la integridad necesitas pragma foreign keys igual on, y como es por conexión, debe vivir en tu función central de conectar, no dispersa por el código. Segundo concepto: SQLite no tiene tipos estrictos, tiene afinidades — puedes guardar un string en una columna integer sin que se queje. La integridad real viene de not null, de unique, y de check: restricciones que la base aplica pase lo que pase. Tercero: integer primary key ya es auto-numérico, no necesitas autoincrement. Y cuarto: los booleanos no existen; usa integer con check cero o uno. Cuando diseñes tu esquema, pregúntate: si un script desconocido insertara basura directa en esta tabla, ¿qué reglas la detendrían? Esas reglas deben ser constraints, no validaciones que viven solo en tu aplicación.",
     "video_prompt": "Video de 85 segundos. Un plano de base de datos como edificio: tabla usuarios y tabla notas conectadas por un puente (REFERENCES). Animación del bug: el puente está DIBUJADO pero es un holograma — una nota huérfana lo atraviesa y cae al vacío sin que suene ninguna alarma (PRAGMA off). Llega 'PRAGMA foreign_keys = ON' como un interruptor general y el holograma se materializa: la siguiente huérfana rebota con IntegrityError. Segunda escena: columna INTEGER aceptando un string colándose disfrazado (type affinity) mientras un guardia CHECK (completada IN (0,1)) lo detiene. Overlay: 'REFERENCES sin PRAGMA = decoración. La integridad vive en constraints.'",
     "trazabilidad": {
-      "libros_fuente": ["SQLite docs - Foreign Keys", "Python docs - sqlite3", "Classic Computer Science Problems (modelado de datos)"],
-      "conceptos_clave": ["esquema", "foreign-keys", "pragma", "constraints", "check", "type-affinity", "integridad"]
+      "libros_fuente": [
+        "SQLite docs - Foreign Keys",
+        "Python docs - sqlite3",
+        "Classic Computer Science Problems (modelado de datos)"
+      ],
+      "conceptos_clave": [
+        "esquema",
+        "foreign-keys",
+        "pragma",
+        "constraints",
+        "check",
+        "type-affinity",
+        "integridad"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "esquema", "foreign-keys", "pragma", "constraints", "integridad"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "esquema",
+      "foreign-keys",
+      "pragma",
+      "constraints",
+      "integridad"
+    ]
   },
   {
     "id": "M2.2-004",
@@ -163,17 +271,39 @@
       "setup_code": "import sqlite3\n\nconn = sqlite3.connect(':memory:')\nconn.executescript(\"\"\"\nCREATE TABLE autores (id INTEGER PRIMARY KEY, nombre TEXT);\nCREATE TABLE libros (id INTEGER PRIMARY KEY, titulo TEXT, autor_id INTEGER);\n\"\"\")\nconn.executemany(\"INSERT INTO autores (nombre) VALUES (?)\", [('Ana',), ('Bob',), ('Carla',), ('Dan',), ('Eve',)])\nconn.executemany(\"INSERT INTO libros (titulo, autor_id) VALUES (?, ?)\", [(f'Libro {i}', (i % 5) + 1) for i in range(20)])\nconn.commit()",
       "codigo_inicial": "def listar_libros(conn):\n    libros = conn.execute(\"SELECT id, titulo, autor_id FROM libros\").fetchall()\n    resultado = []\n    for libro in libros:\n        autor = conn.execute(\"SELECT nombre FROM autores WHERE id = ?\", (libro[2],)).fetchone()\n        resultado.append((libro[1], autor[0]))\n    return resultado",
       "test_code": "queries = []\nconn.set_trace_callback(queries.append)\nresultado = listar_libros(conn)\nconn.set_trace_callback(None)\nassert len(resultado) == 20, f'esperaba 20 libros, obtuve {len(resultado)}'\nassert ('Libro 0', 'Ana') in [tuple(r) for r in resultado], 'datos incorrectos'\nassert len(queries) <= 2, f'N+1 detectado: ejecutaste {len(queries)} queries para 20 libros. Un JOIN lo resuelve en 1.'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def listar_libros(conn):\n    filas = conn.execute(\"\"\"\n        SELECT l.titulo, a.nombre\n        FROM libros l\n        JOIN autores a ON l.autor_id = a.id\n        ORDER BY l.id\n    \"\"\").fetchall()\n    return [tuple(f) for f in filas]"
     },
     "audio_script": "N más uno es el bug de rendimiento más común en todo el desarrollo con bases de datos, y es invisible si no sabes buscarlo. El patrón es este: una query trae cien registros, y luego un bucle hace una query adicional por cada registro. Ciento una idas y vueltas al motor donde bastaba una. Lo medimos en el laboratorio: veinte libros con su autor, versión con bucle, veintiún queries. Versión con JOIN, una sola query, resultados idénticos, veinte veces más rápido. El JOIN es la operación central del modelo relacional: combina dos tablas usando la clave que las relaciona. INNER JOIN devuelve solo las filas con coincidencia en ambas tablas. LEFT JOIN devuelve todas las de la izquierda, con nulos donde no hay pareja — perfecto para listar usuarios aunque no tengan notas todavía. Y te voy a dar la herramienta de diagnóstico que usamos: set trace callback en la conexión de sqlite3 registra cada query que se ejecuta. Corre tu función con el contador puesto. Si el número de queries crece con el tamaño de tus datos, tienes N más uno. Este mismo bug vive en los ORMs modernos con otro nombre: lazy loading.",
     "video_prompt": "Video de 90 segundos. Biblioteca con 20 libros. Escena N+1: un bibliotecario va 21 veces al catálogo central (mostrar contador de viajes: 1, 2, 3... 21), cada viaje con su paperwork (parse, plan, lock). Escena JOIN: el bibliotecario pide UNA sola vez 'libros con sus autores' y el catálogo combina las dos tablas internamente (animación de filas emparejándose por autor_id) y entrega una sola carpeta. Contador: 1 viaje. Tercera escena: herramienta de diagnóstico set_trace_callback como una cinta registradora que anota cada query — la cinta del código roto mide 21 marcas, la del JOIN mide 1. Overlay: 'Si las queries crecen con tus datos, es N+1.'",
     "trazabilidad": {
-      "libros_fuente": ["Classic Computer Science Problems Cap 2 (búsqueda)", "Python docs - sqlite3", "SQLAlchemy docs - selectinload (N+1 en ORM)"],
-      "conceptos_clave": ["join", "inner-join", "left-join", "n+1", "trace-callback", "agregacion", "group-by"]
+      "libros_fuente": [
+        "Classic Computer Science Problems Cap 2 (búsqueda)",
+        "Python docs - sqlite3",
+        "SQLAlchemy docs - selectinload (N+1 en ORM)"
+      ],
+      "conceptos_clave": [
+        "join",
+        "inner-join",
+        "left-join",
+        "n+1",
+        "trace-callback",
+        "agregacion",
+        "group-by"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "join", "n+1", "sql", "performance", "queries"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "join",
+      "n+1",
+      "sql",
+      "performance",
+      "queries"
+    ]
   },
   {
     "id": "M2.2-005",
@@ -207,17 +337,38 @@
       "setup_code": "import sqlite3\n\nconn = sqlite3.connect(':memory:')\nconn.execute(\"CREATE TABLE usuarios (id INTEGER PRIMARY KEY, nombre TEXT, email TEXT)\")\nconn.executemany(\n    \"INSERT INTO usuarios (nombre, email) VALUES (?, ?)\",\n    [(f'user{i}', f'user{i}@mail.com') for i in range(30000)]\n)\nconn.commit()",
       "codigo_inicial": "def asegurar_indices(conn):\n    pass  # sin índices: cada búsqueda escanea 30,000 filas\n\ndef buscar_por_email(conn, email):\n    return conn.execute(\"SELECT * FROM usuarios WHERE email = ?\", (email,)).fetchone()",
       "test_code": "asegurar_indices(conn)\nplan = conn.execute(\"EXPLAIN QUERY PLAN SELECT * FROM usuarios WHERE email = 'user29999@mail.com'\").fetchall()\nplan_str = ' '.join(str(f[-1]) for f in plan)\nassert 'USING INDEX' in plan_str or 'USING COVERING INDEX' in plan_str, f'Sigue haciendo SCAN (sin indice): {plan_str}'\nfila = buscar_por_email(conn, 'user29999@mail.com')\nassert fila is not None and fila[1] == 'user29999', 'la busqueda debe seguir funcionando'\nimport time\nt0 = time.perf_counter()\nfor i in range(200):\n    buscar_por_email(conn, f'user{i}@mail.com')\ndt = time.perf_counter() - t0\nassert dt < 0.5, f'200 busquedas tardaron {dt:.2f}s: el indice no esta siendo usado'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def asegurar_indices(conn):\n    conn.execute(\"CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email)\")\n\ndef buscar_por_email(conn, email):\n    return conn.execute(\"SELECT * FROM usuarios WHERE email = ?\", (email,)).fetchone()"
     },
     "audio_script": "Un índice es una copia ordenada de una columna, guardada como un árbol B, que permite buscar sin leer toda la tabla. La diferencia es brutal y la medimos: treinta mil usuarios, doscientas búsquedas por email. Sin índice: cero punto dos ocho segundos, porque cada búsqueda lee las treinta mil filas. Con índice: cero punto cero cero uno cuatro segundos. Ciento noventa y cinco veces más rápido. Pero los índices no son gratis: cada inserción y cada actualización tiene que mantener todos los índices de la tabla. Indexar todo es tan malo como no indexar nada. Las reglas son simples. Indexa las columnas de tus WHERE frecuentes, las claves foráneas de tus JOIN, y las columnas de tus ORDER BY. No indexes tablas diminutas, columnas booleanas solas, ni tablas que solo se escriben y casi nunca se leen. Y la herramienta que cambia todo: EXPLAIN QUERY PLAN. Pónselo delante de cualquier SELECT y SQLite te confiesa su estrategia. Si dice SCAN TABLE, va a leer todo. Si dice SEARCH USING INDEX, el árbol está trabajando. Auditar índices no es medir velocidad: es leer esos planes de ejecución.",
     "video_prompt": "Video de 85 segundos. Biblioteca de 30,000 libros sin catalogar: el bibliotecario recorre estantería por estantería buscando un email (SCAN TABLE, contador de libros revisados subiendo a 30,000). Llega CREATE INDEX: robots construyen un fichero alfabético paralelo (el B-tree) — animación de la búsqueda binaria saltando directo: 30,000 → 15 saltos → encontrado (SEARCH USING INDEX). Contraparte: cada vez que entra un libro nuevo, un robot debe actualizar el fichero (costo de escritura). Escena EXPLAIN QUERY PLAN: una lupa sobre la query que revela la estrategia del motor en texto. Cronómetros finales: 0.28s vs 0.0014s. Overlay: 'Indexa el WHERE, el JOIN y el ORDER BY. Verifica con EXPLAIN.'",
     "trazabilidad": {
-      "libros_fuente": ["Classic Computer Science Problems Cap 1-2 (búsqueda binaria, complejidad)", "SQLite docs - Query Planning", "Effective Python Item 33"],
-      "conceptos_clave": ["indices", "b-tree", "explain-query-plan", "scan-vs-search", "indice-compuesto", "performance"]
+      "libros_fuente": [
+        "Classic Computer Science Problems Cap 1-2 (búsqueda binaria, complejidad)",
+        "SQLite docs - Query Planning",
+        "Effective Python Item 33"
+      ],
+      "conceptos_clave": [
+        "indices",
+        "b-tree",
+        "explain-query-plan",
+        "scan-vs-search",
+        "indice-compuesto",
+        "performance"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "indices", "performance", "explain", "b-tree", "big-o"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "indices",
+      "performance",
+      "explain",
+      "b-tree",
+      "big-o"
+    ]
   },
   {
     "id": "M2.2-006",
@@ -251,17 +402,39 @@
       "setup_code": "import sqlite3\n\nconn = sqlite3.connect(':memory:')\nconn.executescript(\"\"\"\nCREATE TABLE cuentas (id INTEGER PRIMARY KEY, saldo INTEGER NOT NULL CHECK (saldo >= 0));\nCREATE TABLE historial (id INTEGER PRIMARY KEY, detalle TEXT NOT NULL);\nINSERT INTO cuentas VALUES (1, 100);\nINSERT INTO cuentas VALUES (2, 50);\n\"\"\")",
       "codigo_inicial": "def transferir(conn, origen, destino, monto, detalle):\n    conn.execute(\"UPDATE cuentas SET saldo = saldo - ? WHERE id = ?\", (monto, origen))\n    conn.commit()\n    conn.execute(\"INSERT INTO historial (detalle) VALUES (?)\", (detalle,))\n    conn.execute(\"UPDATE cuentas SET saldo = saldo + ? WHERE id = ?\", (monto, destino))\n    conn.commit()",
       "test_code": "# Transferencia con detalle=None → el INSERT viola NOT NULL a mitad\nlanzo = False\ntry:\n    transferir(conn, 1, 2, 30, None)\nexcept sqlite3.IntegrityError:\n    lanzo = True\nassert lanzo, 'la operacion debe fallar con IntegrityError (NOT NULL)'\ns1 = conn.execute('SELECT saldo FROM cuentas WHERE id=1').fetchone()[0]\ns2 = conn.execute('SELECT saldo FROM cuentas WHERE id=2').fetchone()[0]\nassert (s1, s2) == (100, 50), f'ATOMICIDAD ROTA: saldos quedaron {s1}/{s2}, debian quedar 100/50 (el debito quedo commiteado a mitad)'\n# Transferencia válida funciona completa\ntransferir(conn, 1, 2, 30, 'pago ok')\ns1 = conn.execute('SELECT saldo FROM cuentas WHERE id=1').fetchone()[0]\ns2 = conn.execute('SELECT saldo FROM cuentas WHERE id=2').fetchone()[0]\nassert (s1, s2) == (70, 80), f'transferencia valida fallo: {s1}/{s2}'\nh = conn.execute('SELECT COUNT(*) FROM historial').fetchone()[0]\nassert h == 1, f'historial debe tener 1 registro, tiene {h}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def transferir(conn, origen, destino, monto, detalle):\n    with conn:\n        conn.execute(\"UPDATE cuentas SET saldo = saldo - ? WHERE id = ?\", (monto, origen))\n        conn.execute(\"INSERT INTO historial (detalle) VALUES (?)\", (detalle,))\n        conn.execute(\"UPDATE cuentas SET saldo = saldo + ? WHERE id = ?\", (monto, destino))"
     },
     "audio_script": "Una transacción es una promesa de todo o nada, y es el concepto más importante que vas a aprender de bases de datos. Mira el desastre que medimos en el laboratorio: una transferencia de treinta unidades entre dos cuentas. El código descuenta de la cuenta uno, hace commit — y ahí está el pecado — luego intenta registrar el movimiento en el historial. El registro falla por un campo obligatorio vacío. La excepción sube, el programa termina, y el estado final es: cuenta uno setenta, cuenta dos cincuenta. Treinta unidades desaparecieron del sistema. Para siempre. Porque el commit prematuro convirtió una operación de tres pasos en un paso irreversible más dos pasos opcionales. La solución cabe en una palabra: with conn. El context manager abre la transacción, y al salir hace commit si todo terminó limpio, o rollback si cualquier excepción escapó. Los tres pasos se aplican, o ninguno. Verificado: con el fallo a mitad, los saldos quedan cien y cincuenta, intactos. La regla de oro: la unidad de negocio define la transacción, no cada sentencia SQL individual. Si tu operación de negocio es debitar, registrar y acreditar, eso es UNA transacción.",
     "video_prompt": "Video de 95 segundos. Una balanza con dos cuentas (100 y 50). Animación del commit prematuro: la mano del débito mueve 30 monedas fuera de la cuenta 1 y las deja en una mesa intermedia (commit = sellado con cera). Llega el error del historial (rayo rojo sobre el INSERT), el programa muere, y las 30 monedas de la mesa se desvanecen — la balanza queda 70/50, desbalanceada y humeante. Letrero: 'DINERO DESTRUIDO. Estado permanente.' Rewind. Segunda toma con 'with conn:' como una campana de cristal que cubre las TRES operaciones juntas: el rayo rojo golpea la campana, todo dentro se revierte en tiempo reverso (las monedas vuelven), balanza 100/50 intacta. Overlay: 'La unidad de negocio define la transacción.'",
     "trazabilidad": {
-      "libros_fuente": ["Classic Computer Science Problems (atomicidad)", "SQLite docs - ACID/Transaction", "Python docs - sqlite3 transaction control"],
-      "conceptos_clave": ["transacciones", "atomicidad", "rollback", "commit-prematuro", "savepoints", "wal", "acid"]
+      "libros_fuente": [
+        "Classic Computer Science Problems (atomicidad)",
+        "SQLite docs - ACID/Transaction",
+        "Python docs - sqlite3 transaction control"
+      ],
+      "conceptos_clave": [
+        "transacciones",
+        "atomicidad",
+        "rollback",
+        "commit-prematuro",
+        "savepoints",
+        "wal",
+        "acid"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "transacciones", "atomicidad", "rollback", "commit", "acid"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "transacciones",
+      "atomicidad",
+      "rollback",
+      "commit",
+      "acid"
+    ]
   },
   {
     "id": "M2.2-007",
@@ -295,17 +468,44 @@
       "setup_code": "import micropip\nawait micropip.install('sqlalchemy')\n\nimport sqlite3, tempfile, os\n_d = tempfile.mkdtemp()\nRUTA = os.path.join(_d, 'notas.db')\n_conn = sqlite3.connect(RUTA)\n_conn.execute(\"CREATE TABLE notas (id INTEGER PRIMARY KEY, texto TEXT, tag TEXT)\")\n_conn.executemany(\"INSERT INTO notas (texto, tag) VALUES (?, ?)\", [('Aprender ORM', 'python'), ('JOINs', 'sql'), ('Sessions', 'python')])\n_conn.commit(); _conn.close()",
       "codigo_inicial": "from sqlalchemy import create_engine, text\nfrom sqlalchemy.orm import sessionmaker\n\ndef buscar_por_tag(ruta_db, tag):\n    engine = create_engine(f'sqlite:///{ruta_db}')\n    Session = sessionmaker(engine)\n    session = Session()\n    rows = session.execute(text(f\"SELECT * FROM notas WHERE tag = '{tag}'\")).fetchall()\n    return [dict(r._mapping) for r in rows]",
       "test_code": "# Inyección debe retornar vacío\ninyectado = buscar_por_tag(RUTA, \"python' OR '1'='1\")\nassert inyectado == [], f'¡VULNERABLE! La inyeccion retorno {len(inyectado)} filas (toda la tabla)'\n# Búsqueda legítima funciona\nr = buscar_por_tag(RUTA, 'python')\nassert len(r) == 2, f'esperaba 2 notas python, obtuve {len(r)}'\nassert all(nota['tag'] == 'python' for nota in r)\n# Tag inexistente\nassert buscar_por_tag(RUTA, 'rust') == []\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["f\"SELECT", "f'SELECT", "text(f\""],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "f\"SELECT",
+        "f'SELECT",
+        "text(f\""
+      ],
       "solucion": "from sqlalchemy import create_engine, text\nfrom sqlalchemy.orm import Session\n\ndef buscar_por_tag(ruta_db, tag):\n    engine = create_engine(f'sqlite:///{ruta_db}')\n    with Session(engine) as session:\n        rows = session.execute(\n            text(\"SELECT * FROM notas WHERE tag = :tag\"), {\"tag\": tag}\n        ).fetchall()\n        return [dict(r._mapping) for r in rows]"
     },
     "audio_script": "Un ORM traduce objetos Python a tablas SQL, y SQLAlchemy es el estándar de la industria — además viene precompilado para Pyodide, así que funciona en tu PWA sin conexión. Las tres piezas que necesitas: create engine, que gestionas una sola vez por aplicación y administra el pool de conexiones; Session, que es tu unidad de trabajo y debe vivir en un bloque with para cerrarse siempre; y los modelos declarativos, clases cuyos atributos son columnas. Pero aquí viene la lección que justifica este chunk: el ORM NO te protege mágicamente de SQL injection. Si tomas la función text y le metes un f-string con datos del usuario, la interpolación ocurre antes de que SQLAlchemy vea nada — el SQL ya llega contaminado al motor. Lo medimos: la inyección retorna la tabla completa. La protección real son los bind parameters: dos puntos tag más un diccionario. Segunda trampa: el lazy loading. Cuando accedes a punto usuario de cada nota dentro de un bucle, SQLAlchemy dispara una query por objeto — es N más uno disfrazado. La cura es selectinload, que carga todas las relaciones en dos queries. El ORM es poderosísimo, pero solo si entiendes qué hace por debajo. Por eso aprendiste sqlite3 crudo primero.",
     "video_prompt": "Video de 90 segundos. Una clase Python (Nota) y una tabla SQL como espejos conectados por el traductor SQLAlchemy: session.add(nota) se transforma en INSERT, select(Nota).where(...) en SELECT parametrizado. Escena de la trampa: un desarrollador escribe text(f\"...'{tag}'\") y la cámara muestra la f-string ensamblándose ANTES de llegar al traductor — el ORM recibe SQL ya contaminado y lo deja pasar; inyección exitosa en rojo. Versión correcta: ':tag' + diccionario viajando por tubos separados. Escena lazy loading: bucle sobre 20 notas, cada .usuario dispara una query (contador 1...21) vs selectinload cargando todos los autores de un viaje (contador: 2). Overlay: 'El ORM protege SUS canales, no los tuyos.'",
     "trazabilidad": {
-      "libros_fuente": ["SQLAlchemy 2.0 docs", "FastAPI docs - SQL Databases", "Fluent Python Cap 24 (ORM concepts)"],
-      "conceptos_clave": ["sqlalchemy", "orm", "session", "engine", "text-bind-params", "selectinload", "lazy-loading", "declarative"]
+      "libros_fuente": [
+        "SQLAlchemy 2.0 docs",
+        "FastAPI docs - SQL Databases",
+        "Fluent Python Cap 24 (ORM concepts)"
+      ],
+      "conceptos_clave": [
+        "sqlalchemy",
+        "orm",
+        "session",
+        "engine",
+        "text-bind-params",
+        "selectinload",
+        "lazy-loading",
+        "declarative"
+      ]
     },
-    "tags_rag": ["python", "sqlalchemy", "orm", "session", "fastapi", "sqlite", "sql"]
+    "tags_rag": [
+      "python",
+      "sqlalchemy",
+      "orm",
+      "session",
+      "fastapi",
+      "sqlite",
+      "sql"
+    ]
   },
   {
     "id": "M2.2-008",
@@ -339,17 +539,38 @@
       "setup_code": "import sqlite3\n\nconn = sqlite3.connect(':memory:')\nconn.execute(\"CREATE TABLE usuarios (id INTEGER PRIMARY KEY, nombre TEXT)\")\nconn.execute(\"INSERT INTO usuarios (nombre) VALUES ('ana')\")\nconn.commit()",
       "codigo_inicial": "def migrar(conn):\n    conn.execute(\"ALTER TABLE usuarios ADD COLUMN email TEXT\")\n    conn.commit()",
       "test_code": "migrar(conn)   # primera ejecución\nmigrar(conn)   # segunda: aquí crashea la versión rota (duplicate column name)\nmigrar(conn)   # tercera: una migración idempotente sobrevive a todas\ncolumnas = [row[1] for row in conn.execute(\"PRAGMA table_info(usuarios)\")]\nassert columnas.count('email') == 1, f'la columna email debe existir exactamente una vez: {columnas}'\n# Los datos preexistentes deben sobrevivir\nn = conn.execute(\"SELECT COUNT(*) FROM usuarios WHERE nombre = 'ana'\").fetchone()[0]\nassert n == 1, 'la migracion perdio datos'\nprint('OK')",
-      "asserts_stdout": ["OK"],
+      "asserts_stdout": [
+        "OK"
+      ],
       "asserts_forbidden": [],
       "solucion": "def migrar(conn):\n    columnas = {row[1] for row in conn.execute(\"PRAGMA table_info(usuarios)\")}\n    if 'email' not in columnas:\n        conn.execute(\"ALTER TABLE usuarios ADD COLUMN email TEXT\")\n        conn.commit()"
     },
     "audio_script": "Tu aplicación va a evolucionar, y el esquema de la base de datos con ella. Una migración es exactamente eso: código que lleva el esquema de una versión a la siguiente, y tiene dos propiedades innegociables. Idempotencia: si corre dos veces, la segunda no debe romper nada. Lo medimos: un alter table add column ciego funciona la primera vez y crashea la segunda con duplicate column name — y las migraciones se re-ejecutan todo el tiempo: al reiniciar la app, al abrir dos pestañas, al desplegar. Preservación de datos: el esquema cambia, los datos del usuario sobreviven. Las herramientas que SQLite te da: pragma table info te lista las columnas actuales, así puedes verificar antes de alterar. Y pragma user version es un número entero que vive dentro de la propia base de datos — perfecto para registrar hasta qué migración llegaste y aplicar solo las pendientes, en orden y cada una en su transacción. Y cuando el cambio no cabe en un alter — SQLite viejo ni siquiera puede borrar columnas, lo verificamos — existe el patrón oficial de reconstrucción: creas la tabla nueva, copias los datos con un insert select explícito, borras la vieja y renombras. Todo dentro de una transacción, con backup previo. Regla de oro final: las migraciones aplicadas nunca se editan; se agrega la versión siguiente.",
     "video_prompt": "Video de 90 segundos. Un edificio (esquema v1) que necesita un piso nuevo (columna email). Primera grúa (ALTER ciego) construye el piso perfectamente. Llega una SEGUNDA grúa e intenta construir el mismo piso otra vez: choca con el existente y todo vibra (OperationalError: duplicate column). Rewind: la grúa ahora tiene un inspector (PRAGMA table_info) que sube, mira el edificio, ve que el piso ya existe y apaga la máquina. Segunda escena: PRAGMA user_version como un marcador digital en la fachada del edificio (v1 → v2 → v3), con una cola de camiones de migración que solo entran si su número es mayor que el marcador. Tercera escena: reconstrucción de tabla — edificio gemelo construido al lado, muebles (datos) trasladados en procesión ordenada (INSERT...SELECT), edificio viejo demolido, gemelo renombrado. Overlay: 'Idempotente + versionada + con backup.'",
     "trazabilidad": {
-      "libros_fuente": ["SQLite docs - ALTER TABLE y procedimiento de 12 pasos", "Python docs - sqlite3", "Alembic docs (conceptos)"],
-      "conceptos_clave": ["migraciones", "idempotencia", "user-version", "alter-table", "reconstruccion", "alembic", "backup"]
+      "libros_fuente": [
+        "SQLite docs - ALTER TABLE y procedimiento de 12 pasos",
+        "Python docs - sqlite3",
+        "Alembic docs (conceptos)"
+      ],
+      "conceptos_clave": [
+        "migraciones",
+        "idempotencia",
+        "user-version",
+        "alter-table",
+        "reconstruccion",
+        "alembic",
+        "backup"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "migraciones", "esquema", "idempotencia", "user-version"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "migraciones",
+      "esquema",
+      "idempotencia",
+      "user-version"
+    ]
   },
   {
     "id": "M2.2-009",
@@ -383,17 +604,44 @@
       "setup_code": "import sqlite3\n\nconn = sqlite3.connect(':memory:')\nconn.execute(\"CREATE TABLE notas (id INTEGER PRIMARY KEY, texto TEXT, tag TEXT)\")\nconn.executemany(\"INSERT INTO notas (texto, tag) VALUES (?, ?)\", [('Comprar pan', 'hogar'), ('Estudiar SQL', 'python'), ('Llamar a Ana', 'hogar')])\nconn.commit()",
       "codigo_inicial": "def buscar(conn, termino):\n    return conn.execute(f\"SELECT * FROM notas WHERE texto LIKE '%{termino}%'\").fetchall()\n\ndef borrar(conn, nota_id):\n    conn.execute(f\"DELETE FROM notas WHERE id = {nota_id}\")\n    conn.commit()\n    return True",
       "test_code": "# 1. Búsqueda legítima\nr = buscar(conn, 'pan')\nassert len(r) == 1 and r[0][1] == 'Comprar pan', f'busqueda normal fallo: {r}'\n# 2. Inyección en LIKE debe retornar vacío (ningún texto contiene el literal)\niny = buscar(conn, \"%' OR '1'='1\")\nassert iny == [], f'¡VULNERABLE! La inyeccion retorno {len(iny)} filas (toda la tabla)'\n# 3. borrar existente → True\nassert borrar(conn, 1) is True, 'borrar nota existente debe retornar True'\n# 4. borrar inexistente → False (¡la verdad!)\nassert borrar(conn, 999) is False, 'borrar nota inexistente debe retornar False, no mentir con True'\n# 5. La tabla conserva las otras 2 notas\nn = conn.execute('SELECT COUNT(*) FROM notas').fetchone()[0]\nassert n == 2, f'deberian quedar 2 notas, quedan {n}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["f\"SELECT", "f\"DELETE", "% (termino"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "f\"SELECT",
+        "f\"DELETE",
+        "% (termino"
+      ],
       "solucion": "def buscar(conn, termino):\n    return conn.execute(\n        \"SELECT * FROM notas WHERE texto LIKE ?\",\n        (f'%{termino}%',)\n    ).fetchall()\n\ndef borrar(conn, nota_id):\n    with conn:\n        cur = conn.execute(\"DELETE FROM notas WHERE id = ?\", (nota_id,))\n        return cur.rowcount > 0"
     },
     "audio_script": "Este chunk es la graduación de auditoría del módulo, porque concentra en diez líneas los siete defectos que la inteligencia artificial repite en cada capa de base de datos que genera. Aprende a detectarlos en sesenta segundos. Uno: busca f-strings, porcentajes o concatenación dentro de cualquier string SQL — es inyección, siempre, sin excepciones. Dos: LIKE con el término pegado en el string — misma inyección, la verificamos: retorna la tabla completa. Tres: commit dentro de un bucle — cada commit es una escritura física al disco; executemany con un solo commit es cien veces más rápido. Cuatro: fetchall sin LIMIT sobre tablas que crecen — bomba de memoria esperando datos reales. Cinco: conexiones sin with o closing — fugas de recursos. Seis: operaciones de varios pasos sin transacción única — estados parciales cuando algo falla a mitad. Y siete, el más sutil: ignorar rowcount. Un delete que retorna true siempre, aunque la nota no existiera, es una capa que le miente a su propio programa. Si internalizas esta checklist de siete puntos, puedes auditar cualquier capa de datos — venga de una IA, de un junior o de ti mismo hace seis meses.",
     "video_prompt": "Video de 100 segundos estilo 'inspección forense nocturna'. La clase NotasDAL aparece en pantalla como una casa aparentemente sólida. Un inspector con linterna recorre habitación por habitación marcando 7 sellos rojos numerados: (1) '%s' interpolado — grieta de inyección en el muro; (2) LIKE con f-string — ventana rota; (3) commit() dentro del bucle — grifo goteando un fsync por gota con contador de lentitud x100; (4) fetchall() sin LIMIT — globo de memoria inflándose; (5) conexión sin cerrar — puerta abierta; (6) sin transacciones — escalones a medio construir; (7) 'return True' siempre — espejo que miente (muestra rowcount=0 reflejado como ✓). Cada sello se repara en secuencia con la pieza correcta (parametrización, executemany, LIMIT, closing, with conn, rowcount). Cierre: la checklist de 7 puntos como tarjeta. Overlay: '7 defectos. 60 segundos. Un ojo entrenado.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - sqlite3 (thread-safety)", "OWASP Top 10", "Effective Python Items 23-25 (síntesis)"],
-      "conceptos_clave": ["auditoria", "capa-de-datos", "sql-injection", "rowcount", "executemany", "thread-safety", "checklist", "codigo-ia"]
+      "libros_fuente": [
+        "Python docs - sqlite3 (thread-safety)",
+        "OWASP Top 10",
+        "Effective Python Items 23-25 (síntesis)"
+      ],
+      "conceptos_clave": [
+        "auditoria",
+        "capa-de-datos",
+        "sql-injection",
+        "rowcount",
+        "executemany",
+        "thread-safety",
+        "checklist",
+        "codigo-ia"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "auditoria", "codigo-ia", "sql-injection", "checklist", "capa-datos"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "auditoria",
+      "codigo-ia",
+      "sql-injection",
+      "checklist",
+      "capa-datos"
+    ]
   },
   {
     "id": "M2.2-010",
@@ -427,16 +675,40 @@
       "setup_code": "",
       "codigo_inicial": "import sqlite3\n\nclass NotasDB:\n    def __init__(self, ruta):\n        self.notas = []\n        self.ruta = ruta\n\n    def agregar(self, texto, tag):\n        nota = {'id': len(self.notas) + 1, 'texto': texto, 'tag': tag}\n        self.notas.append(nota)\n        return nota['id']\n\n    def listar(self, tag=None):\n        if tag:\n            return [n for n in self.notas if n['tag'] == tag]\n        return self.notas\n\n    def eliminar(self, nota_id):\n        for n in self.notas:\n            if n['id'] == nota_id:\n                self.notas.remove(n)\n                return True\n        return False",
       "test_code": "import tempfile, os\nruta = os.path.join(tempfile.mkdtemp(), 'notas.db')\n\ndb = NotasDB(ruta)\nid1 = db.agregar('Aprender SQL', 'sql')\nid2 = db.agregar('Repasar JOINs', 'sql')\nid3 = db.agregar('Estudiar regex', 'python')\nassert isinstance(id1, int) and id1 != id2, 'agregar debe retornar ids reales distintos'\nassert len(db.listar()) == 3, 'listar completo falla'\nassert len(db.listar(tag='sql')) == 2, 'filtro por tag falla'\n# Inyección en el filtro de tag\nassert db.listar(tag=\"sql' OR '1'='1\") == [], '¡vulnerable a inyeccion en el filtro!'\nassert db.eliminar(id2) is True\nassert db.eliminar(99999) is False, 'eliminar inexistente debe retornar False (rowcount honesto)'\ndb.close()\n\n# PERSISTENCIA REAL: nueva instancia sobre el mismo archivo\ndb2 = NotasDB(ruta)\nresto = db2.listar()\nassert len(resto) == 2, f'los datos no persistieron: {len(resto)} notas tras reabrir (esperaba 2)'\ntextos = [n['texto'] for n in resto]\nassert 'Aprender SQL' in textos and 'Estudiar regex' in textos\ndb2.close()\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["self.notas = []"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "self.notas = []"
+      ],
       "solucion": "import sqlite3\n\nclass NotasDB:\n    def __init__(self, ruta):\n        self.conn = sqlite3.connect(ruta)\n        self.conn.row_factory = sqlite3.Row\n        self._crear_esquema()\n\n    def _crear_esquema(self):\n        with self.conn:\n            self.conn.execute(\"\"\"\n                CREATE TABLE IF NOT EXISTS notas (\n                    id INTEGER PRIMARY KEY,\n                    texto TEXT NOT NULL,\n                    tag TEXT NOT NULL,\n                    creada TEXT NOT NULL DEFAULT (datetime('now'))\n                )\"\"\")\n            self.conn.execute(\"CREATE INDEX IF NOT EXISTS idx_notas_tag ON notas(tag)\")\n\n    def agregar(self, texto, tag='general'):\n        with self.conn:\n            cur = self.conn.execute(\n                \"INSERT INTO notas (texto, tag) VALUES (?, ?)\", (texto, tag))\n            return cur.lastrowid\n\n    def listar(self, tag=None):\n        if tag:\n            rows = self.conn.execute(\n                \"SELECT * FROM notas WHERE tag = ? ORDER BY id\", (tag,)).fetchall()\n        else:\n            rows = self.conn.execute(\"SELECT * FROM notas ORDER BY id\").fetchall()\n        return [dict(r) for r in rows]\n\n    def eliminar(self, nota_id):\n        with self.conn:\n            cur = self.conn.execute(\"DELETE FROM notas WHERE id = ?\", (nota_id,))\n            return cur.rowcount > 0\n\n    def close(self):\n        self.conn.close()"
     },
     "audio_script": "Este es el momento en que tu aplicación se vuelve real. En el módulo uno punto tres construiste un NoteStore que guardaba todo en un archivo JSON con escritura atómica — era correcto, pero cada consulta obligaba a cargar el archivo completo a memoria. Ahora lo gradúas a SQLite, y la diferencia no es de grado, es de naturaleza. Buscar las notas con la etiqueta python ya no es recorrer diez mil diccionarios: es una query sobre un índice que toca solo las filas que necesitas. La integridad ya no depende de que tu código recuerde validar: los constraints de la tabla detienen la basura aunque un script desconocido intente colarla. Cada operación es una transacción real, no una reescritura completa del archivo. Y tu API FastAPI y tu aplicación pueden leer la misma base a la vez sin corromperla, gracias al modo WAL. La clase que acabas de construir es exactamente la que tu endpoint montará como dependencia con yield: se abre al inicio del request, trabaja, se cierra al final. Las dos mitades de tu sistema — la API de la fase dos punto uno y la base de datos de la fase dos punto dos — por fin se conectan. Y hay un bonus que debes apreciar: todo esto vive en un solo archivo que el navegador puede guardar, copiar y respaldar. SQLite no es el hermano pobre de las bases de datos; vive en cada teléfono del planeta. Tú acabas de ponerlo a trabajar para ti.",
     "video_prompt": "Video de 110 segundos, narrativa de evolución en 3 actos. ACTO 1 (el pasado): NoteStore JSON de M1.3 — cada consulta levanta el archivo completo como una ballena fuera del agua, lo parsea, filtra una sola nota y lo devuelve; medidor de memoria al máximo. ACTO 2 (la migración): animación de transición — los JSON dicts entran por un túnel (executemany) y salen como filas de tabla con columnas etiquetadas; se instalan los guardias: NOT NULL, CHECK, índice idx_notas_tag (B-tree desplegándose), el sello PRAGMA foreign_keys=ON y la campana de transacción 'with conn' sobre cada operación. ACTO 3 (la conexión): la clase NotasDB se enchufa como dependencia al router de FastAPI de M2.1 — un request HTTP entra, get_db() abre la conexión, el endpoint consulta, la respuesta sale, la conexión se cierra. Cierre épico: el archivo .db flotando junto al logo de la PWA en un móvil, con la etiqueta 'todo tu backend en un archivo'. Overlay: 'JSON carga todo. SQLite consulta lo justo. Tu app, por fin persistente.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 10 (proyecto final)", "SQLite docs", "FastAPI docs - SQL Databases (integración)"],
-      "conceptos_clave": ["microproyecto", "notasdb", "migracion-json-sqlite", "integracion-fastapi", "wal", "persistencia", "integrador"]
+      "libros_fuente": [
+        "Python Crash Course Cap 10 (proyecto final)",
+        "SQLite docs",
+        "FastAPI docs - SQL Databases (integración)"
+      ],
+      "conceptos_clave": [
+        "microproyecto",
+        "notasdb",
+        "migracion-json-sqlite",
+        "integracion-fastapi",
+        "wal",
+        "persistencia",
+        "integrador"
+      ]
     },
-    "tags_rag": ["python", "sqlite", "microproyecto", "notasdb", "fastapi", "persistencia", "integrador"]
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "microproyecto",
+      "notasdb",
+      "fastapi",
+      "persistencia",
+      "integrador"
+    ]
   }
 ]

@@ -553,13 +553,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Dibujar un juego que se repite hasta que el jugador diga que no",
-    "modelo_mental": "Un **bucle** es una flecha que regresa. En papel y en pantalla eso se dibuja como una flecha que sube hacia un símbolo anterior: el flujo se recorre, se llega a la decisión y, si la respuesta es que hay que seguir, vuelve al punto de partida del ciclo. Traducido a código, esa flecha de vuelta es exactamente un while o un for.",
+    "modelo_mental": "Un **bucle** es una flecha que regresa. En papel y en pantalla eso se dibuja como una flecha que sube hacia un símbolo anterior: el flujo se recorre, se llega a la decisión y, si la respuesta es que hay que seguir, vuelve al punto de partida del ciclo. Traducido a código, esa flecha de vuelta es exactamente un `while` o un `for`. La analogía central es pensar en un corredor de pista: corre una vuelta, llega a la línea de meta y, si aún no ha completado las vueltas acordadas, da la vuelta atrás para empezar otra. Esa \"vuelta atrás\" es la esencia del bucle. Por qué importa: sin ella, el proceso solo se ejecuta una vez y nunca se repite, lo que rompe la intención de automatizar tareas repetitivas. Qué errores previene: evita olvidar conectar la salida de una iteración con su entrada, y ayuda a reconocer cuándo un diagrama de flujo está incompleto porque falta la flecha que cierra el ciclo.",
     "codigo_roto": "INICIO\nSI ¿Otra vez? (Sí) ENTONCES\n    Pedir número\nSINO\n    Mostrar total\nFIN SI\nFIN",
-    "diagnostico": "Falta la flecha de vuelta. Sin ella, la rama Sí ejecuta el paso y se pierde: el número no vuelve a preguntarse nunca, así que el supuesto bucle no se repite ni una sola vez.",
+    "diagnostico": "1. Falta la flecha de vuelta: la rama Sí ejecuta el paso y se pierde. El número no vuelve a preguntarse nunca, así que el supuesto bucle no se repite ni una sola vez. En Python, si intentáramos traducir esto directamente con un `if` en lugar de un `while`, el bloque se ejecutaría una sola vez y el programa continuaría sin repetir. El patrón general es confundir una condición única con un ciclo: usar `if` cuando se necesita `while` o `for`, o dibujar el flujo lineal sin la flecha que cierra el lazo. 2. No hay inicialización del total: aunque no se menciona explícitamente, el paso \"Mostrar total\" implica que debe existir una variable acumuladora. En Bash, si se intenta usar una variable sin inicializarla, se lanza un error de sintaxis o se interpreta como cadena vacía. El patrón general es olvidar declarar e inicializar variables antes de usarlas, especialmente en acumuladores. 3. Falta el FIN del bucle: el diagrama cierra con FIN SI y luego FIN, pero no hay un símbolo que indique el final del ciclo. En Python, esto se traduciría a un `while` sin `break` o `continue` apropiado, lo que podría causar un bucle infinito. El patrón general es no estructurar correctamente los bloques de control, dejando abierto el flujo del programa.",
     "codigo_corregido": "INICIO\nSI ¿Otra vez? (Sí) ENTONCES\n    Pedir número\n    ⤴ volver a \"¿Otra vez?\"\nSINO\n    Mostrar total\nFIN SI\nFIN",
     "codigo_optimizado": "# INICIO\nwhile ¿Otra vez?:\n    # Pedir número\n# Mostrar total\n# FIN",
     "disenso_experto": "Hay quien prefiere escribir el bucle como REPETIR…HASTA QUE, con la condición al final. Es una alternativa legítima y a veces más legible, porque el cuerpo se ejecuta siempre al menos una vez. En los diagramas más comunes, sin embargo, se usa la decisión al principio, que equivale a un while.",
-    "pregunta_transferencia": "Cuando aprendes a tocar un instrumento, repites un ejercicio hasta que sale bien. ¿Cuál sería la pregunta del rombo y cuál sería el paso que se repite?",
+    "pregunta_transferencia": "Imagina que estás programando un juego de dados: cada vez que el jugador pulse 'Enter', se lanza un dado y se suma al puntaje total; cuando escriba 'fin', se muestra el puntaje acumulado y el juego termina. En el diagrama de flujo, ¿cuál sería la pregunta del rombo y cuál sería el paso que se repite? La pista es que la pregunta debe permitir dos caminos: uno que continúe pidiendo y lanzando, y otro que muestre el resultado y salga del ciclo. No escribas el código, solo describe los dos elementos clave del flujo.",
     "quiz": {
       "pregunta": "¿Qué representa en un diagrama una flecha que vuelve desde un símbolo posterior hasta uno anterior?",
       "opciones": [
@@ -793,7 +793,8 @@
       "repetición",
       "iteración",
       "construir"
-    ]
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.0-005",
@@ -984,13 +985,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Convertir un diagrama de acceso en código ejecutable",
-    "modelo_mental": "Pseudocódigo y diagrama son **el mismo algoritmo en dos idiomas**. El diagrama muestra la forma con figuras; el pseudocódigo la muestra con palabras clave (INICIO, SI, SINO, FIN SI) y Python con sintaxis estricta. Las reglas de correspondencia son uno a uno: rombo con if, flecha de rama con raya de sangría y óvalo Fin con el final del programa.",
+    "modelo_mental": "El pseudocódigo y el diagrama de flujo son **representaciones equivalentes** del mismo algoritmo, como si fueran dos idiomas que describen la misma receta. En el diagrama usan símbolos geométricos (óvalo, rombo, paralelogramo) y flechas; en el pseudocódigo usan palabras clave como `INICIO`, `SI`, `SINO`, `FIN SI` y en Python la sintaxis es aún más estricta con `if`, `elif`, `else` y sangría.\n\nEntender esta correspondencia es importante porque al traducir de un medio a otro garantizamos que la lógica no se altera; un error en la traducción suele revelar una falta de comprensión de la estructura de control. Además, facilita la depuración: si el programa falla, podemos revisar el diagrama o el pseudocódigo para localizar dónde se rompió la cadena de instrucciones.\n\nEsta visión previene errores típicos como olvidar indentar el bloque bajo un `if`, confundir la rama verdadera con la falsa o dejar fuera el `else` necesario. Al aplicar la regla **uno a uno** (rombo → `if`, flecha de sí → bloque indentado, flecha de no → `else` u otro bloque) nos aseguramos de que cada decisión del diagrama tenga su contraparte exacta en código, evitando que el intérprete de Python lance excepciones de sintaxis o lógica.",
     "codigo_roto": "if ¿Es mayor de edad? (Sí):\n# Permitir el acceso\n# Pedir un adulto",
-    "diagnostico": "Solo se escribió la rama verdadera y no se indenta nada: sin sangría, Python no sabe qué instrucciones pertenecen al if y qué instrucciones van fuera. La rama falsa desapareció por completo.",
+    "diagnostico": "1. **Falta de sangría** después de la línea `if ¿Es mayor de edad? (Sí):`. En Python, la indentación define el bloque de código que pertenece al condicionado; sin ella el intérprete interpreta que el `if` no tiene cuerpo y lanza un `IndentationError: expected an indented block`. El patrón general es que cualquier instrucción que sigue a una cláusula de control (`if`, `for`, `while`, `def`, `class`) debe estar indentada de forma consistente.\n\n2. **Uso de símbolos y espacios no válidos** en la condición: `¿Es mayor de edad? (Sí)`. Python solo permite identificadores compuestos por letras, números y guion bajo, y no acepta signos de interrogación ni paréntesis alrededor de la expresión sin un operador. Esto provoca un `SyntaxError: invalid syntax` porque el analizador no reconoce `¿` ni `?` como tokens válidos. El patrón es que las condiciones deben expresarse con variables y operadores lógicos, por ejemplo `edad >= 18`.\n\n3. **Ausencia de la rama falsa (`else`)**. El diagrama original tenía dos salidas del rombo: una para Sí y otra para No. Al traducir solo la rama verdadera, el programa nunca maneja el caso en que la condición sea falsa, lo que puede llevar a un comportamiento silencioso o a que el programa continúe sin realizar la acción esperada (por ejemplo, no pedir un adulto). El patrón general es que toda decisión binaria en un diagrama debe reflejarse con una estructura `if-else` (o `elif`) para cubrir ambos caminos.",
     "codigo_corregido": "INICIO\nSI ¿Es mayor de edad? (Sí) ENTONCES\n    Permitir el acceso\nSINO\n    Pedir un adulto\nFIN SI\nFIN",
     "codigo_optimizado": "# INICIO\nif ¿Es mayor de edad? (Sí):\n    # Permitir el acceso\nelse:\n    # Pedir un adulto\n# FIN",
     "disenso_experto": "La correspondencia diagrama-código no es mecánica en proyectos reales: un rombo con tres salidas se convierte en elif, un bucle anidado obliga a sangrar dos niveles y a veces conviene partir un diagrama gigante en varios subdiagramas. La traducción es una habilidad que se afina con la práctica, no una tabla que se memoriza.",
-    "pregunta_transferencia": "Si el código Python de tu traducción tuviera dos if seguidos en lugar de un if y un else, ¿qué cambiaría en el diagrama original? Dibuja la diferencia.",
+    "pregunta_transferencia": "Imagina que, al traducir el diagrama, en lugar de escribir un bloque `if-else` decides colocar dos sentencias `if` independientes una tras otra, ambas evaluando la misma condición `edad >= 18`. En el diagrama de flujo esto se representaría con dos rombos consecutivos, cada uno con su propia salida sí y no, en lugar de un solo rombo con dos ramas.\n\nPista: piensa en qué significa que las dos condiciones sean independientes y no excluyentes; ¿cómo afectaría eso al flujo de control cuando la condición es verdadera o falsa? No necesitas dibujar el diagrama completo, solo indica qué cambiaría en la estructura de decisiones respecto al original.",
     "quiz": {
       "pregunta": "¿Qué símbolo del diagrama corresponde a la instrucción if de Python?",
       "opciones": [
@@ -1141,7 +1142,8 @@
       "if",
       "else",
       "traducción"
-    ]
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.0-007",
@@ -1150,13 +1152,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Dibujar la calculadora que aplica descuento solo por encima de 50 €",
-    "modelo_mental": "Diseñar es **resolver antes de escribir**. Primero enumeras qué ocurre en orden, luego marcas dónde hay una decisión, y solo después dibujas. Un buen diagrama responde tres preguntas de un vistazo: por dónde se entra, qué se decide y dónde se sale. Si esas tres cosas se ven sin leer los textos, el diseño está bien hecho.",
+    "modelo_mental": "El diseño de un algoritmo es como planificar un viaje: primero decides a dónde vas, luego trazas la ruta y finalmente escribes las instrucciones. **Resolver antes de escribir** te permite ver el flujo completo sin atascarte en detalles de sintaxis. Usa `pseudo-código` para describir cada paso sin preocuparte por la sintaxis.\n\nUn diagrama de flujo debe responder tres preguntas clave: ¿por dónde se entra?, ¿qué decisiones se toman? y ¿dónde se sale? Si esas tres cosas se ven sin leer los textos, el diseño está bien hecho. Esto previene errores como ramas incompletas o bucles infinitos.\n\nAdemás, al usar símbolos estandarizados como rombos para decisiones y cajas para acciones, mantienes la claridad y facilitas la revisión por otros desarrolladores.",
     "codigo_roto": "INICIO\nPedir importe\nSI ¿Es mayor de 50 €? (Sí) ENTONCES\nFIN",
-    "diagnostico": "El flujo se queda a medias: la rama Sí no hace nada y no hay rama No. Un algoritmo con una sola rama no es una decisión, y sin llegada al fin el programa no terminaría nunca.",
+    "diagnostico": "1. La rama Sí no contiene ninguna acción, lo que significa que cuando se cumple la condición el programa no realiza nada y vuelve a evaluar la misma condición, generando un bucle infinito. En Python, esto se traduce en un `while` sin modificación de la variable de control, y el intérprete nunca sale del ciclo. En Bash, un `if` sin comando following puede provocar que el script se quede colgado.\n\n2. No se incluye una rama No, por lo que la única salida posible es la condición verdadera; si ésta no se cumple, el flujo no tiene adónde ir y se produce un error de flujo incompleto. En lenguajes como Python, intentar acceder a un bloque `else` inexistente no es un error sintáctico, pero lógicamente el programa se estanca.\n\n3. Falta un símbolo de FIN o de salida después de la decisión, de modo que el algoritmo nunca termina. En diagramas de flujo, la ausencia de un terminal provoca que el ejecutable entre en un bucle sin fin; en Python equivaldría a un `while True` sin `break`, y en Bash a un script que nunca llega al `exit`.",
     "codigo_corregido": "INICIO\nPedir importe\nSI ¿Es mayor de 50 €? (Sí) ENTONCES\n    Aplicar 10 % de descuento\nSINO\n    Total = importe\nFIN SI\nMostrar total\nFIN",
     "codigo_optimizado": "# INICIO\nimporte = pedir_importe()\nif importe > 50:\n    total = importe * 0.9\nelse:\n    total = importe\n# Mostrar total",
     "disenso_experto": "En la vida real conviene validar el importe antes de aplicar descuentos: un número negativo o una entrada vacía romperían la lógica. Este diagrama prescinde de esa validación para centrarse en la decisión, pero un diseño profesional añadiría un rombo más antes de calcular.",
-    "pregunta_transferencia": "Diseña ahora el flujo de una app que solo permite comprar si el usuario tiene saldo suficiente. ¿Cuántos símbolos necesitas y cuál es la decisión central?",
+    "pregunta_transferencia": "Imagina una aplicación web de compras donde el usuario introduce un producto y el sistema verifica si su saldo actual es mayor o igual al precio del artículo. El flujo debe comenzar con la entrada de datos del usuario, luego calcular el total y finalmente decidir si la compra es posible.\n\nPara representar este flujo necesitarás al menos un rombo para la decisión de saldo suficiente, dos cajas de acción (una para descontar el saldo y otra para mostrar error) y un símbolo de inicio y fin. La decisión central es comparar el saldo con el precio; la pista es que debes pensar en qué hacer en cada caso sin revelar la solución exacta.",
     "quiz": {
       "pregunta": "¿Cuál es el orden lógico recomendado para diseñar un diagrama desde cero?",
       "opciones": [
@@ -1350,6 +1352,7 @@
       "capstone",
       "decisión",
       "construir"
-    ]
+    ],
+    "_enriched": true
   }
 ]
