@@ -193,13 +193,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Dibujar en el editor el flujo de encender la cafetera",
-    "modelo_mental": "Lo más simple también se dibuja: **inicio → acción → fin**. Un flujo secuencial no tiene decisiones, así que solo hay una única flecha que te lleva de un símbolo al siguiente. Aprender a construir este esqueleto en el editor te da el gesto que usarás después para cosas mucho más complicadas: añadir un símbolo, arrastrar para conectar, revisar que validé.",
+    "modelo_mental": "**Esqueleto de flujo secuencial**: Un diagrama de flujo que solo tiene **inicio → acción → fin** es el bloque de construcción más básico. La analogía central es la de un camino lineal: arrancas en el símbolo `Inicio`, sigues una sola flecha hasta el símbolo de acción (el paso que realmente haces), y luego llegas al símbolo `Fin`. Este patrón te da el gesto de arrastrar y conectar que usarás más tarde para diagramas más complicados con decisiones, bucles y múltiples acciones.\n\nEl porqué importa: Dominar este esqueleto te ayuda a evitar errores comunes como flechas perdidas, símbolos extra o un punto final ambiguo. Si omites el símbolo de `Fin`, el diagrama parece inacabado y el lector no sabe si el proceso realmente termina o solo dejaste de dibujar. Al practicar el flujo secuencial, aprendes a validar cada extremo, asegurando que el diagrama sea claro, completo y fácilmente convertible en código o en una implementación posterior.\n\n**Consejo clave**: Cuando agregues un nuevo paso, siempre arrastra una flecha desde el símbolo anterior, luego suelta en el nuevo símbolo, y termina arrastrando una flecha al símbolo `Fin`. Este hábito te da confianza al construir estructuras más complejas.",
     "codigo_roto": "Inicio\nPreparar café\nFIN",
-    "diagnostico": "Falta cerrar el flujo. Sin un símbolo de fin, quien lea el diagrama no sabe si el proceso termina o si simplemente dejó de dibujarse: el algoritmo queda ambiguo.",
+    "diagnostico": "El error es que el diagrama no tiene un símbolo de **Fin**. En un diagrama de flujo, el símbolo de Fin indica el punto final del algoritmo; sin él, el flujo parece incompleto. Este error haría que una herramienta de validación (como un editor de diagramas de flujo) marque el diagrama como inválido, porque el algoritmo no tiene un punto de salida claro.\n\nEn términos de código, un script sin una declaración `return` o sin una instrucción `exit` se ejecutaría indefinidamente o generaría un error de sintaxis. De manera similar, un diagrama de flujo sin Fin deja al lector adivinando si el proceso realmente termina, lo que puede llevar a interpretaciones erróneas y a una logica posterior defectuosa.\n\n**Patrón general**: Cualquier diagrama de flujo debe comenzar con un símbolo de Inicio y terminar con un símbolo de Fin, con al menos un símbolo de acción conectado en entre. La falta de cualquiera de estos extremos es un error clásico de \"flujo roto\".",
     "codigo_corregido": "INICIO\nPreparar café\nFIN",
     "codigo_optimizado": "# INICIO\n# Preparar café\n# FIN",
     "disenso_experto": "Dibujar un flujo de tres símbolos puede parecer una pérdida de tiempo. Se defiende que el objetivo de esta lección no es el diagrama en sí, sino dominar el editor: añadir, conectar, etiquetar y validar. Ese gesto es el que después te permitirá concentrarte en la lógica y no en la herramienta.",
-    "pregunta_transferencia": "Piensa en el proceso de preparar tu desayuno. Si lo redujeras a un solo paso y dos extremos, ¿qué texto pondrías en cada uno de los tres símbolos?",
+    "pregunta_transferencia": "Imagina que estás preparando tu desayuno matutino. Si redujeras todo el proceso a un solo paso y dos extremos, ¿qué texto pondrías en cada uno de los tres símbolos? Piensa en el primer símbolo como el punto de partida (por ejemplo, 'Encender cafetera'), el símbolo del medio como la acción principal (por ejemplo, 'Hacer café'), y el último símbolo como el punto de finalización (por ejemplo, 'Servir y disfrutar'). La pista es que cada símbolo debe reflejar una etapa clara y secuencial del proceso, sin decisiones adicionales.",
     "quiz": {
       "pregunta": "En un flujo secuencial sin decisiones, ¿cuántas flechas de salida puede tener un símbolo de proceso?",
       "opciones": [
@@ -214,15 +214,39 @@
     },
     "quiz_ia": [
       {
-        "pregunta": "Si construyes un flujo con inicio, proceso y fin pero olvidas conectar el proceso al fin, ¿qué error detectará el validador?",
+        "pregunta": "En un diagrama de flujo, ¿cuál es la función principal del símbolo de Inicio?",
         "opciones": [
-          "Que falta un símbolo de inicio",
-          "Un callejón sin salida y un fin inalcanzable",
-          "Que hay demasiadas flechas",
-          "Ninguno, el diagrama es válido"
+          "Indicar una decisión",
+          "Marcar el punto de entrada al algoritmo",
+          "Mostrar el resultado final",
+          "Conectar múltiples acciones"
         ],
         "correcta": "B",
-        "explicacion": "El proceso queda sin flecha de salida (callejón) y el fin nunca se alcanza desde el inicio (inalcanzable). Las dos reglas se validan juntas.",
+        "explicacion": "El símbolo de Inicio indica dónde comienza el proceso. Es el punto de entrada, no una decisión, un resultado o un conector. Elegir B reconoce el propósito fundamental del símbolo de Inicio.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Un diagrama de flujo secuencial representa el siguiente algoritmo: Iniciar, Preparar café, Mostrar mensaje 'Listo'. ¿Cuál es la salida esperada cuando se ejecuta el diagrama?",
+        "opciones": [
+          "'Error: Falta Fin'\\n",
+          "'Listo'\\n",
+          "'Preparar caf\\u00e9'\\n",
+          "'Inicio'\\n"
+        ],
+        "correcta": "B",
+        "explicacion": "El diagrama ejecuta la acción 'Mostrar mensaje \\\"Listo\\\"' después de Preparar café, por lo que la salida visible es 'Listo'. Las otras opciones describen errores o pasos no mostrados.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la principal deficiencia de este diagrama de flujo rota?\nInicio\nPreparar café\nFIN",
+        "opciones": [
+          "Falta un símbolo de decisión",
+          "Falta un símbolo de acción",
+          "Falta cerrar el flujo (símbolo de Fin)",
+          "El símbolo de Inicio está mal colocado"
+        ],
+        "correcta": "C",
+        "explicacion": "El diagrama tiene un símbolo de Inicio y una acción, pero la flecha termina antes de un símbolo de Fin, dejando el flujo sin cerrar. Agregar un símbolo de Fin resuelve el problema.",
         "tipo": "debugging"
       }
     ],
@@ -306,7 +330,8 @@
       "editor",
       "tutorial",
       "básicos"
-    ]
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.0-003",
@@ -803,13 +828,13 @@
     "nivel": "principiante",
     "fase": 0,
     "microproyecto": "Seguir el flujo de una suma con bucle y anticipar el resultado",
-    "modelo_mental": "Leer un diagrama es **ejecutarlo con el dedo**. Empiezas en el óvalo, vas saltando de flecha en flecha y mantienes una memoria imaginaria de las variables. Cuando llegas a un rombo, miras la etiqueta y eliges la rama; cuando llegas a una flecha que sube, vuelves atrás. Si puedes decir qué imprimiría antes de mirar, has entendido el algoritmo.",
+    "modelo_mental": "Leer un diagrama de flujo es **ejecutarlo con el dedo**: comienzas en el óvalo de inicio y sigues cada flecha, actualizando mentalmente las variables. Esta técnica te permite visualizar el estado del sistema en cada paso y detectar cambios bruscos.\n\nAl llegar a un rompo, debes evaluar la condición y elegir la rama correspondiente. Si la flecha te lleva de vuelta a un punto anterior, el bucle se repetirá. Mantén una memoria imaginaria de los valores, como `total = 0`, y actualízala según las instrucciones.\n\nComprender este patrón te ayuda a predecir cuántas veces se ejecutará el bucle y qué valor tendrá la variable al salir. Además, te previene errores comunes como olvidar acumular valores o omitir la flecha de retroceso.",
     "codigo_roto": "INICIO\ntotal = 0\nSI ¿quedan números? (Sí) ENTONCES\n    mostrar total\nFIN SI\nFIN",
-    "diagnostico": "La rama Sí muestra el total en lugar de acumularlo, y la flecha de vuelta desapareció. El resultado sería que el bucle se ejecuta una vez y devuelve siempre lo mismo, nunca la suma real.",
+    "diagnostico": "1. La rama 'Sí' muestra el total en lugar de acumularlo. En el código, la instrucción `mostrar total` se encuentra dentro del bloque SI, pero no se actualiza la variable `total` sumando el nuevo número. Esto provoca que el programa muestre siempre el valor inicial o el mismo valor anterior, sin reflejar la suma acumulada. En Python, esto equivalría a tener un `print(total)` sin haber ejecutado `total += numero`. El error se manifiesta como una salida constante que no refleja el progreso del bucle.\n\n2. La flecha de vuelta que cierra el bucle desapareció. En un diagrama de flujo, la flecha que regresa al rompo de condición indica que el bucle se repetirá mientras la condición sea verdadera. Al omitirla, el flujo continua hacia el FIN, por lo que el bucle se ejecuta exactamente una vez. En términos de código, equivale a escribir un `if` sin un `while` o un `for` que repita. El resultado es que el algoritmo no procesa todos los números, sino solo el primero.",
     "codigo_corregido": "INICIO\ntotal = 0\nSI ¿quedan números? (Sí) ENTONCES\n    total = total + número\n    ⤴ volver a \"¿quedan números?\"\nSINO\n    mostrar total\nFIN SI\nFIN",
     "codigo_optimizado": "# INICIO\ntotal = 0\nwhile ¿quedan números?:\n    total = total + número\n# mostrar total\n# FIN",
     "disenso_experto": "Un purista diría que este bucle debería probar la condición antes de entrar y que quizá el primer número se pierde. Tiene razón en que el orden importa en la vida real: el diseño con la comprobación al principio evita procesar datos que no existen. Aquí lo importante es que la flecha de vuelta y la acumulación están en su sitio.",
-    "pregunta_transferencia": "Si el diagrama tuviera la rama Sí vacía, ¿qué resultado en falsos obtendrías? Explica la diferencia entre tener la flecha de vuelta y no tenerla.",
+    "pregunta_transferencia": "Si el diagrama tuviera la rama Sí vacía, sin ninguna instrucción, ¿qué resultado obtendrías al ejecutarlo? Describe el comportamiento que esperas.\n\nObserva la flecha que sale del bloque de acción y donde regresa: si no hay flecha de vuelta, el flujo solo pasa una vez por el bloque; si la hay, el bucle se repite. Usa esta observación para predecir la salida.",
     "quiz": {
       "pregunta": "Siguiendo el diagrama con la lista 4, 7, 2, ¿qué valor muestra al terminar?",
       "opciones": [
@@ -976,7 +1001,8 @@
       "acumulador",
       "lectura",
       "predict"
-    ]
+    ],
+    "_enriched": true
   },
   {
     "id": "F0.0-006",
