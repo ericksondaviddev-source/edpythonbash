@@ -832,13 +832,13 @@
     "nivel": "principiante",
     "fase": 1,
     "microproyecto": "Extractor de datos que limpia texto y genera JSON para tu PWA",
-    "modelo_mental": "Dos dogmas que debes romper hoy. (1) **No existe un regex que valide emails correctamente**: RFC 5322 permite comillas, comentarios, IPs literales y direcciones de 254 caracteres. Todo regex de email es un compromiso entre rechazar válidos y aceptar inválidos — la validación real ocurre enviando un correo de confirmación. (2) **Nunca parsees HTML con regex**: HTML no es un lenguaje regular (tiene anidamiento recursivo), así que ningún regex puede parsearlo correctamente. Para HTML usa `html.parser` de la stdlib o BeautifulSoup (Fase 2). La habilidad real no es escribir el regex perfecto: es saber CUÁNDO regex es la herramienta equivocada.",
+    "modelo_mental": "Imagina que quieres validar una dirección de correo como si fuera una entrada de formulario en una fiesta temática de superhéroe. El **modelo mental** aquí es doble: primero, **no existe un regex que valide emails correctamente**. La especificación RFC 5322 permite comillas, comentarios, direcciones IP literales y hasta direcciones de hasta 254 caracteres. Cualquier regex es un compromiso: o rechazas correos válidos, o aceptas inválidos. La validación real no se hace con regex, se hace **enviando un correo de confirmación**. Segundo, **nunca parses HTML con regex**. HTML no es un lenguaje regular: tiene anidamiento recursivo, atributos variables, comentarios y estructuras complejas. Un regex como `<h2>(.*?)</h2>` es como usar un destornillador como palanca: funciona en casos triviales, pero se rompe con `<h2 class=\"x\">`, `<H2>`, o un título que abarque múltiples renglones. La habilidad real no es escribir el regex \"perfecto\": es reconocer **cuándo regex es la herramienta equivocada**. Usa `html.parser` de la stdlib o BeautifulSoup para HTML, y guarda regex para patrones simples y lineales.\n\nEste conocimiento te protege de dos errores comunes: sobreconfiar en un regex de email (que da falsa seguridad) y usar regex para estructuras anidadas (que produce bugs sutiles y difíciles de rastrear). El patrón general es: **regex es para texto plano, no para lenguajes estructurados**.",
     "codigo_roto": "import re\n\ndef es_email_valido(s):\n    return bool(re.match(r'^[\\w\\.]+@[\\w\\.]+$', s))\n\ndef extraer_titulos(html):\n    return re.findall(r'<h2>(.*?)</h2>', html)",
-    "diagnostico": "`es_email_valido` falla en ambas direcciones: RECHAZA válidos comunes (`juan.perez+tag@sub.dominio.co.uk` — el `+` no está en `\\w`, y los subdominios con guiones tampoco) y ACEPTA inválidos (`usuario@dominio..com` — puntos consecutivos, `usuario@.com` — dominio que empieza con punto, `usuario@dominio` — sin TLD). Es peor que no validar: da falsa confianza. `extraer_titulos` se rompe con cualquier variación real: `<h2 class=\"titulo\">` no coincide, `<H2>` tampoco (case), un título multilínea tampoco (`.` no cruza `\\n` sin DOTALL), y un comentario HTML `<!-- <h2>falso</h2> -->` produce un falso positivo.",
+    "diagnostico": "1. `es_email_valido` rechaza correos válidos: el regex `^[\\w\\.]+@...` usa `\\w` que incluye `[a-zA-Z0-9_]` pero **no el `+`** (usado en `juan+tag@dominio.com`), ni **guiones** en subdominios (`sub-dominio.com`). Esto lanza falsos negativos: correos legítimos son rechazados silenciosamente.\n2. `es_email_valido` acepta correos inválidos: `usuario@dominio..com` (puntos consecutivos) y `usuario@.com` (dominio que empieza con punto) pasan porque el regex solo verifica \"algo, @, algo con puntos\". Python no lanza un error aquí: el regex **coincide parcialmente**, dando falsa confianza. El patrón general es: **regex simple no valida estructura compleja**.\n3. `extraer_titulos` falla con variaciones reales del HTML: `<h2 class=\"titulo\">` no coincide porque el regex exige `<h2>` exacto; `<H2>` (mayúsculas) tampoco coincide sin flag `IGNORECASE`; títulos multilínea fallan porque `.` no cruza saltos de línea sin `re.DOTALL`; y comentarios HTML como `<!-- <h2>falso</h2> -->` producen **falsos positivos**. Bash/Python no lanzan error: el regex devuelve resultados incorrectos silenciosamente. El patrón general es: **regex no entiende sintaxis anidada**.",
     "codigo_corregido": "import re\n\n_EMAIL = re.compile(\n    r\"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+\"\n    r\"@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+\"\n    r\"[A-Za-z]{2,63}$\"\n)\n\ndef es_email_valido(s):\n    if not isinstance(s, str) or not s or len(s) > 254:\n        return False\n    local, sep, dominio = s.partition('@')\n    if not sep or not local or not dominio:\n        return False\n    if len(local) > 64:\n        return False\n    if local.startswith('.') or local.endswith('.') or '..' in local:\n        return False\n    if dominio.startswith('-') or dominio.endswith('-') or '..' in dominio:\n        return False\n    return bool(_EMAIL.match(s))\n\n# HTML: parser real de la stdlib, sin dependencias externas\nfrom html.parser import HTMLParser\n\nclass ExtractorH2(HTMLParser):\n    def __init__(self):\n        super().__init__()\n        self.titulos = []\n        self._dentro = False\n        self._buffer = []\n\n    def handle_starttag(self, tag, attrs):\n        if tag == 'h2':\n            self._dentro = True\n            self._buffer = []\n\n    def handle_endtag(self, tag):\n        if tag == 'h2' and self._dentro:\n            self._dentro = False\n            self.titulos.append(''.join(self._buffer).strip())\n\n    def handle_data(self, data):\n        if self._dentro:\n            self._buffer.append(data)\n\ndef extraer_titulos(html):\n    p = ExtractorH2()\n    p.feed(html)\n    return p.titulos",
     "codigo_optimizado": "import re\nfrom html.parser import HTMLParser\n\n# ============ EMAIL: la estrategia en 3 niveles ============\n\n# Nivel 1 — Sintaxis (lo que SÍ debes validar en el cliente):\n_EMAIL = re.compile(\n    r\"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+\"\n    r\"@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+\"\n    r\"[A-Za-z]{2,63}$\"\n)\n\ndef email_sintacticamente_valido(s: str) -> bool:\n    if not isinstance(s, str) or not 3 <= len(s) <= 254:\n        return False\n    local, sep, dominio = s.partition('@')\n    if not sep or not local or not dominio or len(local) > 64:\n        return False\n    if local[0] == '.' or local[-1] == '.' or '..' in local:\n        return False\n    return bool(_EMAIL.match(s))\n\n# Nivel 2 — Normalización (para detectar duplicados):\ndef normalizar_email(s: str) -> str:\n    local, _, dominio = s.strip().lower().partition('@')\n    if dominio in ('gmail.com', 'googlemail.com'):\n        local = local.split('+')[0].replace('.', '')\n    return f'{local}@{dominio}'\n\n# Nivel 3 — Existencia real: SOLO un correo de confirmación la prueba.\n#   Ningún regex, ni una consulta MX, garantiza que el buzón existe.\n#   (Una consulta DNS MX verifica el DOMINIO, no la cuenta.)\n\n# ============ HTML: por qué regex es matemáticamente insuficiente ============\n# HTML permite anidamiento recursivo:\n#   <div><div><div>...</div></div></div>\n# Los lenguajes regulares no pueden contar niveles de anidamiento\n# (teorema: no son regulares). Por eso NINGÚN regex puede parsear HTML\n# correctamente. Y por eso existen parsers.\n\n# Parser genérico reutilizable para tu scraper de la Fase 2\nclass ExtractorDeEtiquetas(HTMLParser):\n    \"\"\"Extrae texto de cualquier etiqueta, manejando atributos, case,\n    multilínea, entidades y comentarios correctamente.\"\"\"\n\n    def __init__(self, etiquetas=('h2',)):\n        super().__init__(convert_charrefs=True)\n        self.etiquetas = {e.lower() for e in etiquetas}\n        self.resultados = []\n        self._pila = []\n        self._buffer = []\n\n    def handle_starttag(self, tag, attrs):\n        if tag.lower() in self.etiquetas:\n            self._pila.append(tag.lower())\n            self._buffer = []\n\n    def handle_endtag(self, tag):\n        if self._pila and self._pila[-1] == tag.lower():\n            self._pila.pop()\n            self.resultados.append(''.join(self._buffer).strip())\n\n    def handle_data(self, data):\n        if self._pila:\n            self._buffer.append(data)\n\ndef extraer(html: str, *etiquetas) -> list:\n    p = ExtractorDeEtiquetas(etiquetas or ('h2',))\n    p.feed(html)\n    return p.resultados\n\n# ============ CUÁNDO SÍ usar regex con HTML ============\n# Solo sobre HTML que TÚ generaste y cuya forma controlas al 100%,\n# para extracciones triviales (quitar etiquetas, extraer un atributo fijo).\n_QUITAR_ETIQUETAS = re.compile(r'<[^>]+>')\ndef solo_texto(html_propio: str) -> str:\n    return _QUITAR_ETIQUETAS.sub(' ', html_propio)\n# Aun así: html.unescape() después, para &amp; &lt; &nbsp;",
     "disenso_experto": "El debate sobre validación de emails tiene tres bandos. (1) 'Regex estricto': intenta cumplir RFC 5322 — inevitablemente rechaza emails reales que la gente usa, y genera tickets de soporte. (2) 'Regex laxo + confirmación': verifica lo mínimo (tiene @, dominio con punto, longitud sensata) y confirma enviando un enlace — es lo que hacen Stripe, GitHub y toda app seria. (3) 'Librería especializada' (`email-validator`): añade verificación de sintaxis RFC, dominio entregable vía DNS y normalización. El bando 2 gana para el 95% de los casos. Lo que NUNCA debes hacer es confiar en un regex como prueba de que el email existe.",
-    "pregunta_transferencia": "Tu PWA usa regex para extraer los títulos `<h2>` de páginas que scrapeas en Fase 2. Encuentras una página donde el título está así: `<h2 class=\"titulo\" data-id=\"5\">Aprende<br>Python</h2>`. Enumera las 4 razones por las que `re.findall(r'<h2>(.*?)</h2>', html)` falla aquí, y qué maneja automáticamente un HTMLParser en cada caso.",
+    "pregunta_transferencia": "Tu PWA usa regex para extraer títulos `<h2>` de páginas que scrapeas. Encuentras una página con: `<h2 class=\"titulo\" data-id=\"5\">Aprende<br>Python</h2>`. El regex `re.findall(r'<h2>(.*?)</h2>', html)` falla por 4 razones: (1) **atributos en la etiqueta** (`<h2 class=...>`) no coinciden con `<h2>` literal; (2) **etiquetas anidadas** (`<br>`) rompen el contenido capturado; (3) **mayúsculas/minúsculas** (`<H2>`) requieren `re.IGNORECASE`; (4) **multilínea** requiere `re.DOTALL`. Un `HTMLParser` maneja automáticamente los atributos (los ignora), el anidamiento (procesa etiquetas hijas), el case (normaliza), y el contenido multilínea (captura todo el texto entre etiquetas).\n\nLa pista está en usar `html.parser.HTMLParser` con un manejador `handle_starttag` que detecte `h2` y acumule texto en `handle_data`. No necesitas regex: el parser entiende la estructura del HTML.",
     "quiz": {
       "pregunta": "¿Por qué es IMPOSIBLE parsear HTML correctamente con expresiones regulares?",
       "opciones": [
@@ -890,6 +890,57 @@
       "html-parser",
       "validacion",
       "codigo-ia"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué problema fundamental tiene el regex `^[\\w\\.]+@...` para validar emails?",
+        "opciones": [
+          "Acepta direcciones con puntos consecutivos como `a..b@dominio.com`",
+          "No permite el carácter `+` en correos como `usuario+tag@dominio.com`",
+          "Requiere que el dominio tenga al menos un punto",
+          "Lanza un error de sintaxis en Python si el email tiene más de 254 caracteres"
+        ],
+        "correcta": "B",
+        "explicacion": "La clase `\\w` en Python incluye `[a-zA-Z0-9_]` pero **no el `+`**, que es válido en emails según RFC 5322. Esto causa un falso negativo: correos legítimos como `usuario+tag@dominio.com` son rechazados. La opción A describe otro bug del regex (acepta puntos consecutivos), pero no el problema fundamental de `\\w`. La opción C es incorrecta: el regex no valida TLD. La opción D es falsa: Python no lanza error por longitud.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Por qué `re.findall(r'<h2>(.*?)</h2>', html)` falla con `<H2>Título</H2>`?",
+        "opciones": [
+          "Porque `.` no coincide con saltos de línea",
+          "Porque el regex no usa `re.IGNORECASE`",
+          "Porque `(.*?)` es demasiado restrictivo",
+          "Porque `re.findall` no funciona con HTML"
+        ],
+        "correcta": "B",
+        "explicacion": "El regex `<h2>` es **sensible a mayúsculas/minúsculas** por defecto en Python. `<H2>` no coincide con `<h2>`. Usar `re.IGNORECASE` resolvería esto, pero sigue fallando con atributos y anidamiento. La opción A es un problema distinto (multilínea). La opción C es falsa: `(.*?)` es no-greedy pero funciona. La opción D es falsa: `re.findall` funciona con cualquier string.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es el patrón general que indica que regex es la herramienta equivocada?",
+        "opciones": [
+          "Cuando el texto contiene números de teléfono",
+          "Cuando necesitas validar un email con RFC 5322",
+          "Cuando el texto tiene estructura anidada o recursiva",
+          "Cuando necesitas hacer coincidir URLs"
+        ],
+        "correcta": "C",
+        "explicacion": "Regex es adecuado para patrones lineales simples, pero **falla con estructuras anidadas** como HTML (`<div><span>texto</span></div>`), JSON, o lenguajes con recursión. HTML no es un lenguaje regular: tiene anidamiento ilimitado, atributos variables, comentarios, etc. La opción A es falsa: regex puede manejar teléfonos. La opción B es un caso de \"regex insuficiente\" pero no el patrón general. La opción D es falsa: regex puede extraer URLs simples.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué devuelve `re.findall(r'<h2>(.*?)</h2>', '<h2 class=\"x\">Título</h2>')`?",
+        "opciones": [
+          "['Título']",
+          "['<h2 class=\"x\">Título</h2>']",
+          "[]",
+          "Lanza un error de sintaxis"
+        ],
+        "correcta": "C",
+        "explicacion": "El regex busca literalmente `<h2>` pero la etiqueta real es `<h2 class=\"x\">`, que **no coincide**. El `(.*?)` capturaría el contenido solo si la etiqueta abierta coincidiera exactamente. Como no coincide, `re.findall` devuelve una lista vacía `[]`. La opción A es incorrecta: no hay coincidencia. La opción B es falsa: `re.findall` no devuelve la etiqueta completa. La opción D es falsa: no hay error de sintaxis.",
+        "tipo": "codigo"
+      }
     ]
   },
   {

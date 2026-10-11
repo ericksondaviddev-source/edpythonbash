@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Pipeline scraper → limpieza → SQLite → JSON que alimenta tu PWA",
-    "modelo_mental": "Scraping NO es 'bajar HTML': es conversar con un servidor bajo su contrato HTTP. Cuatro piezas definen si tu scraper es profesional o un juguete que te bloquean: (1) **User-Agent identificable** (los servidores bloquean el default de requests: `python-requests/2.x`), (2) **timeout SIEMPRE** (sin él, una conexión colgada detiene tu scraper para siempre), (3) **encoding correcto** (`r.encoding` puede venir mal declarado; `apparent_encoding` lo detecta), (4) **reintentos con backoff exponencial** ante 429/5xx. Y la regla de oro: `raise_for_status()` — un 404 NO es un HTML vacío, es un error que debes ver.",
+    "modelo_mental": "Scraping NO es 'bajar HTML': es conversar con un servidor bajo su contrato HTTP. Cuatro piezas definen si tu scraper es profesional o un juguete que te bloquean: (1) **User-Agent identificable** (los servidores bloquean el UA default de requests: `python-requests/2.x`), (2) **timeout SIEMPRE** (sin él, una conexión colgada detiene tu scraper para siempre), (3) **encoding correcto** (`r.encoding` puede venir mal declarado; `apparent_encoding` lo detecta), (4) **reintentos con backoff exponencial** ante 429/5xx. La analogía central es pensar el scraping como una conversación diplomática: presentas credenciales (User-Agent), estableces un límite de tiempo para la respuesta (timeout), verificas que entendiste el idioma correctamente (encoding) y, si te responden con un 'ocupado' (429/5xx), no te vas de golpe sino que vuelves con paciencia (backoff). Por qué importa: un scraper sin estas prácticas no solo falla ante sitios medianamente serios, sino que también consume recursos innecesarios, puede ser baneado permanentemente y genera datos corruptos que arruin análisis posteriores. Qué errores previene: evita caídas silenciosas por timeouts, bloqueos 403 por UA genérico, datos con caracteres corruptos y pérdidas masivas de datos por un único error transitorio.\n\nUn segundo párrafo clave: la regla de oro es `raise_for_status()` — un 404 NO es un HTML vacío, es un error que debes ver. Esto convierte errores HTTP en excepciones explícitas, forzándote a decidir cómo manejarlos en lugar de procesar una página de error como si fuera contenido válido.",
     "codigo_roto": "import requests\nfrom bs4 import BeautifulSoup\n\ndef scrapear(url):\n    r = requests.get(url)              # sin timeout, sin User-Agent\n    soup = BeautifulSoup(r.text, 'html.parser')\n    return [t.text for t in soup.select('h2')]",
-    "diagnostico": "Cinco defectos que la IA genera por defecto. (1) Sin `timeout`: si el servidor acepta la conexión y no responde, tu script se cuelga indefinidamente — el fallo más común en scrapers que 'funcionaban ayer'. (2) Sin User-Agent propio: muchos sitios responden 403 al UA default de requests. (3) Sin `raise_for_status()`: un 404 retorna la página de error del servidor con status 200-en-tu-cabeza, tu select encuentra 0 elementos y crees que 'el sitio ya no tiene datos'. (4) Sin manejo de encoding: `r.text` con charset mal declarado produce 'MÃ©xico' en vez de 'México'. (5) Sin reintentos: un solo 429 o 503 aborta toda la corrida de 10,000 páginas.",
+    "diagnostico": "1. Sin `timeout`: si el servidor acepta la conexión y no responde, tu script se cuelga indefinidamente — el fallo más común en scrapers que 'funcionaban ayer'. Python no lanza nada porque `requests.get()` sin timeout espera literalmente para siempre; el patrón general es que el scraper aparece 'colgado' sin errores visibles.\n2. Sin User-Agent propio: muchos sitios responden 403 al UA default de requests (`python-requests/2.x`). Python/Bash no lanza nada porque la petición técnicamente funciona, pero el servidor devuelve Forbidden; el patrón general es un 403 inesperado en sitios que abrían antes.\n3. Sin `raise_for_status()`: un 404 retorna la página de error del servidor con status 200-en-tu-cabeza, tu select encuentra 0 elementos y crees que 'el sitio ya no tiene datos'. Python no lanza nada porque `r.text` contiene HTML válido (la página 404), pero tu lógica de parsing falla silenciosamente; el patrón general es listas vacías sin excepciones.\n4. Sin manejo de encoding: `r.text` con charset mal declarado produce 'MÃ©xico' en vez de 'México'. Python no lanza nada porque el contenido se descarga, pero `r.encoding` toma el valor declarado por el servidor (a menudo incorrecto); el patrón general es texto con caracteres extraños o símbolos raros.\n5. Sin reintentos: un solo 429 o 503 aborta toda la corrida de 10,000 páginas. Python lanza `requests.exceptions.HTTPError` si usas `raise_for_status()`, pero sin reintentos no hay segunda oportunidad; el patrón general es que una sola respuesta temporal mata todo el proceso.",
     "codigo_corregido": "import requests\nfrom bs4 import BeautifulSoup\n\nHEADERS = {\n    'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot; contacto@mail.example)',\n    'Accept-Language': 'es-MX,es;q=0.9',\n}\n\ndef scrapear(url, reintentos=3):\n    for intento in range(1, reintentos + 1):\n        try:\n            r = requests.get(url, headers=HEADERS, timeout=15)\n            r.raise_for_status()\n            r.encoding = r.apparent_encoding or r.encoding\n            soup = BeautifulSoup(r.text, 'html.parser')\n            return [t.get_text(strip=True) for t in soup.select('h2')]\n        except requests.RequestException as e:\n            if intento == reintentos:\n                raise\n            time.sleep(2 ** intento)   # backoff: 2s, 4s, 8s",
     "codigo_optimizado": "import time\nimport requests\nfrom bs4 import BeautifulSoup\n\n# ===== Cliente HTTP profesional (la base de TODO tu scraping) =====\nclass ClienteHTTP:\n    \"\"\"Timeout, UA identificable, encoding, backoff y respeto por 429.\"\"\"\n\n    def __init__(self, ua='MiBotEducativo/1.0 (+https://mipwa.example/bot)',\n                 timeout=15, reintentos=4, backoff=1.5):\n        self.s = requests.Session()          # reutiliza conexiones (keep-alive)\n        self.s.headers.update({\n            'User-Agent': ua,\n            'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',\n            'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8',\n        })\n        self.timeout, self.reintentos, self.backoff = timeout, reintentos, backoff\n\n    def get(self, url, **kw):\n        ultimo = None\n        for intento in range(1, self.reintentos + 1):\n            try:\n                r = self.s.get(url, timeout=self.timeout, **kw)\n                if r.status_code == 429:      # Too Many Requests: obedecer Retry-After\n                    espera = int(r.headers.get('Retry-After', 0)) or self.backoff ** intento\n                    time.sleep(min(espera, 60))\n                    continue\n                if r.status_code >= 500:      # error del servidor: reintentar\n                    raise requests.HTTPError(f'{r.status_code} server error', response=r)\n                r.raise_for_status()\n                r.encoding = r.apparent_encoding or r.encoding\n                return r\n            except requests.RequestException as e:\n                ultimo = e\n                time.sleep(self.backoff ** intento)\n        raise ultimo\n\n    def soup(self, url, **kw):\n        return BeautifulSoup(self.get(url, **kw).text, 'html.parser')\n\n# ===== DIAGNÓSTICO: qué te está diciendo el servidor =====\n# 200 → OK. 301/302 → sigue Location (requests lo hace solo si allow_redirects=True)\n# 403 → te identificó como bot: revisa UA/headers, o el sitio no quiere scraping\n# 404 → la URL no existe (¡no es 'sin resultados'!)\n# 429 → vas demasiado rápido: respeta Retry-After y baja el ritmo\n# 5xx → problema de ellos: reintenta con backoff\n# r.url ≠ url pedida → hubo redirect (muy útil para detectar paywalls/logins)\n# r.elapsed.total_seconds() → latencia real: si sube, estás saturando\n\n# ===== MODO DEBUG: ver qué envías y qué recibes =====\n# import logging, http.client\n# http.client.HTTPConnection.debuglevel = 1\n# logging.basicConfig(); logging.getLogger('urllib3').setLevel(logging.DEBUG)",
     "disenso_experto": "¿requests o httpx? requests es el estándar de facto, síncrono, estable, y funciona perfecto en Colab. httpx añade HTTP/2 y async nativo — superior para scraping concurrente de miles de URLs (Fase 3, concurrencia). La regla: requests para aprender y scripts secuenciales; httpx cuando la concurrencia sea el cuello de botella. En Pyodide ninguno hace red real, por eso este chunk vive en Colab.",
-    "pregunta_transferencia": "Tu scraper recorría 5,000 URLs sin problemas. Hoy retorna listas vacías en todas, sin ninguna excepción, y `r.status_code` es 200. Enumera 4 causas posibles distintas (servidor, red, markup, tu código) y el diagnóstico exacto de una línea para cada una.",
+    "pregunta_transferencia": "Tu scraper recorría 5,000 URLs sin problemas. Hoy retorna listas vacías en todas, sin ninguna excepción, y `r.status_code` es 200. Enumera 4 causas posibles distintas (servidor, red, markup, tu código) y el diagnóstico exacto de una línea para cada una.\n\nPista: no asumas que '200 significa OK'. El servidor podría estar devolviendo una página de mantenimiento con status 200, o tu selector podría estar apuntando a una clase CSS que cambió de nombre, o el encoding podría estar corrompiendo el HTML hasta hacerlo no parseable, o podrías tener un proxy intermedio devolviendo contenido genérico. La clave es verificar `r.text[:500]` directamente y comparar con lo que esperas.",
     "quiz": {
       "pregunta": "¿Por qué `requests.get(url)` SIN `timeout=` es un defecto grave en un scraper?",
       "opciones": [
@@ -29,35 +29,100 @@
       "engine": "string_match",
       "instruccion": "Un servidor responde 429 con header Retry-After: 30. Según el ClienteHTTP del chunk (backoff=1.5, reintentos=4), ¿cuántos segundos espera el cliente antes del siguiente intento y qué hace después?",
       "respuesta_esperada": "espera 30 segundos y reintenta la peticion",
-      "normalizacion": ["trim", "colapsar_espacios", "lowercase"],
+      "normalizacion": [
+        "trim",
+        "colapsar_espacios",
+        "lowercase"
+      ],
       "tolerancia": "contiene_palabras_clave",
-      "palabras_clave": ["30", "reintenta"],
+      "palabras_clave": [
+        "30",
+        "reintenta"
+      ],
       "pistas_parciales": [
-        {"trigger": "1.5", "mensaje": "El backoff exponencial solo aplica cuando NO hay Retry-After. Lee la rama del 429."},
-        {"trigger": "falla", "mensaje": "429 no es un error fatal: es el servidor pidiéndote que bajes el ritmo. ¿Qué dice el código que hace con Retry-After?"}
+        {
+          "trigger": "1.5",
+          "mensaje": "El backoff exponencial solo aplica cuando NO hay Retry-After. Lee la rama del 429."
+        },
+        {
+          "trigger": "falla",
+          "mensaje": "429 no es un error fatal: es el servidor pidiéndote que bajes el ritmo. ¿Qué dice el código que hace con Retry-After?"
+        }
       ],
       "solucion": "Toma Retry-After=30 → time.sleep(min(30, 60)) = 30 segundos → `continue` (no consume el intento como fallo) → reintenta la misma URL. El backoff 1.5**intento solo se usa si el header falta."
     },
     "colab": {
       "objetivo": "Hacer tus primeras peticiones reales, inspeccionar qué responde el servidor y construir tu ClienteHTTP reutilizable.",
-      "sitios_practica": ["https://httpbin.org", "https://quotes.toscrape.com", "https://books.toscrape.com"],
+      "sitios_practica": [
+        "https://httpbin.org",
+        "https://quotes.toscrape.com",
+        "https://books.toscrape.com"
+      ],
       "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-001 — Anatomía de una petición HTTP\n\nInstala dependencias y construye tu cliente. Los sitios de práctica existen para esto: no los satures (1 petición cada 1-2s)."},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time\nfrom bs4 import BeautifulSoup"},
-        {"tipo": "markdown", "contenido": "## 1. Inspección: qué envías y qué recibes\n\nhttpbin.org te devuelve TU propia petición como JSON. Perfecto para ver qué headers estás mandando realmente."},
-        {"tipo": "code", "contenido": "r = requests.get('https://httpbin.org/headers', timeout=15)\nprint('status:', r.status_code)\nprint('headers que envié (default):', r.json()['headers'])\n\nr2 = requests.get('https://httpbin.org/headers',\n                  headers={'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'},\n                  timeout=15)\nprint('\\ncon UA propio:', r2.json()['headers']['User-Agent'])"},
-        {"tipo": "markdown", "contenido": "## 2. Códigos de estado reales: 404, 429, 500 y redirects"},
-        {"tipo": "code", "contenido": "for url in ['https://httpbin.org/status/404',\n            'https://httpbin.org/status/429',\n            'https://httpbin.org/status/500',\n            'https://httpbin.org/redirect-to?url=https://quotes.toscrape.com/']:\n    try:\n        r = requests.get(url, timeout=15)\n        print(f'{r.status_code:3d} {url}  → url final: {r.url}  ok={r.ok}')\n    except requests.RequestException as e:\n        print('EXC', url, type(e).__name__, str(e)[:80])\n    time.sleep(1)"},
-        {"tipo": "markdown", "contenido": "## 3. raise_for_status(): la diferencia entre 'sin datos' y 'error'\n\nEste es el bug silencioso más caro del scraping: un 404 parseado como si fuera HTML válido."},
-        {"tipo": "code", "contenido": "r = requests.get('https://quotes.toscrape.com/pagina-que-no-existe-xyz', timeout=15)\nsoup = BeautifulSoup(r.text, 'html.parser')\nprint('status:', r.status_code)\nprint('h2 encontrados SIN raise_for_status:', len(soup.select('h2')), '← parece \"el sitio no tiene datos\"')\ntry:\n    r.raise_for_status()\nexcept requests.HTTPError as e:\n    print('CON raise_for_status →', e)"},
-        {"tipo": "markdown", "contenido": "## 4. Encoding: por qué ves 'MÃ©xico' en vez de 'México'"},
-        {"tipo": "code", "contenido": "r = requests.get('https://quotes.toscrape.com/', timeout=15)\nprint('r.encoding declarado  :', r.encoding)\nprint('r.apparent_encoding   :', r.apparent_encoding)\nprint('título:', BeautifulSoup(r.text, 'html.parser').title.get_text(strip=True))"},
-        {"tipo": "markdown", "contenido": "## 5. Tu ClienteHTTP reutilizable (cópialo a todos tus notebooks)\n\nTimeout + UA identificable + backoff + respeto por Retry-After."},
-        {"tipo": "code", "contenido": "class ClienteHTTP:\n    def __init__(self, ua='MiBotEducativo/1.0 (+https://mipwa.example/bot)',\n                 timeout=15, reintentos=4, backoff=1.5):\n        self.s = requests.Session()\n        self.s.headers.update({'User-Agent': ua,\n                               'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8'})\n        self.timeout, self.reintentos, self.backoff = timeout, reintentos, backoff\n\n    def get(self, url, **kw):\n        ultimo = None\n        for intento in range(1, self.reintentos + 1):\n            try:\n                r = self.s.get(url, timeout=self.timeout, **kw)\n                if r.status_code == 429:\n                    espera = int(r.headers.get('Retry-After', 0)) or self.backoff ** intento\n                    print(f'  429 → espero {espera}s')\n                    time.sleep(min(espera, 60)); continue\n                if r.status_code >= 500:\n                    raise requests.HTTPError(f'{r.status_code}', response=r)\n                r.raise_for_status()\n                r.encoding = r.apparent_encoding or r.encoding\n                return r\n            except requests.RequestException as e:\n                ultimo = e\n                espera = self.backoff ** intento\n                print(f'  intento {intento} falló ({type(e).__name__}) → espero {espera:.1f}s')\n                time.sleep(espera)\n        raise ultimo\n\n    def soup(self, url, **kw):\n        return BeautifulSoup(self.get(url, **kw).text, 'html.parser')\n\ncliente = ClienteHTTP()"},
-        {"tipo": "markdown", "contenido": "## 6. Primera extracción real + VERIFICACIÓN de datos\n\nNunca confíes en un scraper sin contar lo que trajo."},
-        {"tipo": "code", "contenido": "soup = cliente.soup('https://quotes.toscrape.com/')\ncitas = []\nfor q in soup.select('div.quote'):\n    citas.append({\n        'texto': q.select_one('span.text').get_text(strip=True),\n        'autor': q.select_one('small.author').get_text(strip=True),\n        'tags': [t.get_text(strip=True) for t in q.select('a.tag')],\n    })\n\n# Verificación obligatoria:\nprint('citas extraídas :', len(citas))\nprint('con texto vacío:', sum(1 for c in citas if not c['texto']))\nprint('con autor vacío:', sum(1 for c in citas if not c['autor']))\nprint('tags promedio  :', round(sum(len(c['tags']) for c in citas) / len(citas), 2))\nprint('\\nmuestra:', citas[0])\nassert len(citas) == 10, 'la página 1 tiene exactamente 10 citas: tus selectores están mal'\nassert all(c['texto'] and c['autor'] for c in citas), 'hay campos vacíos: revisa la extracción'"},
-        {"tipo": "markdown", "contenido": "## 7. Diagnóstico de latencia y tamaño (¿estoy saturando el sitio?)"},
-        {"tipo": "code", "contenido": "for i in range(3):\n    r = cliente.get('https://quotes.toscrape.com/')\n    print(f'#{i+1} status={r.status_code} {len(r.content)/1024:.1f} KB latencia={r.elapsed.total_seconds():.3f}s')\n    time.sleep(1.5)   # ritmo respetuoso"}
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-001 — Anatomía de una petición HTTP\n\nInstala dependencias y construye tu cliente. Los sitios de práctica existen para esto: no los satures (1 petición cada 1-2s)."
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time\nfrom bs4 import BeautifulSoup"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 1. Inspección: qué envías y qué recibes\n\nhttpbin.org te devuelve TU propia petición como JSON. Perfecto para ver qué headers estás mandando realmente."
+        },
+        {
+          "tipo": "code",
+          "contenido": "r = requests.get('https://httpbin.org/headers', timeout=15)\nprint('status:', r.status_code)\nprint('headers que envié (default):', r.json()['headers'])\n\nr2 = requests.get('https://httpbin.org/headers',\n                  headers={'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'},\n                  timeout=15)\nprint('\\ncon UA propio:', r2.json()['headers']['User-Agent'])"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 2. Códigos de estado reales: 404, 429, 500 y redirects"
+        },
+        {
+          "tipo": "code",
+          "contenido": "for url in ['https://httpbin.org/status/404',\n            'https://httpbin.org/status/429',\n            'https://httpbin.org/status/500',\n            'https://httpbin.org/redirect-to?url=https://quotes.toscrape.com/']:\n    try:\n        r = requests.get(url, timeout=15)\n        print(f'{r.status_code:3d} {url}  → url final: {r.url}  ok={r.ok}')\n    except requests.RequestException as e:\n        print('EXC', url, type(e).__name__, str(e)[:80])\n    time.sleep(1)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 3. raise_for_status(): la diferencia entre 'sin datos' y 'error'\n\nEste es el bug silencioso más caro del scraping: un 404 parseado como si fuera HTML válido."
+        },
+        {
+          "tipo": "code",
+          "contenido": "r = requests.get('https://quotes.toscrape.com/pagina-que-no-existe-xyz', timeout=15)\nsoup = BeautifulSoup(r.text, 'html.parser')\nprint('status:', r.status_code)\nprint('h2 encontrados SIN raise_for_status:', len(soup.select('h2')), '← parece \"el sitio no tiene datos\"')\ntry:\n    r.raise_for_status()\nexcept requests.HTTPError as e:\n    print('CON raise_for_status →', e)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 4. Encoding: por qué ves 'MÃ©xico' en vez de 'México'"
+        },
+        {
+          "tipo": "code",
+          "contenido": "r = requests.get('https://quotes.toscrape.com/', timeout=15)\nprint('r.encoding declarado  :', r.encoding)\nprint('r.apparent_encoding   :', r.apparent_encoding)\nprint('título:', BeautifulSoup(r.text, 'html.parser').title.get_text(strip=True))"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 5. Tu ClienteHTTP reutilizable (cópialo a todos tus notebooks)\n\nTimeout + UA identificable + backoff + respeto por Retry-After."
+        },
+        {
+          "tipo": "code",
+          "contenido": "class ClienteHTTP:\n    def __init__(self, ua='MiBotEducativo/1.0 (+https://mipwa.example/bot)',\n                 timeout=15, reintentos=4, backoff=1.5):\n        self.s = requests.Session()\n        self.s.headers.update({'User-Agent': ua,\n                               'Accept-Language': 'es-MX,es;q=0.9,en;q=0.8'})\n        self.timeout, self.reintentos, self.backoff = timeout, reintentos, backoff\n\n    def get(self, url, **kw):\n        ultimo = None\n        for intento in range(1, self.reintentos + 1):\n            try:\n                r = self.s.get(url, timeout=self.timeout, **kw)\n                if r.status_code == 429:\n                    espera = int(r.headers.get('Retry-After', 0)) or self.backoff ** intento\n                    print(f'  429 → espero {espera}s')\n                    time.sleep(min(espera, 60)); continue\n                if r.status_code >= 500:\n                    raise requests.HTTPError(f'{r.status_code}', response=r)\n                r.raise_for_status()\n                r.encoding = r.apparent_encoding or r.encoding\n                return r\n            except requests.RequestException as e:\n                ultimo = e\n                espera = self.backoff ** intento\n                print(f'  intento {intento} falló ({type(e).__name__}) → espero {espera:.1f}s')\n                time.sleep(espera)\n        raise ultimo\n\n    def soup(self, url, **kw):\n        return BeautifulSoup(self.get(url, **kw).text, 'html.parser')\n\ncliente = ClienteHTTP()"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 6. Primera extracción real + VERIFICACIÓN de datos\n\nNunca confíes en un scraper sin contar lo que trajo."
+        },
+        {
+          "tipo": "code",
+          "contenido": "soup = cliente.soup('https://quotes.toscrape.com/')\ncitas = []\nfor q in soup.select('div.quote'):\n    citas.append({\n        'texto': q.select_one('span.text').get_text(strip=True),\n        'autor': q.select_one('small.author').get_text(strip=True),\n        'tags': [t.get_text(strip=True) for t in q.select('a.tag')],\n    })\n\n# Verificación obligatoria:\nprint('citas extraídas :', len(citas))\nprint('con texto vacío:', sum(1 for c in citas if not c['texto']))\nprint('con autor vacío:', sum(1 for c in citas if not c['autor']))\nprint('tags promedio  :', round(sum(len(c['tags']) for c in citas) / len(citas), 2))\nprint('\\nmuestra:', citas[0])\nassert len(citas) == 10, 'la página 1 tiene exactamente 10 citas: tus selectores están mal'\nassert all(c['texto'] and c['autor'] for c in citas), 'hay campos vacíos: revisa la extracción'"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 7. Diagnóstico de latencia y tamaño (¿estoy saturando el sitio?)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "for i in range(3):\n    r = cliente.get('https://quotes.toscrape.com/')\n    print(f'#{i+1} status={r.status_code} {len(r.content)/1024:.1f} KB latencia={r.elapsed.total_seconds():.3f}s')\n    time.sleep(1.5)   # ritmo respetuoso"
+        }
       ],
       "verificacion": [
         "assert len(citas) == 10",
@@ -69,10 +134,82 @@
     "audio_script": "El scraping no consiste en descargar HTML: consiste en conversar con un servidor bajo las reglas del protocolo HTTP, y si no las respetas, te bloquean o te devuelven basura. Cuatro piezas separan un scraper profesional de un script que la inteligencia artificial te generó. Primera: tu User-Agent. El que trae requests por defecto dice python-requests, y muchos servidores responden cuatrocientos tres apenas lo ven. Identifícate: nombre del bot, versión y una URL de contacto. Segunda: timeout siempre. Sin timeout, un servidor que acepta la conexión y no responde cuelga tu programa para siempre, sin excepción, sin mensaje. Tercera: raise for status. Un cuatrocientos cuatro no es una página sin datos: es un error. Si no lo conviertes en excepción, tu scraper parsea la página de error, encuentra cero elementos, y tú concluyes que el sitio ya no tiene información. Cuarta: encoding. Si el servidor declara mal el charset, tus acentos se convierten en basura; apparent encoding lo detecta. Y encima de todo, reintentos con backoff exponencial y respeto absoluto por el código cuatrocientos veintinueve: cuando el servidor te dice que vas muy rápido, le obedeces.",
     "video_prompt": "Video de 95 segundos. Un scraper como un mensajero llegando a un edificio (servidor). Escena 1: el mensajero sin identificación (User-Agent default) y el guardia lo echa (403). Con credencial 'MiBotEducativo/1.0' lo deja pasar. Escena 2: el mensajero toca el timbre y espera eternamente sin timeout — reloj girando, pantalla congelada; con timeout=15 el timbre suena y se retira ordenadamente. Escena 3: el mensajero recibe un sobre vacío con sello '404' y lo archiva como 'sin datos' (raise_for_status ausente) vs lo reporta como error (presente). Escena 4: semáforo 429 con cartel 'Retry-After: 30' — el mensajero espera 30s y vuelve. Cierre: backoff exponencial como escalera 1.5s → 2.2s → 3.4s → 5s. Overlay: 'HTTP es un contrato. Léelo antes de scrapear.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 12 (web scraping)", "Linux Command Line Bible Cap 16 (curl/wget como modelo mental)", "requests docs"],
-      "conceptos_clave": ["http", "requests", "status-codes", "user-agent", "timeout", "encoding", "backoff", "429"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 12 (web scraping)",
+        "Linux Command Line Bible Cap 16 (curl/wget como modelo mental)",
+        "requests docs"
+      ],
+      "conceptos_clave": [
+        "http",
+        "requests",
+        "status-codes",
+        "user-agent",
+        "timeout",
+        "encoding",
+        "backoff",
+        "429"
+      ]
     },
-    "tags_rag": ["python", "scraping", "requests", "http", "headers", "timeout", "backoff"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "requests",
+      "http",
+      "headers",
+      "timeout",
+      "backoff"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué sucede si ejecutas requests.get(url) sin timeout contra un servidor que acepta la conexión pero nunca responde?",
+        "opciones": [
+          "El script lanza ConnectionError inmediatamente",
+          "El script se cuelga indefinidamente esperando la respuesta",
+          "El script retorna un objeto Response con status_code 200",
+          "El script reintenta automáticamente hasta recibir respuesta"
+        ],
+        "correcta": "B",
+        "explicacion": "Sin timeout, requests.get() espera literalmente para siempre si el servidor no cierra la conexión. Python no lanza ninguna excepción porque técnicamente la conexión está abierta. El patrón general es que el scraper parece 'colgado' sin errores visibles. La opción A es incorrecta porque no hay cierre de conexión. La opción C es falsa porque nunca llega una respuesta. La opción D es incorrecta porque requests no reintenta por defecto.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la salida del siguiente código si el servidor devuelve 'México' con charset mal declarado como ISO-8859-1?",
+        "opciones": [
+          "Imprime: México",
+          "Imprime: MÃ©xico",
+          "Lanza UnicodeDecodeError",
+          "Imprime: Mxico"
+        ],
+        "correcta": "B",
+        "explicacion": "Cuando el servidor declara un charset incorrecto (ej. ISO-8859-1) pero el contenido real es UTF-8, r.text aplica la decodificación equivocada produciendo 'MÃ©xico'. La opción A sería correcta solo si el charset coincidiera. La opción C es falsa porque requests no lanza error, solo decodifica mal. La opción D ocurre con bytes inválidos, no con decodificación equivocada.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Por qué es peligroso no usar raise_for_status() después de una petición HTTP?",
+        "opciones": [
+          "El scraper consume más memoria al no liberar la conexión",
+          "Un 404 o 500 se procesa como contenido válido, generando listas vacías silenciosas",
+          "El servidor devuelve siempre 200 incluso ante errores internos",
+          "Se pierde el User-Agent en la siguiente petición"
+        ],
+        "correcta": "B",
+        "explicacion": "Sin raise_for_status(), un 404 retorna HTML válido (página de error) y tu código lo procesa como si fuera contenido real, encontrando 0 elementos y produciendo listas vacías sin excepciones. La opción A es incorrecta porque la conexión se libera igual. La opción C es falsa: los servidores sí devuelven códigos de error reales. La opción D es irrelevante.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué User-Agent usa por defecto la librería requests de Python?",
+        "opciones": [
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+          "python-requests/2.x",
+          "curl/7.68.0",
+          "Scrapy/2.6 (+https://scrapy.org)"
+        ],
+        "correcta": "B",
+        "explicacion": "La librería requests identifica su User-Agent como 'python-requests/2.x' por defecto, lo cual muchos servidores bloquean fácilmente. La opción A es el UA de navegadores reales. La opción C es de curl. La opción D es de Scrapy. El patrón general es que servidores bloquean UAs genéricos de herramientas.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M2.3-002",
@@ -106,33 +243,87 @@
       "setup_code": "import micropip\nawait micropip.install('beautifulsoup4')\nfrom bs4 import BeautifulSoup\n\nFIXTURE = '''\n<div class=\"catalogo\">\n  <article class=\"producto\" data-id=\"1\">\n    <h3 class=\"titulo\">Fluent Python</h3>\n    <span class=\"precio\">$45.99</span>\n    <span class=\"stock\">En stock</span>\n    <a class=\"detalle\" href=\"/libros/1\">ver</a>\n  </article>\n  <article class=\"producto\" data-id=\"2\">\n    <h3 class=\"titulo\">Effective Python</h3>\n    <span class=\"precio\">$32.50</span>\n    <span class=\"stock\">Agotado</span>\n    <a class=\"detalle\" href=\"/libros/2\">ver</a>\n  </article>\n  <article class=\"producto destacado\" data-id=\"3\">\n    <h3 class=\"titulo\">Python Crash Course</h3>\n    <span class=\"precio\">$29.99</span>\n    <span class=\"stock\">En stock</span>\n    <a class=\"detalle\" href=\"/libros/3\">ver</a>\n  </article>\n</div>\n'''",
       "codigo_inicial": "def extraer_productos(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    catalogo = soup.find('div', class_='catalogo')\n    productos = []\n    for card in catalogo.find_all('div', recursive=False):\n        productos.append({\n            'titulo': card.h3.text,\n            'precio': card.find('span', class_='precio').text,\n        })\n    return productos",
       "test_code": "r = extraer_productos(FIXTURE)\nassert len(r) == 3, f'esperaba 3 productos, obtuve {len(r)} (¿estás asumiendo <div> hijos directos?)'\nassert r[0] == {'id': '1', 'titulo': 'Fluent Python', 'precio': '$45.99'}, r[0]\nassert r[2]['titulo'] == 'Python Crash Course', f'el producto con clase extra no se extrajo: {r[2]}'\nassert all(p['id'] and p['titulo'] and p['precio'] for p in r), 'campos vacíos'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["recursive=False", "find_all('div'"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "recursive=False",
+        "find_all('div'"
+      ],
       "solucion": "def extraer_productos(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    productos = []\n    for card in soup.select('article.producto'):\n        titulo = card.select_one('.titulo')\n        precio = card.select_one('.precio')\n        productos.append({\n            'id': card.get('data-id'),\n            'titulo': titulo.get_text(strip=True) if titulo else None,\n            'precio': precio.get_text(strip=True) if precio else None,\n        })\n    return productos"
     },
     "colab": {
       "objetivo": "Practicar selectores CSS contra HTML real y aprender a derivarlos desde DevTools.",
-      "sitios_practica": ["https://books.toscrape.com", "https://quotes.toscrape.com"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-002 — Selectores CSS contra HTML real"},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nsoup = BeautifulSoup(requests.get('https://books.toscrape.com/', headers=UA, timeout=15).text, 'html.parser')"},
-        {"tipo": "markdown", "contenido": "## Ejercicio: extrae título, precio, disponibilidad y URL de los 20 libros de la portada"},
-        {"tipo": "code", "contenido": "libros = []\nfor art in soup.select('article.product_pod'):\n    titulo_el = art.select_one('h3 a')\n    precio_el = art.select_one('.price_color')\n    stock_el  = art.select_one('.availability')\n    libros.append({\n        'titulo': titulo_el['title'] if titulo_el else None,   # el texto visible está truncado: el real vive en title\n        'url': ('https://books.toscrape.com/catalogue/' + titulo_el['href']) if titulo_el else None,\n        'precio': precio_el.get_text(strip=True) if precio_el else None,\n        'stock': stock_el.get_text(' ', strip=True) if stock_el else None,\n        'rating': art.select_one('p.star-rating')['class'][1] if art.select_one('p.star-rating') else None,\n    })\nprint('libros:', len(libros))\nfor l in libros[:3]: print(l)\nassert len(libros) == 20"},
-        {"tipo": "markdown", "contenido": "## Comparativa: select() vs find_all() para el mismo trabajo"},
-        {"tipo": "code", "contenido": "a = [x.get_text(strip=True) for x in soup.select('.price_color')]\nb = [x.get_text(strip=True) for x in soup.find_all('p', class_='price_color')]\nprint('select   :', len(a), a[:2])\nprint('find_all :', len(b), b[:2])\nassert a == b\nprint('equivalentes ✓')"},
-        {"tipo": "markdown", "contenido": "## Navegación del árbol: subir al contenedor con find_parent"},
-        {"tipo": "code", "contenido": "precio = soup.select_one('.price_color')\nart = precio.find_parent('article')\nprint('desde el precio subí al article:', art.select_one('h3 a')['title'])\ntime.sleep(1.5)"}
+      "sitios_practica": [
+        "https://books.toscrape.com",
+        "https://quotes.toscrape.com"
       ],
-      "verificacion": ["assert len(libros) == 20", "assert all(l['titulo'] and l['precio'] for l in libros)"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-002 — Selectores CSS contra HTML real"
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nsoup = BeautifulSoup(requests.get('https://books.toscrape.com/', headers=UA, timeout=15).text, 'html.parser')"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Ejercicio: extrae título, precio, disponibilidad y URL de los 20 libros de la portada"
+        },
+        {
+          "tipo": "code",
+          "contenido": "libros = []\nfor art in soup.select('article.product_pod'):\n    titulo_el = art.select_one('h3 a')\n    precio_el = art.select_one('.price_color')\n    stock_el  = art.select_one('.availability')\n    libros.append({\n        'titulo': titulo_el['title'] if titulo_el else None,   # el texto visible está truncado: el real vive en title\n        'url': ('https://books.toscrape.com/catalogue/' + titulo_el['href']) if titulo_el else None,\n        'precio': precio_el.get_text(strip=True) if precio_el else None,\n        'stock': stock_el.get_text(' ', strip=True) if stock_el else None,\n        'rating': art.select_one('p.star-rating')['class'][1] if art.select_one('p.star-rating') else None,\n    })\nprint('libros:', len(libros))\nfor l in libros[:3]: print(l)\nassert len(libros) == 20"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Comparativa: select() vs find_all() para el mismo trabajo"
+        },
+        {
+          "tipo": "code",
+          "contenido": "a = [x.get_text(strip=True) for x in soup.select('.price_color')]\nb = [x.get_text(strip=True) for x in soup.find_all('p', class_='price_color')]\nprint('select   :', len(a), a[:2])\nprint('find_all :', len(b), b[:2])\nassert a == b\nprint('equivalentes ✓')"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Navegación del árbol: subir al contenedor con find_parent"
+        },
+        {
+          "tipo": "code",
+          "contenido": "precio = soup.select_one('.price_color')\nart = precio.find_parent('article')\nprint('desde el precio subí al article:', art.select_one('h3 a')['title'])\ntime.sleep(1.5)"
+        }
+      ],
+      "verificacion": [
+        "assert len(libros) == 20",
+        "assert all(l['titulo'] and l['precio'] for l in libros)"
+      ],
       "nota_etica": "books.toscrape.com es un sitio de práctica con datos ficticios: scrapéalo libremente manteniendo ~1 req/s."
     },
     "audio_script": "BeautifulSoup convierte el HTML en un árbol de objetos que puedes navegar, y te da dos interfaces para buscar. Select y select one usan selectores CSS — los mismos que ya conoces del frontend: punto para clase, numeral para id, corchetes para atributos, espacio para descendientes, mayor que para hijos directos. Find all y find usan atributos de Python y ganan cuando necesitas filtrar con una función o con una expresión regular. Mi recomendación práctica: usa selectores CSS por defecto, porque puedes copiarlos del inspector del navegador y porque son más compactos. Pero hay una regla que te va a ahorrar la mitad de los crashes: select one retorna None cuando no encuentra nada. Si encadenas punto text sobre None, tu scraper explota en la primera página que tenga un elemento faltante. El patrón defensivo es siempre el mismo: guarda el elemento en una variable, verifica que no sea None, y solo entonces extrae el texto. Y usa get text con separador y strip true: colapsa espacios y te da texto limpio en un solo paso.",
     "video_prompt": "Video de 85 segundos. Un HTML renderizándose como un árbol genealógico de nodos. Un haz de luz (el selector CSS) recorre el árbol: 'article.producto' ilumina 3 nodos, '.precio' ilumina sus hijos, '[data-id=\"2\"]' ilumina uno exacto. Comparativa lado a lado: select('.precio') vs find_all('span', class_='precio') produciendo el mismo resultado. Escena crítica: select_one devuelve None y un .text encadenado explota en rojo; el patrón defensivo (if el: ...) lo previene en verde. Cierre con DevTools: clic derecho → Copy selector mostrando una ruta larguísima que se simplifica a '.product_pod'. Overlay: 'CSS para buscar. None-check para no crashear.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 12", "BeautifulSoup docs", "Classic CS Problems (estructuras de árbol)"],
-      "conceptos_clave": ["beautifulsoup", "selectores-css", "select", "find-all", "arbol-dom", "get-text", "scraping"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 12",
+        "BeautifulSoup docs",
+        "Classic CS Problems (estructuras de árbol)"
+      ],
+      "conceptos_clave": [
+        "beautifulsoup",
+        "selectores-css",
+        "select",
+        "find-all",
+        "arbol-dom",
+        "get-text",
+        "scraping"
+      ]
     },
-    "tags_rag": ["python", "scraping", "beautifulsoup", "selectores-css", "html", "parsing"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "beautifulsoup",
+      "selectores-css",
+      "html",
+      "parsing"
+    ]
   },
   {
     "id": "M2.3-003",
@@ -141,9 +332,9 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Pipeline scraper → limpieza → SQLite → JSON que alimenta tu PWA",
-    "modelo_mental": "El HTML del mundo real nunca coincide con tu fixture ideal: campos ausentes, `&nbsp;`, entidades (`&amp;`), precios con moneda y separadores ('\\$ 1,250.50 MXN'), valores no numéricos ('Gratis', 'Consultar'), elementos vacíos. Un scraper profesional tiene tres propiedades: **nunca crashea por un registro** (falla por elemento, no por lote — M2.2-009), **convierte tipos con red de seguridad** (regex para extraer el número + try/except), y **reporta lo que no pudo** (lista de problemas + conteos). La diferencia entre 'datos' y 'basura con forma de datos' es el reporte de calidad.",
+    "modelo_mental": "**El mundo real es ruidoso:** el HTML no coincide con tus fixtures ideales porque contiene campos ausentes, entornos de codificación como `&nbsp;`, unidades de moneda y separadores locales (puntos o comas). Un scraper profesional debe tener tres propiedades clave: **nunca crashea por un registro** (fallo por elemento, no por lote), **convierte tipos con red de seguridad** usando regex y try/except, y **reporta lo que no pudo** mediante un informe de calidad. Esta diferencia entre 'datos' y 'basura con forma de datos' es la clave para mantener la integridad de la base.",
     "codigo_roto": "from bs4 import BeautifulSoup\n\ndef parsear_items(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    items = []\n    for li in soup.select('li.item'):\n        items.append({\n            'url': li.select_one('a.link')['href'],\n            'nombre': li.select_one('a.link').text,\n            'precio': float(li.select_one('.price').text.replace('$', '')),\n            'rating': float(li.select_one('.rating').text.split('/')[0]),\n        })\n    return items, []",
-    "diagnostico": "Verificado: crashea en el segundo item con `ValueError: could not convert string to float: ' 1,250.50 MXN'` (coma de miles + moneda + espacios). Aunque superara eso, crashea con AttributeError en el item sin `.rating` y en el `<li>` vacío. Tres defectos de diseño: (1) asume que todos los campos existen siempre; (2) asume que el precio es un float limpio; (3) retorna una lista de problemas vacía por contrato pero nunca la llena — cero observabilidad. El resultado práctico: un solo item raro tumba el lote completo.",
+    "diagnostico": "1. **Error de conversión de precio:** El código lanza `ValueError` al intentar convertir ' 1,250.50 MXN' a float porque el parser estándar no acepta comas como separadores decimales ni la unidad de moneda. 2. **Fallo por acceso a atributos:** Cuando el selector no encuentra el elemento (como un `li` vacío o sin la clase `a.link`), las llamadas a `.text` o `.select_one` devuelven `None`, provocando un `AttributeError`. 3. **Falta de observabilidad:** La función devuelve una lista de problemas siempre vacía, ocultando la existencia de datos corruptos y haciendo imposible depurar el origen de la mala calidad.",
     "codigo_corregido": "import re\nfrom bs4 import BeautifulSoup\n\n_NUM = re.compile(r'[\\d.,]+')\n\ndef parsear_items(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    items, problemas = [], []\n    for idx, li in enumerate(soup.select('li.item')):\n        link = li.select_one('a.link')\n        if link is None:\n            problemas.append((idx, 'sin enlace'))\n            continue\n        precio_el = li.select_one('.price')\n        precio = None\n        if precio_el:\n            m = _NUM.search(precio_el.get_text(strip=True).replace(' ', ''))\n            if m:\n                try:\n                    precio = float(m.group().replace(',', ''))\n                except ValueError:\n                    pass\n            else:\n                problemas.append((idx, f'precio no numerico: {precio_el.get_text(strip=True)!r}'))\n        rating_el = li.select_one('.rating')\n        rating = None\n        if rating_el:\n            rm = re.match(r'([\\d.]+)\\s*/\\s*5', rating_el.get_text(strip=True))\n            if rm:\n                rating = float(rm.group(1))\n        items.append({\n            'url': link.get('href'),\n            'nombre': link.get_text(' ', strip=True).replace('\\xa0', ' ').strip(),\n            'precio': precio,\n            'rating': rating,\n        })\n    return items, problemas",
     "codigo_optimizado": "import re\nimport unicodedata\nfrom bs4 import BeautifulSoup\n\n# ===== NORMALIZACIÓN DE CAMPOS (reutilizable en todo tu pipeline) =====\n_NUM = re.compile(r'[\\d.,]+')\n_ESP = re.compile(r'\\s+')\n\ndef limpiar_texto(s) -> str:\n    \"\"\"NFC + quita &nbsp; + colapsa whitespace. Aplica M1.4-002 y M1.4-005.\"\"\"\n    s = unicodedata.normalize('NFC', s or '').replace('\\xa0', ' ')\n    return _ESP.sub(' ', s).strip()\n\ndef parsear_precio(txt) -> float | None:\n    \"\"\"'$ 1,250.50 MXN' → 1250.5 | '1.250,50 €' (formato ES) → 1250.5 | 'Gratis' → None\"\"\"\n    if not txt:\n        return None\n    limpio = txt.replace(' ', '').replace('\\xa0', '')\n    m = _NUM.search(limpio)\n    if not m:\n        return None\n    s = m.group()\n    # Heurística de formato: la ÚLTIMA coma/punto es el separador decimal\n    if ',' in s and '.' in s:\n        if s.rfind(',') > s.rfind('.'):     # 1.250,50  (europeo)\n            s = s.replace('.', '').replace(',', '.')\n        else:                                # 1,250.50  (anglosajón)\n            s = s.replace(',', '')\n    elif ',' in s:\n        s = s.replace(',', '.') if len(s.split(',')[-1]) != 3 else s.replace(',', '')\n    try:\n        return float(s)\n    except ValueError:\n        return None\n\ndef detectar_moneda(txt) -> str | None:\n    for simbolo, codigo in (('$', 'MXN'), ('€', 'EUR'), ('£', 'GBP')):\n        if simbolo in (txt or ''):\n            return codigo\n    return None\n\n# ===== EXTRACTOR TOLERANTE COMPLETO =====\ndef parsear_items(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    items, problemas = [], []\n    for idx, li in enumerate(soup.select('li.item')):\n        link = li.select_one('a.link')\n        if link is None:\n            problemas.append((idx, 'sin enlace'))\n            continue\n\n        precio_el = li.select_one('.price')\n        precio_txt = precio_el.get_text(strip=True) if precio_el else ''\n        precio = parsear_precio(precio_txt)\n        if precio is None and precio_txt:\n            problemas.append((idx, f'precio no numerico: {precio_txt!r}'))\n\n        rating_el = li.select_one('.rating')\n        rating = None\n        if rating_el:\n            rm = re.match(r'([\\d.]+)\\s*/\\s*5', rating_el.get_text(strip=True))\n            if rm:\n                rating = float(rm.group(1))\n            else:\n                problemas.append((idx, f'rating no numerico: {rating_el.get_text(strip=True)!r}'))\n\n        items.append({\n            'url': link.get('href'),\n            'nombre': limpiar_texto(link.get_text(' ', strip=True)),\n            'precio': precio,\n            'moneda': detectar_moneda(precio_txt),\n            'rating': rating,\n        })\n    return items, problemas\n\n# ===== REPORTE DE CALIDAD: lo que separa datos de basura =====\ndef reporte(items, problemas):\n    n = len(items) or 1\n    return {\n        'extraidos': len(items),\n        'con_problemas': len(problemas),\n        'tasa_precio_nulo': round(sum(1 for i in items if i['precio'] is None) / n, 3),\n        'tasa_rating_nulo': round(sum(1 for i in items if i['rating'] is None) / n, 3),\n        'nombres_vacios': sum(1 for i in items if not i['nombre']),\n        'detalle_problemas': problemas[:10],\n    }\n\n# ===== UMBRAL DE ALARMA =====\n# Si tasa_precio_nulo > 0.2 → el markup cambió o tu selector es incorrecto.\n# Un scraper sin umbrales llena tu base de NULLs durante semanas sin avisar.",
     "disenso_experto": "¿Limpiar durante el scraping o después? Escuela 'limpia al extraer': los datos entran a la DB ya normalizados. Escuela 'crudo primero, limpia después' (raw layer + clean layer): guardas el HTML/JSON original tal cual y limpias en una segunda etapa. La segunda es la práctica profesional en ingeniería de datos por una razón decisiva: **cuando descubres que tu limpieza estaba mal (y lo descubrirás), puedes reprocesar desde el crudo sin volver a scrapear**. Para tu PWA: guarda el HTML crudo en cache/archivo y limpia al procesar. Cuesta espacio, ahorra re-scraping.",
@@ -166,30 +357,111 @@
       "setup_code": "import micropip\nawait micropip.install('beautifulsoup4')\nfrom bs4 import BeautifulSoup\n\nFIXTURE = '''\n<ul class=\"resultados\">\n  <li class=\"item\">\n    <a href=\"/p/1\" class=\"link\">  Teclado&nbsp;Mecánico  </a>\n    <span class=\"price\">$ 1,250.50 MXN</span>\n    <span class=\"rating\">4.5/5</span>\n  </li>\n  <li class=\"item\">\n    <a href=\"/p/2\" class=\"link\">Mouse Inalámbrico</a>\n    <span class=\"price\">Gratis</span>\n  </li>\n  <li class=\"item\">\n    <a href=\"/p/3\" class=\"link\">Monitor &amp; Soporte</a>\n    <span class=\"price\">$3,200.00</span>\n    <span class=\"rating\">sin votos</span>\n  </li>\n  <li class=\"item sin-datos\"></li>\n</ul>\n'''",
       "codigo_inicial": "def parsear_items(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    items = []\n    for li in soup.select('li.item'):\n        items.append({\n            'url': li.select_one('a.link')['href'],\n            'nombre': li.select_one('a.link').text,\n            'precio': float(li.select_one('.price').text.replace('$', '')),\n            'rating': float(li.select_one('.rating').text.split('/')[0]),\n        })\n    return items, []",
       "test_code": "items, problemas = parsear_items(FIXTURE)\nassert len(items) == 3, f'esperaba 3 items validos (el li vacio se descarta), obtuve {len(items)}'\nassert items[0]['nombre'] == 'Teclado Mecánico', f'nbsp/espacios sin limpiar: {items[0][\"nombre\"]!r}'\nassert items[0]['precio'] == 1250.5, f'precio mal parseado: {items[0][\"precio\"]!r}'\nassert items[0]['rating'] == 4.5\nassert items[1]['precio'] is None, \"'Gratis' debe ser None, no crashear\"\nassert items[2]['nombre'] == 'Monitor & Soporte', f'entidades sin decodificar: {items[2][\"nombre\"]!r}'\nassert items[2]['rating'] is None, \"'sin votos' debe ser None\"\nassert len(problemas) == 2, f'debes reportar 2 problemas (Gratis y li vacio), reportaste {len(problemas)}: {problemas}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": [".text.split('/'"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        ".text.split('/'"
+      ],
       "solucion": "import re\n\n_NUM = re.compile(r'[\\d.,]+')\n\ndef parsear_items(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    items, problemas = [], []\n    for idx, li in enumerate(soup.select('li.item')):\n        link = li.select_one('a.link')\n        if link is None:\n            problemas.append((idx, 'sin enlace'))\n            continue\n        precio_el = li.select_one('.price')\n        precio = None\n        if precio_el:\n            m = _NUM.search(precio_el.get_text(strip=True).replace(' ', ''))\n            if m:\n                try:\n                    precio = float(m.group().replace(',', ''))\n                except ValueError:\n                    pass\n            else:\n                problemas.append((idx, 'precio no numerico'))\n        rating_el = li.select_one('.rating')\n        rating = None\n        if rating_el:\n            rm = re.match(r'([\\d.]+)\\s*/\\s*5', rating_el.get_text(strip=True))\n            if rm:\n                rating = float(rm.group(1))\n            else:\n                problemas.append((idx, 'rating no numerico'))\n        items.append({\n            'url': link.get('href'),\n            'nombre': link.get_text(' ', strip=True).replace('\\xa0', ' ').strip(),\n            'precio': precio,\n            'rating': rating,\n        })\n    return items, problemas"
     },
     "colab": {
       "objetivo": "Aplicar extracción tolerante a un catálogo real con datos heterogéneos.",
-      "sitios_practica": ["https://books.toscrape.com"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-003 — Extracción tolerante sobre datos reales"},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, re, unicodedata, time\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nsoup = BeautifulSoup(requests.get('https://books.toscrape.com/', headers=UA, timeout=15).text, 'html.parser')"},
-        {"tipo": "code", "contenido": "_NUM = re.compile(r'[\\d.,]+')\n\ndef limpiar(s):\n    s = unicodedata.normalize('NFC', s or '').replace('\\xa0', ' ')\n    return re.sub(r'\\s+', ' ', s).strip()\n\ndef parsear_precio(txt):\n    if not txt: return None\n    m = _NUM.search(txt.replace(' ', ''))\n    if not m: return None\n    try: return float(m.group().replace(',', ''))\n    except ValueError: return None\n\nitems, problemas = [], []\nfor i, art in enumerate(soup.select('article.product_pod')):\n    t = art.select_one('h3 a')\n    p = art.select_one('.price_color')\n    s = art.select_one('.availability')\n    precio_txt = p.get_text(strip=True) if p else ''\n    precio = parsear_precio(precio_txt)\n    if precio is None: problemas.append((i, f'precio: {precio_txt!r}'))\n    if t is None:\n        problemas.append((i, 'sin titulo')); continue\n    items.append({'titulo': limpiar(t['title']), 'precio': precio, 'moneda': 'GBP' if '£' in (p.get_text() if p else '') else None,\n                  'stock': limpiar(s.get_text(' ', strip=True)) if s else None})\n\nprint('extraidos:', len(items), '| problemas:', problemas)\nprint('muestra:', items[0])\nprint('precio nulo:', sum(1 for i in items if i['precio'] is None))\nassert len(items) == 20 and all(i['precio'] is not None for i in items)"},
-        {"tipo": "markdown", "contenido": "## Reporte de calidad: el paso que la IA omite siempre"},
-        {"tipo": "code", "contenido": "n = len(items)\nreporte = {\n  'extraidos': n,\n  'tasa_precio_nulo': round(sum(1 for i in items if i['precio'] is None)/n, 3),\n  'tasa_stock_nulo': round(sum(1 for i in items if not i['stock'])/n, 3),\n  'precio_min': min(i['precio'] for i in items if i['precio'] is not None),\n  'precio_max': max(i['precio'] for i in items if i['precio'] is not None),\n  'problemas': len(problemas),\n}\nfor k, v in reporte.items(): print(f'{k:20s} {v}')\n# Umbral de alarma: si tasa_precio_nulo > 0.2 → el markup cambió\nassert reporte['tasa_precio_nulo'] < 0.2, 'ALARMA: demasiados precios nulos, revisa selectores'\ntime.sleep(1.5)"}
+      "sitios_practica": [
+        "https://books.toscrape.com"
       ],
-      "verificacion": ["assert len(items) == 20", "assert reporte['tasa_precio_nulo'] < 0.2"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-003 — Extracción tolerante sobre datos reales"
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, re, unicodedata, time\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nsoup = BeautifulSoup(requests.get('https://books.toscrape.com/', headers=UA, timeout=15).text, 'html.parser')"
+        },
+        {
+          "tipo": "code",
+          "contenido": "_NUM = re.compile(r'[\\d.,]+')\n\ndef limpiar(s):\n    s = unicodedata.normalize('NFC', s or '').replace('\\xa0', ' ')\n    return re.sub(r'\\s+', ' ', s).strip()\n\ndef parsear_precio(txt):\n    if not txt: return None\n    m = _NUM.search(txt.replace(' ', ''))\n    if not m: return None\n    try: return float(m.group().replace(',', ''))\n    except ValueError: return None\n\nitems, problemas = [], []\nfor i, art in enumerate(soup.select('article.product_pod')):\n    t = art.select_one('h3 a')\n    p = art.select_one('.price_color')\n    s = art.select_one('.availability')\n    precio_txt = p.get_text(strip=True) if p else ''\n    precio = parsear_precio(precio_txt)\n    if precio is None: problemas.append((i, f'precio: {precio_txt!r}'))\n    if t is None:\n        problemas.append((i, 'sin titulo')); continue\n    items.append({'titulo': limpiar(t['title']), 'precio': precio, 'moneda': 'GBP' if '£' in (p.get_text() if p else '') else None,\n                  'stock': limpiar(s.get_text(' ', strip=True)) if s else None})\n\nprint('extraidos:', len(items), '| problemas:', problemas)\nprint('muestra:', items[0])\nprint('precio nulo:', sum(1 for i in items if i['precio'] is None))\nassert len(items) == 20 and all(i['precio'] is not None for i in items)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Reporte de calidad: el paso que la IA omite siempre"
+        },
+        {
+          "tipo": "code",
+          "contenido": "n = len(items)\nreporte = {\n  'extraidos': n,\n  'tasa_precio_nulo': round(sum(1 for i in items if i['precio'] is None)/n, 3),\n  'tasa_stock_nulo': round(sum(1 for i in items if not i['stock'])/n, 3),\n  'precio_min': min(i['precio'] for i in items if i['precio'] is not None),\n  'precio_max': max(i['precio'] for i in items if i['precio'] is not None),\n  'problemas': len(problemas),\n}\nfor k, v in reporte.items(): print(f'{k:20s} {v}')\n# Umbral de alarma: si tasa_precio_nulo > 0.2 → el markup cambió\nassert reporte['tasa_precio_nulo'] < 0.2, 'ALARMA: demasiados precios nulos, revisa selectores'\ntime.sleep(1.5)"
+        }
+      ],
+      "verificacion": [
+        "assert len(items) == 20",
+        "assert reporte['tasa_precio_nulo'] < 0.2"
+      ],
       "nota_etica": "Una sola petición al sitio de práctica. El reporte de calidad es tu seguro: sin umbrales, un cambio de markup llena tu base de NULLs durante semanas sin que te enteres."
     },
     "audio_script": "Aquí está la verdad incómoda del scraping: el HTML real nunca se parece a tu fixture ideal. Vas a encontrar campos ausentes, espacios duros, entidades como ampersand amp, precios con símbolo de moneda y separadores de miles, valores que no son números como Gratis o Consultar, y contenedores completamente vacíos. Un scraper amateur crashea en el primer caso raro y pierde toda la corrida. Un scraper profesional tiene tres propiedades. Primera: falla por elemento, no por lote — si un registro está roto, lo saltas, lo cuentas y sigues. Segunda: convierte tipos con red de seguridad — usas una regex para extraer los dígitos y un try except alrededor del float, nunca un float directo sobre texto del mundo real. Tercera, y es la que separa datos de basura con forma de datos: reporta lo que no pudo. Cuántos registros extrajiste, cuántos tienen precio nulo, cuántos problemas hubo y cuáles. Con ese reporte puedes poner umbrales de alarma: si de pronto el veinte por ciento de tus precios sale nulo, el sitio cambió su estructura y necesitas saberlo hoy, no en tres semanas cuando tu base esté contaminada.",
     "video_prompt": "Video de 95 segundos. Un HTML 'sucia' entrando en dos máquinas paralelas. Máquina amateur: el item con '$ 1,250.50 MXN' llega al conversor float() y explota (ValueError en rojo); la cinta se detiene, los 411 items ya procesados caen al vacío. Máquina profesional: mismo item pasa por tres estaciones — limpieza de nbsp y espacios, regex que extrae '1,250.50' y quita la coma, try/except que atrapa 'Gratis' y lo marca como None — y sale con campos tipados mientras un contador de problemas se incrementa. Al final, un tablero de calidad muestra: extraídos 3, precio_nulo 33%, problemas 2, con una alarma parpadeando al superar el umbral. Overlay: 'Falla por elemento. Convierte con red. Reporta siempre.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 12", "Effective Python Item 12 (regex/limpieza)", "M1.4-005 (limpieza) aplicado a datos externos"],
-      "conceptos_clave": ["extraccion-tolerante", "datos-sucios", "parseo-precios", "reporte-calidad", "tolerancia-a-fallos", "scraping"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 12",
+        "Effective Python Item 12 (regex/limpieza)",
+        "M1.4-005 (limpieza) aplicado a datos externos"
+      ],
+      "conceptos_clave": [
+        "extraccion-tolerante",
+        "datos-sucios",
+        "parseo-precios",
+        "reporte-calidad",
+        "tolerancia-a-fallos",
+        "scraping"
+      ]
     },
-    "tags_rag": ["python", "scraping", "limpieza", "datos-sucios", "tolerancia", "calidad-datos"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "limpieza",
+      "datos-sucios",
+      "tolerancia",
+      "calidad-datos"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Para extraer precios de URLs mexicanas y españolas donde el formato cambia (US usa coma para decimales, ES usa coma para miles), ¿cuál es la estrategia más segura antes de convertir a float?",
+        "opciones": [
+          "Usar eval() directamente sobre la cadena de precio.",
+          "Aplicar una expresión regular para extraer solo los dígitos y la coma decimal correspondiente al idioma objetivo.",
+          "Depender de que el parser BeautifulSoup resuelva automáticamente los símbolos de moneda.",
+          "Sustituir $ y € y luego intentar float() directamente."
+        ],
+        "correcta": "B",
+        "explicacion": "La estrategia correcta es usar regex para aislar el número puro (eliminando $ y €) y confiar en el parser de float, ya que esto evita interpretar la coma como separador de miles (ES) o decimal (US). Las otras opciones fallan porque eval() es inseguro, BeautifulSoup no hace conversiones numéricas, y eliminar el símbolo sin considerar el formato local deja la coma como separador de miles, generando errores de magnitud.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Se tiene un método `parsear_precio(cadena)` diseñado para limpiar precios sucios. ¿Por qué `float(cadena.replace('$', ''))` falla en la entrada '1.250,50 €'?",
+        "opciones": [
+          "Porque elimina el euro y la coma, dejando '1.25050' que sigue fallando.",
+          "Porque la coma decimal española se interpreta como separador de miles por el parser de floats estándar.",
+          "Porque `replace` no funciona con cadenas multilínea.",
+          "Porque falta el módulo locale en el código."
+        ],
+        "correcta": "B",
+        "explicacion": "El error principal es que el parser float espera una coma decimal estándar (.) y no puede distinguir la coma de miles (en España) de la coma decimal (en EE.UU.). Al reemplazar solo el dólar, la cadena resultante contiene comas que rompen el análisis numérico, causando un ValueError. La solución requiere entender el contexto lingüístico o usar librerías de locales.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En el flujo de procesamiento del scraper, un registro de producto aparece sin la etiqueta .rating. Si el código intenta acceder a item.rating dentro de un bucle sin verificación previa, ¿qué excepción se lanzará y cómo se evita según el modelo mental?",
+        "opciones": [
+          "Un KeyError en la variable del diccionario.",
+          "Un AttributeError al intentar leer .text de un objeto nulo.",
+          "Un TypeError por mezclar tipos de datos.",
+          "El programa ignoraría silenciosamente el campo."
+        ],
+        "correcta": "B",
+        "explicacion": "Si el selector para la rating devuelve None (el elemento no existe), intentar acceder a su propiedad o método (como .text) lanza un AttributeError porque None no tiene esos métodos. El modelo mental exige verificar la existencia del campo antes de operar, usando sentencias condicionales o métodos como .get() adaptados a objetos, para garantizar que el scraper nunca crashee por un registro incompleto.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M2.3-004",
@@ -221,40 +493,109 @@
       "engine": "string_match",
       "instruccion": "Ejecutas: requests.post('https://x.com/login', data=creds) y luego, en una línea separada, requests.get('https://x.com/privado'). ¿Qué contenido retorna el GET y qué objeto debiste usar para que la cookie de sesión sobreviviera?",
       "respuesta_esperada": "retorna la pagina de login porque la cookie se perdio; debio usar requests.Session",
-      "normalizacion": ["trim", "colapsar_espacios", "lowercase"],
+      "normalizacion": [
+        "trim",
+        "colapsar_espacios",
+        "lowercase"
+      ],
       "tolerancia": "contiene_palabras_clave",
-      "palabras_clave": ["login", "sesion"],
+      "palabras_clave": [
+        "login",
+        "sesion"
+      ],
       "pistas_parciales": [
-        {"trigger": "403", "mensaje": "El servidor no rechaza: responde 200 con la página de login. Es peor que un error, porque parece éxito."},
-        {"trigger": "cookie", "mensaje": "Correcto el diagnóstico. Ahora: ¿qué objeto de requests administra el jar de cookies entre llamadas?"}
+        {
+          "trigger": "403",
+          "mensaje": "El servidor no rechaza: responde 200 con la página de login. Es peor que un error, porque parece éxito."
+        },
+        {
+          "trigger": "cookie",
+          "mensaje": "Correcto el diagnóstico. Ahora: ¿qué objeto de requests administra el jar de cookies entre llamadas?"
+        }
       ],
       "solucion": "Retorna la página de login con status 200 (la cookie de autenticación murió con la primera llamada). Fix: with requests.Session() as s: s.post(...); s.get(...) — el jar de cookies vive en la sesión."
     },
     "colab": {
       "objetivo": "Verificar en un sitio real la diferencia entre sesión y peticiones sueltas, y practicar login autenticado con credenciales de prueba.",
-      "sitios_practica": ["https://httpbin.org", "https://quotes.toscrape.com/login"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-004 — Sesiones, cookies y autenticación\n\nquotes.toscrape.com tiene un área de login de práctica: acepta CUALQUIER usuario/contraseña y te da acceso a una cita que solo ven los autenticados. Es el laboratorio perfecto."},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}"},
-        {"tipo": "markdown", "contenido": "## 1. El bug: login sin sesión (las cookies mueren)"},
-        {"tipo": "code", "contenido": "base = 'https://quotes.toscrape.com'\nrequests.post(base + '/login', data={'username': 'ana', 'password': 'secreto'}, headers=UA, timeout=15)\nr = requests.get(base + '/', headers=UA, timeout=15)\nsoup = BeautifulSoup(r.text, 'html.parser')\nprint('¿hay botón Logout? (debería haberlo si estuviéramos autenticados):',\n      bool(soup.select_one('a[href=\"/logout\"]')))\ntime.sleep(1.5)"},
-        {"tipo": "markdown", "contenido": "## 2. Correcto: con Session, las cookies sobreviven"},
-        {"tipo": "code", "contenido": "with requests.Session() as s:\n    s.headers.update(UA)\n    pagina_login = s.get(base + '/login', timeout=15)\n    soup = BeautifulSoup(pagina_login.text, 'html.parser')\n    csrf = soup.select_one('input[name=\"csrf_token\"]')\n    payload = {'username': 'ana', 'password': 'secreto'}\n    if csrf:\n        payload['csrf_token'] = csrf['value']\n        print('token CSRF encontrado:', csrf['value'][:20], '...')\n    r = s.post(base + '/login', data=payload, timeout=15)\n    print('status login:', r.status_code, '| url final:', r.url)\n    print('cookies de la sesión:', s.cookies.get_dict())\n    \n    time.sleep(1.5)\n    r2 = s.get(base + '/', timeout=15)\n    soup2 = BeautifulSoup(r2.text, 'html.parser')\n    logout = soup2.select_one('a[href=\"/logout\"]')\n    print('\\n¿autenticado? →', logout is not None)\n    assert logout is not None, 'la sesión no conservó la autenticación'\n    # La cita exclusiva para usuarios autenticados:\n    especial = soup2.select_one('div.quote')\n    print('primera cita visible:', especial.select_one('span.text').get_text(strip=True)[:60])"},
-        {"tipo": "markdown", "contenido": "## 3. Diagnóstico: ¿cómo sabes que perdiste la autenticación?"},
-        {"tipo": "code", "contenido": "with requests.Session() as s:\n    s.headers.update(UA)\n    r = s.get(base + '/', timeout=15)\n    print('r.history (redirects):', r.history)\n    print('r.url final:', r.url)\n    print('r.status_code:', r.status_code)\n    # Señales de 'no autenticado':\n    #  - r.history muestra un 302 hacia /login\n    #  - r.url termina en /login aunque pediste otra cosa\n    #  - status 200 PERO el HTML contiene el formulario de login\n    print('¿contiene formulario de login?', bool(BeautifulSoup(r.text, 'html.parser').select_one('form[action=\"/login\"]')))\ntime.sleep(1.5)"},
-        {"tipo": "markdown", "contenido": "## 4. Beneficio de rendimiento: conexión reutilizada (keep-alive)"},
-        {"tipo": "code", "contenido": "import time\nurl = 'https://quotes.toscrape.com/'\n\n# Sin sesión: conexión nueva cada vez\nt0 = time.perf_counter()\nfor _ in range(5):\n    requests.get(url, headers=UA, timeout=15)\nsin_sesion = time.perf_counter() - t0\ntime.sleep(2)\n\n# Con sesión: keep-alive\nt0 = time.perf_counter()\nwith requests.Session() as s:\n    s.headers.update(UA)\n    for _ in range(5):\n        s.get(url, timeout=15)\ncon_sesion = time.perf_counter() - t0\n\nprint(f'sin sesión: {sin_sesion:.2f}s  |  con sesión: {con_sesion:.2f}s  |  mejora: {sin_sesion/con_sesion:.1f}x')\nassert con_sesion < sin_sesion"}
+      "sitios_practica": [
+        "https://httpbin.org",
+        "https://quotes.toscrape.com/login"
       ],
-      "verificacion": ["assert logout is not None", "assert con_sesion < sin_sesion"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-004 — Sesiones, cookies y autenticación\n\nquotes.toscrape.com tiene un área de login de práctica: acepta CUALQUIER usuario/contraseña y te da acceso a una cita que solo ven los autenticados. Es el laboratorio perfecto."
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 1. El bug: login sin sesión (las cookies mueren)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "base = 'https://quotes.toscrape.com'\nrequests.post(base + '/login', data={'username': 'ana', 'password': 'secreto'}, headers=UA, timeout=15)\nr = requests.get(base + '/', headers=UA, timeout=15)\nsoup = BeautifulSoup(r.text, 'html.parser')\nprint('¿hay botón Logout? (debería haberlo si estuviéramos autenticados):',\n      bool(soup.select_one('a[href=\"/logout\"]')))\ntime.sleep(1.5)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 2. Correcto: con Session, las cookies sobreviven"
+        },
+        {
+          "tipo": "code",
+          "contenido": "with requests.Session() as s:\n    s.headers.update(UA)\n    pagina_login = s.get(base + '/login', timeout=15)\n    soup = BeautifulSoup(pagina_login.text, 'html.parser')\n    csrf = soup.select_one('input[name=\"csrf_token\"]')\n    payload = {'username': 'ana', 'password': 'secreto'}\n    if csrf:\n        payload['csrf_token'] = csrf['value']\n        print('token CSRF encontrado:', csrf['value'][:20], '...')\n    r = s.post(base + '/login', data=payload, timeout=15)\n    print('status login:', r.status_code, '| url final:', r.url)\n    print('cookies de la sesión:', s.cookies.get_dict())\n    \n    time.sleep(1.5)\n    r2 = s.get(base + '/', timeout=15)\n    soup2 = BeautifulSoup(r2.text, 'html.parser')\n    logout = soup2.select_one('a[href=\"/logout\"]')\n    print('\\n¿autenticado? →', logout is not None)\n    assert logout is not None, 'la sesión no conservó la autenticación'\n    # La cita exclusiva para usuarios autenticados:\n    especial = soup2.select_one('div.quote')\n    print('primera cita visible:', especial.select_one('span.text').get_text(strip=True)[:60])"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 3. Diagnóstico: ¿cómo sabes que perdiste la autenticación?"
+        },
+        {
+          "tipo": "code",
+          "contenido": "with requests.Session() as s:\n    s.headers.update(UA)\n    r = s.get(base + '/', timeout=15)\n    print('r.history (redirects):', r.history)\n    print('r.url final:', r.url)\n    print('r.status_code:', r.status_code)\n    # Señales de 'no autenticado':\n    #  - r.history muestra un 302 hacia /login\n    #  - r.url termina en /login aunque pediste otra cosa\n    #  - status 200 PERO el HTML contiene el formulario de login\n    print('¿contiene formulario de login?', bool(BeautifulSoup(r.text, 'html.parser').select_one('form[action=\"/login\"]')))\ntime.sleep(1.5)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 4. Beneficio de rendimiento: conexión reutilizada (keep-alive)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "import time\nurl = 'https://quotes.toscrape.com/'\n\n# Sin sesión: conexión nueva cada vez\nt0 = time.perf_counter()\nfor _ in range(5):\n    requests.get(url, headers=UA, timeout=15)\nsin_sesion = time.perf_counter() - t0\ntime.sleep(2)\n\n# Con sesión: keep-alive\nt0 = time.perf_counter()\nwith requests.Session() as s:\n    s.headers.update(UA)\n    for _ in range(5):\n        s.get(url, timeout=15)\ncon_sesion = time.perf_counter() - t0\n\nprint(f'sin sesión: {sin_sesion:.2f}s  |  con sesión: {con_sesion:.2f}s  |  mejora: {sin_sesion/con_sesion:.1f}x')\nassert con_sesion < sin_sesion"
+        }
+      ],
+      "verificacion": [
+        "assert logout is not None",
+        "assert con_sesion < sin_sesion"
+      ],
       "nota_etica": "NUNCA pongas credenciales reales en un notebook de Colab: usa google.colab userdata o variables de entorno. Scrapear áreas autenticadas de sitios reales suele violar sus términos de servicio; aquí usamos el login de práctica oficial."
     },
     "audio_script": "HTTP no tiene memoria: cada petición nace y muere sola. Las cookies son el mecanismo que le da continuidad, y requests punto Session es el objeto que las administra por ti. Si haces un login con una petición suelta, la cookie de autenticación se guarda en un frasco temporal que se tira al terminar esa llamada. Tu siguiente petición llega sin credenciales, y aquí viene lo peligroso: el servidor no te responde con un error, te responde con la página de login y código doscientos. Tu scraper extrae quinientas veces el formulario de login creyendo que son datos. Cero errores, cien por cien basura. Con Session, el frasco de cookies persiste entre llamadas, y obtienes dos bonus: reutilizas la conexión TCP, que en la práctica hace tus scrapers dos a cinco veces más rápidos, y configuras tus headers una sola vez. Dos reglas más. Siempre verifica empíricamente que el login funcionó: busca un elemento que solo existe para usuarios autenticados. Y jamás escribas credenciales en el código: usa variables de entorno o el almacén de secretos de Colab, porque ese notebook termina en git.",
     "video_prompt": "Video de 90 segundos. Un edificio con puerta de acceso. Escena del bug: el visitante se identifica en recepción (POST /login), recibe una pulsera (cookie), sale del edificio… y la pulsera se desintegra (requests suelto). Vuelve a la puerta sin pulsera y el guardia lo devuelve amablemente a recepción con una sonrisa (status 200 + página de login) — el visitante cree que entró. Escena con Session: la pulsera permanece en su muñeca entre visitas, y además el guardia lo reconoce (keep-alive: sin volver a hacer fila). Medidor de tiempo: 5 visitas sin sesión 4.2s, con sesión 1.8s. Escena final: credenciales escritas en un notebook que se sube a git con un sello rojo 'SECRETO EXPUESTO' → variable de entorno en verde. Overlay: 'Session = memoria + velocidad. Verifica el login. Secretos fuera del código.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 12 (cookies/session)", "requests docs - Sessions", "M2.1-005 (CORS/auth concepts)"],
-      "conceptos_clave": ["session", "cookies", "autenticacion", "csrf", "keep-alive", "secrets", "scraping"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 12 (cookies/session)",
+        "requests docs - Sessions",
+        "M2.1-005 (CORS/auth concepts)"
+      ],
+      "conceptos_clave": [
+        "session",
+        "cookies",
+        "autenticacion",
+        "csrf",
+        "keep-alive",
+        "secrets",
+        "scraping"
+      ]
     },
-    "tags_rag": ["python", "scraping", "session", "cookies", "autenticacion", "requests", "csrf"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "session",
+      "cookies",
+      "autenticacion",
+      "requests",
+      "csrf"
+    ]
   },
   {
     "id": "M2.3-005",
@@ -288,35 +629,97 @@
       "setup_code": "import time, urllib.robotparser\n\nROBOTS_TXT = ['User-agent: *', 'Disallow: /privado/', 'Crawl-delay: 5']\nSITIO = {\n    'https://x.example/publico/1': '<h2>Nota 1</h2>',\n    'https://x.example/publico/2': '<h2>Nota 2</h2>',\n    'https://x.example/privado/3': '<h2>SECRETO</h2>',\n}\ndef fetch_simulado(url):\n    return SITIO.get(url)",
       "codigo_inicial": "class ScraperEtico:\n    def __init__(self, min_intervalo=0.2):\n        self.min_intervalo = min_intervalo\n        self._ultimo = 0.0\n        self.rp = None            # ← falta cargar las reglas de robots\n        self.bloqueadas = 0\n\n    def permitido(self, url):\n        return True               # ← BUG: permite todo, ignora robots.txt\n\n    def _esperar(self):\n        pass                      # ← BUG: no aplica rate limiting\n\n    def get(self, url):\n        if not self.permitido(url):\n            self.bloqueadas += 1\n            return None\n        self._esperar()\n        return fetch_simulado(url)",
       "test_code": "sc = ScraperEtico(min_intervalo=0.2)\n# 1. robots.txt debe bloquear /privado/\nassert sc.permitido('https://x.example/publico/1') is True, 'debe permitir rutas publicas'\nassert sc.permitido('https://x.example/privado/3') is False, 'robots.txt prohibe /privado/ y tu codigo lo permite'\nassert sc.get('https://x.example/privado/3') is None\nassert sc.bloqueadas == 1\n# 2. lo permitido se descarga\nassert sc.get('https://x.example/publico/1') == '<h2>Nota 1</h2>'\n# 3. rate limiting real entre 4 peticiones\nt0 = time.perf_counter()\nfor u in ['https://x.example/publico/1', 'https://x.example/publico/2',\n          'https://x.example/publico/1', 'https://x.example/publico/2']:\n    sc.get(u)\ndt = time.perf_counter() - t0\nassert dt >= 0.55, f'4 peticiones con intervalo minimo 0.2s deberian tardar >=0.6s: tardaron {dt:.3f}s (no hay rate limiting)'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["return True               # ← BUG"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "return True               # ← BUG"
+      ],
       "solucion": "class ScraperEtico:\n    def __init__(self, min_intervalo=0.2):\n        self.min_intervalo = min_intervalo\n        self._ultimo = 0.0\n        self.rp = urllib.robotparser.RobotFileParser()\n        self.rp.parse(ROBOTS_TXT)\n        self.bloqueadas = 0\n\n    def permitido(self, url):\n        return self.rp.can_fetch('MiBotEducativo', url)\n\n    def _esperar(self):\n        falta = self.min_intervalo - (time.monotonic() - self._ultimo)\n        if falta > 0:\n            time.sleep(falta)\n        self._ultimo = time.monotonic()\n\n    def get(self, url):\n        if not self.permitido(url):\n            self.bloqueadas += 1\n            return None\n        self._esperar()\n        return fetch_simulado(url)"
     },
     "colab": {
       "objetivo": "Leer robots.txt de sitios reales, medir tu ritmo de peticiones y construir el scraper cacheado con reanudación.",
-      "sitios_practica": ["https://quotes.toscrape.com/robots.txt", "https://books.toscrape.com/robots.txt", "https://httpbin.org"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-005 — Scraping ético: robots, ritmo y cache"},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time, urllib.robotparser, hashlib, pathlib\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}"},
-        {"tipo": "markdown", "contenido": "## 1. Lee SIEMPRE robots.txt antes de scrapear"},
-        {"tipo": "code", "contenido": "for sitio in ['https://quotes.toscrape.com', 'https://books.toscrape.com']:\n    r = requests.get(sitio + '/robots.txt', headers=UA, timeout=15)\n    print(f'--- {sitio}/robots.txt  (status {r.status_code}) ---')\n    print(r.text[:400] if r.ok else '(no existe)')\n    rp = urllib.robotparser.RobotFileParser()\n    rp.set_url(sitio + '/robots.txt')\n    try:\n        rp.read()\n    except Exception as e:\n        rp.parse(['User-agent: *', 'Allow: /'])\n    print('  ¿puedo scrapear la portada? ', rp.can_fetch('MiBotEducativo', sitio + '/'))\n    print('  ¿Crawl-delay declarado?     ', rp.crawl_delay('MiBotEducativo'))\n    time.sleep(1.5)"},
-        {"tipo": "markdown", "contenido": "## 2. Mide tu ritmo real (¿eres un humano o un ataque DDoS?)"},
-        {"tipo": "code", "contenido": "class Ritmo:\n    def __init__(self, min_intervalo=1.5):\n        self.min_intervalo = min_intervalo; self._ultimo = 0.0; self.marcas = []\n    def esperar(self):\n        falta = self.min_intervalo - (time.monotonic() - self._ultimo)\n        if falta > 0: time.sleep(falta)\n        self._ultimo = time.monotonic(); self.marcas.append(self._ultimo)\n\nritmo = Ritmo(1.5)\nt0 = time.perf_counter()\nfor i in range(4):\n    requests.get('https://quotes.toscrape.com/', headers=UA, timeout=15)\n    ritmo.esperar()\ntotal = time.perf_counter() - t0\nprint(f'4 peticiones en {total:.2f}s → {4/total:.2f} req/s (objetivo: <= 0.7 req/s)')\nassert 4/total < 1.0, 'vas demasiado rápido'"},
-        {"tipo": "markdown", "contenido": "## 3. Cache en disco = reanudación gratis + menos molestia"},
-        {"tipo": "code", "contenido": "cache = pathlib.Path('.cache_html'); cache.mkdir(exist_ok=True)\n\ndef get_cacheado(url, usar_cache=True):\n    key = hashlib.sha256(url.encode()).hexdigest()[:20]\n    f = cache / f'{key}.html'\n    if usar_cache and f.exists():\n        return f.read_text(encoding='utf-8'), 'CACHE'\n    ritmo.esperar()\n    r = requests.get(url, headers=UA, timeout=15); r.raise_for_status()\n    f.write_text(r.text, encoding='utf-8')\n    return r.text, 'RED'\n\nurl = 'https://quotes.toscrape.com/'\n_, origen1 = get_cacheado(url)\n_, origen2 = get_cacheado(url)\nprint('primera vez:', origen1, '| segunda vez:', origen2)\nassert origen1 == 'RED' and origen2 == 'CACHE'"},
-        {"tipo": "markdown", "contenido": "## 4. Scraper completo: robots + ritmo + cache + estadísticas"},
-        {"tipo": "code", "contenido": "def scrapear_lista(urls, base='https://quotes.toscrape.com'):\n    rp = urllib.robotparser.RobotFileParser(); rp.set_url(base + '/robots.txt')\n    try: rp.read()\n    except Exception: rp.parse(['User-agent: *', 'Allow: /'])\n    stats = {'ok': 0, 'cache': 0, 'bloqueadas': 0, 'errores': 0}\n    resultados = []\n    for u in urls:\n        if not rp.can_fetch('MiBotEducativo', u):\n            stats['bloqueadas'] += 1; continue\n        try:\n            html, origen = get_cacheado(u)\n            stats['cache' if origen == 'CACHE' else 'ok'] += 1\n            resultados.append((u, html))\n        except Exception as e:\n            stats['errores'] += 1; print('  error', u, type(e).__name__)\n    return resultados, stats\n\nurls = [base + p for base, p in [('https://quotes.toscrape.com', f'/page/{i}/')] for i in range(1, 4)]\nres, stats = scrapear_lista(urls)\nprint('stats:', stats, '| páginas obtenidas:', len(res))\nassert len(res) == 3 and stats['errores'] == 0"}
+      "sitios_practica": [
+        "https://quotes.toscrape.com/robots.txt",
+        "https://books.toscrape.com/robots.txt",
+        "https://httpbin.org"
       ],
-      "verificacion": ["assert 4/total < 1.0", "assert origen1 == 'RED' and origen2 == 'CACHE'", "assert len(res) == 3"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-005 — Scraping ético: robots, ritmo y cache"
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time, urllib.robotparser, hashlib, pathlib\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 1. Lee SIEMPRE robots.txt antes de scrapear"
+        },
+        {
+          "tipo": "code",
+          "contenido": "for sitio in ['https://quotes.toscrape.com', 'https://books.toscrape.com']:\n    r = requests.get(sitio + '/robots.txt', headers=UA, timeout=15)\n    print(f'--- {sitio}/robots.txt  (status {r.status_code}) ---')\n    print(r.text[:400] if r.ok else '(no existe)')\n    rp = urllib.robotparser.RobotFileParser()\n    rp.set_url(sitio + '/robots.txt')\n    try:\n        rp.read()\n    except Exception as e:\n        rp.parse(['User-agent: *', 'Allow: /'])\n    print('  ¿puedo scrapear la portada? ', rp.can_fetch('MiBotEducativo', sitio + '/'))\n    print('  ¿Crawl-delay declarado?     ', rp.crawl_delay('MiBotEducativo'))\n    time.sleep(1.5)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 2. Mide tu ritmo real (¿eres un humano o un ataque DDoS?)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "class Ritmo:\n    def __init__(self, min_intervalo=1.5):\n        self.min_intervalo = min_intervalo; self._ultimo = 0.0; self.marcas = []\n    def esperar(self):\n        falta = self.min_intervalo - (time.monotonic() - self._ultimo)\n        if falta > 0: time.sleep(falta)\n        self._ultimo = time.monotonic(); self.marcas.append(self._ultimo)\n\nritmo = Ritmo(1.5)\nt0 = time.perf_counter()\nfor i in range(4):\n    requests.get('https://quotes.toscrape.com/', headers=UA, timeout=15)\n    ritmo.esperar()\ntotal = time.perf_counter() - t0\nprint(f'4 peticiones en {total:.2f}s → {4/total:.2f} req/s (objetivo: <= 0.7 req/s)')\nassert 4/total < 1.0, 'vas demasiado rápido'"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 3. Cache en disco = reanudación gratis + menos molestia"
+        },
+        {
+          "tipo": "code",
+          "contenido": "cache = pathlib.Path('.cache_html'); cache.mkdir(exist_ok=True)\n\ndef get_cacheado(url, usar_cache=True):\n    key = hashlib.sha256(url.encode()).hexdigest()[:20]\n    f = cache / f'{key}.html'\n    if usar_cache and f.exists():\n        return f.read_text(encoding='utf-8'), 'CACHE'\n    ritmo.esperar()\n    r = requests.get(url, headers=UA, timeout=15); r.raise_for_status()\n    f.write_text(r.text, encoding='utf-8')\n    return r.text, 'RED'\n\nurl = 'https://quotes.toscrape.com/'\n_, origen1 = get_cacheado(url)\n_, origen2 = get_cacheado(url)\nprint('primera vez:', origen1, '| segunda vez:', origen2)\nassert origen1 == 'RED' and origen2 == 'CACHE'"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 4. Scraper completo: robots + ritmo + cache + estadísticas"
+        },
+        {
+          "tipo": "code",
+          "contenido": "def scrapear_lista(urls, base='https://quotes.toscrape.com'):\n    rp = urllib.robotparser.RobotFileParser(); rp.set_url(base + '/robots.txt')\n    try: rp.read()\n    except Exception: rp.parse(['User-agent: *', 'Allow: /'])\n    stats = {'ok': 0, 'cache': 0, 'bloqueadas': 0, 'errores': 0}\n    resultados = []\n    for u in urls:\n        if not rp.can_fetch('MiBotEducativo', u):\n            stats['bloqueadas'] += 1; continue\n        try:\n            html, origen = get_cacheado(u)\n            stats['cache' if origen == 'CACHE' else 'ok'] += 1\n            resultados.append((u, html))\n        except Exception as e:\n            stats['errores'] += 1; print('  error', u, type(e).__name__)\n    return resultados, stats\n\nurls = [base + p for base, p in [('https://quotes.toscrape.com', f'/page/{i}/')] for i in range(1, 4)]\nres, stats = scrapear_lista(urls)\nprint('stats:', stats, '| páginas obtenidas:', len(res))\nassert len(res) == 3 and stats['errores'] == 0"
+        }
+      ],
+      "verificacion": [
+        "assert 4/total < 1.0",
+        "assert origen1 == 'RED' and origen2 == 'CACHE'",
+        "assert len(res) == 3"
+      ],
       "nota_etica": "Este chunk define si eres un estudiante responsable o una molestia pública. Regla de oro: si el sitio declara Crawl-delay, es tu mínimo absoluto. Si ves 403 o CAPTCHAs, DETENTE — evadir el bloqueo (rotar User-Agents o proxies) es lo que convierte un scraping gris en un problema legal."
     },
     "audio_script": "Este chunk no es técnico, es de criterio, y es el que decide si tus scrapers duran semanas o mueren en diez minutos. Tres restricciones. Primera: robots punto txt es la declaración pública del dueño del sitio sobre qué rutas no quiere que recorras. Python trae urllib punto robotparser en la biblioteca estándar, y puedes evaluar las reglas sin conexión, pasándole las líneas como datos — perfecto para probar tu lógica. Segunda: el ritmo. Cada petición tuya consume CPU, memoria y ancho de banda de alguien más. Un scraper sin pausas hace veinte peticiones por segundo: eso es un ataque de denegación de servicio accidental, y las protecciones del sitio te van a bloquear la IP en minutos. La regla es una petición por segundo o el crawl delay declarado, lo que sea mayor. Tercera: cache. Si ya descargaste una página, guárdala en disco. No solo ahorras tiempo y molestias: te da reanudación gratis cuando el proceso crashea en la página cuatro mil. Y las señales de alarma que debes respetar: cuarenta y veintinueve significa baja el ritmo; cuarenta y tres significa te bloquearon, detente y no intentes evadirlo cambiando de User-Agent; un CAPTCHA significa que ese sitio no quiere bots, punto. Ahí se acabó la conversación.",
     "video_prompt": "Video de 100 segundos. Un sitio web como una tienda con dueño. Escena 1: un bot llega con 20 clones a la vez golpeando la puerta (20 req/s) — el dueño saca una lista negra y sella la puerta (403 BAN). Escena 2: el mismo bot, solo, espera en la fila con reloj de 1.5s entre visitas, se identifica con credencial legible (User-Agent con contacto), y primero lee el cartel de la entrada (robots.txt) que dice 'no pasar al almacén' — el bot respeta el almacén y solo visita el mostrador. Escena 3: el bot lleva una mochila (cache en disco): la segunda vez que necesita el mismo folleto, lo saca de la mochila en vez de pedirlo. Escena 4: semáforo 429 con 'Retry-After: 60' → el bot espera sentado. Cierre: señales de alarma como iconos (429, 403, CAPTCHA) con acciones correctas. Overlay: 'Ritmo humano. Reglas del dueño. Cache. Y cuando te dicen NO, es NO.'",
     "trazabilidad": {
-      "libros_fuente": ["Linux Command Line Bible (curl/wget --limit-rate, robots)", "Automate the Boring Stuff Cap 12", "Python docs - urllib.robotparser"],
-      "conceptos_clave": ["robots-txt", "rate-limiting", "etica", "cache", "crawl-delay", "reanudacion", "429"]
+      "libros_fuente": [
+        "Linux Command Line Bible (curl/wget --limit-rate, robots)",
+        "Automate the Boring Stuff Cap 12",
+        "Python docs - urllib.robotparser"
+      ],
+      "conceptos_clave": [
+        "robots-txt",
+        "rate-limiting",
+        "etica",
+        "cache",
+        "crawl-delay",
+        "reanudacion",
+        "429"
+      ]
     },
-    "tags_rag": ["python", "scraping", "robots-txt", "rate-limiting", "etica", "cache", "responsable"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "robots-txt",
+      "rate-limiting",
+      "etica",
+      "cache",
+      "responsable"
+    ]
   },
   {
     "id": "M2.3-006",
@@ -350,33 +753,89 @@
       "setup_code": "import micropip\nawait micropip.install('beautifulsoup4')\nfrom bs4 import BeautifulSoup\n\nPAGINAS = {\n '/libros?page=1': '''<div class=\"list\">\n   <a class=\"book\" href=\"/libros/a\">A</a>\n   <a class=\"book\" href=\"/libros/b\">B</a>\n   <a class=\"next\" href=\"/libros?page=2\">siguiente</a></div>''',\n '/libros?page=2': '''<div class=\"list\">\n   <a class=\"book\" href=\"/libros/b\">B</a>\n   <a class=\"book\" href=\"/libros/c\">C</a>\n   <a class=\"next\" href=\"/libros?page=3\">siguiente</a></div>''',\n '/libros?page=3': '''<div class=\"list\">\n   <a class=\"book\" href=\"/libros/d\">D</a></div>''',\n}\n\ndef fetch(url):\n    return PAGINAS.get(url)",
       "codigo_inicial": "def crawl(url_inicial, fetch, max_paginas=50):\n    vistos, urls_libros, cola = set(), [], [url_inicial]\n    n = 0\n    while cola and n < max_paginas:\n        url = cola.pop(0)\n        if url in vistos:\n            continue\n        vistos.add(url)\n        n += 1\n        html = fetch(url)\n        if html is None:\n            continue\n        soup = BeautifulSoup(html, 'html.parser')\n        for a in soup.select('a.book'):\n            href = a.get('href')\n            if href and href not in vistos:\n                urls_libros.append(href)\n        nxt = soup.select_one('a.next')\n        if nxt and nxt.get('href'):\n            cola.append(nxt['href'])\n    return urls_libros, n",
       "test_code": "urls, paginas = crawl('/libros?page=1', fetch)\nassert urls == ['/libros/a', '/libros/b', '/libros/c', '/libros/d'], f'items incorrectos o duplicados: {urls}'\nassert len(urls) == len(set(urls)), 'hay items duplicados: deduplicaste contra el conjunto equivocado'\nassert paginas == 3, f'debes visitar exactamente 3 paginas, visitaste {paginas}'\n# fusible: un loop infinito debe detenerse por el tope de páginas\nLOOP = {'/x': '<a class=\"next\" href=\"/x\">loop</a>'}\n_, p2 = crawl('/x', lambda u: LOOP.get(u), max_paginas=10)\nassert p2 == 1, f'el conjunto de paginas visitadas no corta el loop: {p2}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["not in vistos"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "not in vistos"
+      ],
       "solucion": "def crawl(url_inicial, fetch, max_paginas=50):\n    paginas_vistas, items_vistos, urls_libros = set(), set(), []\n    cola, n = [url_inicial], 0\n    while cola and n < max_paginas:\n        url = cola.pop(0)\n        if url in paginas_vistas:\n            continue\n        paginas_vistas.add(url)\n        n += 1\n        html = fetch(url)\n        if html is None:\n            continue\n        soup = BeautifulSoup(html, 'html.parser')\n        for a in soup.select('a.book'):\n            href = a.get('href')\n            if href and href not in items_vistos:\n                items_vistos.add(href)\n                urls_libros.append(href)\n        nxt = soup.select_one('a.next')\n        if nxt and nxt.get('href') and nxt['href'] not in paginas_vistas:\n            cola.append(nxt['href'])\n    return urls_libros, n"
     },
     "colab": {
       "objetivo": "Crawlear un sitio real paginado con dedup, límites, urljoin y guardado incremental.",
-      "sitios_practica": ["https://books.toscrape.com", "https://quotes.toscrape.com"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-006 — Crawl paginado real"},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time, json\nfrom urllib.parse import urljoin\nfrom bs4 import BeautifulSoup\nfrom collections import deque\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nBASE = 'https://quotes.toscrape.com/'"},
-        {"tipo": "markdown", "contenido": "## Crawl con dedup doble + fusible de páginas + guardado incremental"},
-        {"tipo": "code", "contenido": "def crawl(base, max_paginas=3, min_intervalo=1.5):\n    paginas_vistas, citas_vistas = set(), set()\n    citas, cola, ultimo = [], deque([base]), 0.0\n    while cola and len(paginas_vistas) < max_paginas:\n        url = cola.popleft()\n        if url in paginas_vistas: continue\n        paginas_vistas.add(url)\n        falta = min_intervalo - (time.monotonic() - ultimo)\n        if falta > 0: time.sleep(falta)\n        r = requests.get(url, headers=UA, timeout=15); r.raise_for_status()\n        ultimo = time.monotonic()\n        soup = BeautifulSoup(r.text, 'html.parser')\n        nuevos = 0\n        for q in soup.select('div.quote'):\n            texto = q.select_one('span.text').get_text(strip=True)\n            autor = q.select_one('small.author').get_text(strip=True)\n            clave = (texto, autor)\n            if clave in citas_vistas: continue\n            citas_vistas.add(clave); nuevos += 1\n            citas.append({'texto': texto, 'autor': autor,\n                          'tags': [t.get_text(strip=True) for t in q.select('a.tag')],\n                          'fuente': url, 'scrapeado_en': time.strftime('%Y-%m-%dT%H:%M:%S')})\n        print(f'{url} → {nuevos} citas nuevas (total {len(citas)})')\n        if nuevos == 0:\n            print('  página sin items nuevos → fin del crawl'); break\n        nxt = soup.select_one('li.next > a')\n        if not nxt: \n            print('  sin enlace next → fin del crawl'); break\n        cola.append(urljoin(url, nxt['href']))\n    return citas, {'paginas': len(paginas_vistas), 'citas': len(citas)}\n\ncitas, stats = crawl(BASE, max_paginas=3)\nprint('\\nstats:', stats)\nassert stats['citas'] == 30, f'3 páginas × 10 citas = 30 únicas, obtuve {stats[\"citas\"]}'\nassert len({(c['texto'], c['autor']) for c in citas}) == 30, 'hay duplicados'"},
-        {"tipo": "markdown", "contenido": "## Prueba de fuego: forzar duplicados crawlando las MISMAS páginas dos veces"},
-        {"tipo": "code", "contenido": "citas2, stats2 = crawl(BASE, max_paginas=2)\nprint('segunda corrida (2 páginas):', stats2)\ncombinadas = {(c['texto'], c['autor']) for c in citas} | {(c['texto'], c['autor']) for c in citas2}\nprint('únicas combinando ambas corridas:', len(combinadas))\nassert len(combinadas) == 30, 'la dedup por contenido debe impedir duplicados entre corridas'"},
-        {"tipo": "markdown", "contenido": "## Guardado incremental + reanudación (patrón de producción)"},
-        {"tipo": "code", "contenido": "import pathlib\nout = pathlib.Path('citas.jsonl')   # JSON Lines: una cita por línea, append-friendly\nwith out.open('w', encoding='utf-8') as f:\n    for c in citas:\n        f.write(json.dumps(c, ensure_ascii=False) + '\\n')\nprint('escrito:', out, out.stat().st_size, 'bytes')\n# Reanudación: al arrancar, lee las claves ya guardadas y salta las conocidas\nya = set()\nwith out.open(encoding='utf-8') as f:\n    for linea in f:\n        d = json.loads(linea); ya.add((d['texto'], d['autor']))\nprint('claves ya guardadas:', len(ya))\nassert len(ya) == 30"}
+      "sitios_practica": [
+        "https://books.toscrape.com",
+        "https://quotes.toscrape.com"
       ],
-      "verificacion": ["assert stats['citas'] == 30", "assert len(combinadas) == 30", "assert len(ya) == 30"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-006 — Crawl paginado real"
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, time, json\nfrom urllib.parse import urljoin\nfrom bs4 import BeautifulSoup\nfrom collections import deque\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nBASE = 'https://quotes.toscrape.com/'"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Crawl con dedup doble + fusible de páginas + guardado incremental"
+        },
+        {
+          "tipo": "code",
+          "contenido": "def crawl(base, max_paginas=3, min_intervalo=1.5):\n    paginas_vistas, citas_vistas = set(), set()\n    citas, cola, ultimo = [], deque([base]), 0.0\n    while cola and len(paginas_vistas) < max_paginas:\n        url = cola.popleft()\n        if url in paginas_vistas: continue\n        paginas_vistas.add(url)\n        falta = min_intervalo - (time.monotonic() - ultimo)\n        if falta > 0: time.sleep(falta)\n        r = requests.get(url, headers=UA, timeout=15); r.raise_for_status()\n        ultimo = time.monotonic()\n        soup = BeautifulSoup(r.text, 'html.parser')\n        nuevos = 0\n        for q in soup.select('div.quote'):\n            texto = q.select_one('span.text').get_text(strip=True)\n            autor = q.select_one('small.author').get_text(strip=True)\n            clave = (texto, autor)\n            if clave in citas_vistas: continue\n            citas_vistas.add(clave); nuevos += 1\n            citas.append({'texto': texto, 'autor': autor,\n                          'tags': [t.get_text(strip=True) for t in q.select('a.tag')],\n                          'fuente': url, 'scrapeado_en': time.strftime('%Y-%m-%dT%H:%M:%S')})\n        print(f'{url} → {nuevos} citas nuevas (total {len(citas)})')\n        if nuevos == 0:\n            print('  página sin items nuevos → fin del crawl'); break\n        nxt = soup.select_one('li.next > a')\n        if not nxt: \n            print('  sin enlace next → fin del crawl'); break\n        cola.append(urljoin(url, nxt['href']))\n    return citas, {'paginas': len(paginas_vistas), 'citas': len(citas)}\n\ncitas, stats = crawl(BASE, max_paginas=3)\nprint('\\nstats:', stats)\nassert stats['citas'] == 30, f'3 páginas × 10 citas = 30 únicas, obtuve {stats[\"citas\"]}'\nassert len({(c['texto'], c['autor']) for c in citas}) == 30, 'hay duplicados'"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Prueba de fuego: forzar duplicados crawlando las MISMAS páginas dos veces"
+        },
+        {
+          "tipo": "code",
+          "contenido": "citas2, stats2 = crawl(BASE, max_paginas=2)\nprint('segunda corrida (2 páginas):', stats2)\ncombinadas = {(c['texto'], c['autor']) for c in citas} | {(c['texto'], c['autor']) for c in citas2}\nprint('únicas combinando ambas corridas:', len(combinadas))\nassert len(combinadas) == 30, 'la dedup por contenido debe impedir duplicados entre corridas'"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Guardado incremental + reanudación (patrón de producción)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "import pathlib\nout = pathlib.Path('citas.jsonl')   # JSON Lines: una cita por línea, append-friendly\nwith out.open('w', encoding='utf-8') as f:\n    for c in citas:\n        f.write(json.dumps(c, ensure_ascii=False) + '\\n')\nprint('escrito:', out, out.stat().st_size, 'bytes')\n# Reanudación: al arrancar, lee las claves ya guardadas y salta las conocidas\nya = set()\nwith out.open(encoding='utf-8') as f:\n    for linea in f:\n        d = json.loads(linea); ya.add((d['texto'], d['autor']))\nprint('claves ya guardadas:', len(ya))\nassert len(ya) == 30"
+        }
+      ],
+      "verificacion": [
+        "assert stats['citas'] == 30",
+        "assert len(combinadas) == 30",
+        "assert len(ya) == 30"
+      ],
       "nota_etica": "3 páginas a 1.5s de intervalo = ~5 segundos de carga total para el sitio. Eso es aceptable. Escalar a 100 páginas requiere más intervalo, no más hilos."
     },
     "audio_script": "Todo crawler necesita dos memorias separadas, y confundirlas es el bug que yo mismo cometí al preparar este módulo. La primera memoria guarda las páginas que ya recorriste: evita procesar dos veces la misma lista y, más importante, corta los loops infinitos cuando un enlace siguiente apunta a sí mismo. La segunda memoria guarda los items que ya descubriste: porque el mismo producto puede aparecer en la página uno y en la página dos, o en dos categorías distintas. El código roto usa un solo conjunto y compara las URLs de items contra las URLs de páginas — nunca coinciden, así que la deduplicación jamás ocurre y obtienes registros repetidos en tu base de datos. Lo medimos: cuatro libros reales salieron como cinco. Tres detalles más que marcan la diferencia entre un juguete y un crawler de producción. Usa urljoin para convertir URLs relativas en absolutas, porque barra b no es lo mismo que b a secas. Pon siempre un tope máximo de páginas como fusible. Y guarda los resultados de forma incremental: si el proceso crashea en la página cuatro mil, no quieres empezar desde cero.",
     "video_prompt": "Video de 95 segundos. Un laberinto de páginas conectadas por enlaces 'next'. Dos libretas en manos del explorador: libreta roja 'PÁGINAS VISITADAS' y libreta azul 'ITEMS DESCUBIERTOS'. Escena del bug: el explorador tiene UNA sola libreta (roja) y al encontrar el libro B en la página 2, busca 'B' en la libreta de páginas, no lo encuentra, y lo anota otra vez — al final su inventario muestra B duplicado en rojo parpadeante. Escena corregida: dos libretas, B se anota una vez. Segunda escena: un enlace 'next' que apunta a sí mismo creando un remolino infinito — la libreta roja lo detecta y el explorador se detiene; sin libreta, gira para siempre. Tercera escena: urljoin convirtiendo 'page/2' (relativa, ambigua) en la URL absoluta correcta. Overlay: 'Dos conjuntos: páginas e items. Siempre.'",
     "trazabilidad": {
-      "libros_fuente": ["Classic Computer Science Problems Cap 2 (búsqueda en grafos)", "Automate the Boring Stuff Cap 12", "Fluent Python Cap 2 (secuencias/dedup)"],
-      "conceptos_clave": ["crawl", "paginacion", "dedup", "bfs", "urljoin", "deque", "loops-infinitos", "reanudacion"]
+      "libros_fuente": [
+        "Classic Computer Science Problems Cap 2 (búsqueda en grafos)",
+        "Automate the Boring Stuff Cap 12",
+        "Fluent Python Cap 2 (secuencias/dedup)"
+      ],
+      "conceptos_clave": [
+        "crawl",
+        "paginacion",
+        "dedup",
+        "bfs",
+        "urljoin",
+        "deque",
+        "loops-infinitos",
+        "reanudacion"
+      ]
     },
-    "tags_rag": ["python", "scraping", "paginacion", "crawl", "dedup", "urljoin", "bfs"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "paginacion",
+      "crawl",
+      "dedup",
+      "urljoin",
+      "bfs"
+    ]
   },
   {
     "id": "M2.3-007",
@@ -410,35 +869,99 @@
       "setup_code": "import json\n\nPAYLOAD = json.loads('''\n{\"page\": 1, \"total\": 3, \"results\": [\n  {\"id\": \"py-1\", \"title\": \"Python desde Cero\", \"price\": {\"amount\": 1299.0, \"currency\": \"MXN\"},\n   \"tags\": [\"python\",\"basico\"], \"instructor\": {\"name\": \"Ana\", \"rating\": 4.8}},\n  {\"id\": \"bs-1\", \"title\": \"Bash Pro\", \"price\": {\"amount\": 899.5, \"currency\": \"MXN\"},\n   \"tags\": [\"bash\"], \"instructor\": {\"name\": \"Bob\", \"rating\": 4.2}},\n  {\"id\": \"ml-1\", \"title\": null, \"price\": null, \"tags\": [], \"instructor\": null}\n]}\n''')",
       "codigo_inicial": "def extraer_de_api(payload):\n    out = []\n    for r in payload['results']:\n        out.append({\n            'id': r['id'],\n            'titulo': r['title'],                      # None sin normalizar\n            'precio': r['price']['amount'],            # TypeError si price es None\n            'moneda': r['price']['currency'],\n            'tags': r['tags'],\n            'instructor': r['instructor']['name'],     # TypeError si instructor es None\n            'rating': r['instructor']['rating'],\n        })\n    return out",
       "test_code": "rows = extraer_de_api(PAYLOAD)\nassert len(rows) == 3, f'esperaba 3 registros, obtuve {len(rows)}'\nassert rows[0]['titulo'] == 'Python desde Cero'\nassert rows[0]['precio'] == 1299.0 and rows[0]['moneda'] == 'MXN'\nassert rows[0]['tags'] == 'python,basico', f\"tags debe ser string plano, obtuve {rows[0]['tags']!r}\"\nassert rows[0]['instructor'] == 'Ana' and rows[0]['rating'] == 4.8\n# El tercer registro tiene None en title, price e instructor: NO debe crashear\nassert rows[2]['titulo'] == '', f\"title None debe normalizarse a '': {rows[2]['titulo']!r}\"\nassert rows[2]['precio'] is None and rows[2]['moneda'] is None\nassert rows[2]['instructor'] is None and rows[2]['rating'] is None\nassert rows[2]['tags'] == ''\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["r['price']['amount']", "r['instructor']['name']"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "r['price']['amount']",
+        "r['instructor']['name']"
+      ],
       "solucion": "def extraer_de_api(payload):\n    out = []\n    for r in payload.get('results', []):\n        if not r.get('id'):\n            continue\n        price = r.get('price') or {}\n        instr = r.get('instructor') or {}\n        out.append({\n            'id': r['id'],\n            'titulo': r.get('title') or '',\n            'precio': price.get('amount'),\n            'moneda': price.get('currency'),\n            'tags': ','.join(r.get('tags') or []),\n            'instructor': instr.get('name'),\n            'rating': instr.get('rating'),\n        })\n    return out"
     },
     "colab": {
       "objetivo": "Descubrir endpoints JSON reales con DevTools y consumir APIs oficiales (el camino legal y estable).",
-      "sitios_practica": ["https://openlibrary.org", "https://hacker-news.firebaseio.com", "https://httpbin.org"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-007 — APIs: el atajo que cambia todo\n\n**Ejercicio previo obligatorio (10 min, en tu navegador):** abre un sitio dinámico que uses (un marketplace, un periódico), pulsa F12 → Network → Fetch/XHR → recarga → encuentra la petición que devuelve los datos que ves. Copia su URL. Ese es el skill real; el código de abajo es la parte fácil."},
-        {"tipo": "code", "contenido": "!pip -q install requests\nimport requests, time, json\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)', 'Accept': 'application/json'}"},
-        {"tipo": "markdown", "contenido": "## 1. API oficial y documentada: OpenLibrary (buscar libros de Python)"},
-        {"tipo": "code", "contenido": "r = requests.get('https://openlibrary.org/search.json',\n                 params={'q': 'python programming', 'limit': 10, 'fields': 'title,author_name,first_publish_year,edition_count,ratings_average'},\n                 headers=UA, timeout=20)\nr.raise_for_status()\ndata = r.json()\nprint('total disponible:', data.get('numFound'), '| devueltos:', len(data.get('docs', [])))\n\nlibros = []\nfor d in data.get('docs', []):\n    libros.append({\n        'titulo': d.get('title') or '',\n        'autor': (d.get('author_name') or ['desconocido'])[0],\n        'anio': d.get('first_publish_year'),\n        'ediciones': d.get('edition_count', 0),\n        'rating': d.get('ratings_average'),\n    })\nfor l in libros[:5]: print(l)\nassert len(libros) == 10\nassert all(l['titulo'] for l in libros), 'títulos vacíos: revisa el campo'\ntime.sleep(2)"},
-        {"tipo": "markdown", "contenido": "## 2. Paginación de API con cursor/offset + fusible"},
-        {"tipo": "code", "contenido": "def recorrer(q, paginas=3, por_pagina=10):\n    todos, vistos = [], set()\n    for p in range(1, paginas + 1):\n        r = requests.get('https://openlibrary.org/search.json',\n                         params={'q': q, 'limit': por_pagina, 'page': p,\n                                 'fields': 'key,title,author_name'},\n                         headers=UA, timeout=20)\n        r.raise_for_status()\n        docs = r.json().get('docs', [])\n        nuevos = 0\n        for d in docs:\n            k = d.get('key')\n            if not k or k in vistos: continue\n            vistos.add(k); nuevos += 1\n            todos.append({'key': k, 'titulo': d.get('title'),\n                          'autor': (d.get('author_name') or [None])[0]})\n        print(f'página {p}: {len(docs)} docs, {nuevos} nuevos (total {len(todos)})')\n        if nuevos == 0: \n            print('  sin nuevos → fin'); break\n        time.sleep(2)\n    return todos\n\nresultado = recorrer('fluent python', paginas=3)\nprint('total único:', len(resultado))\nassert len(resultado) > 0\ntime.sleep(2)"},
-        {"tipo": "markdown", "contenido": "## 3. Comparativa de costos: HTML vs API (el argumento decisivo)"},
-        {"tipo": "code", "contenido": "# HTML: 1 petición = 120 KB de markup → parsear → 20 items (y selectores frágiles)\nr_html = requests.get('https://books.toscrape.com/', headers=UA, timeout=15)\n# API: 1 petición = 3 KB de JSON → .json() → 10 items tipados (y contrato estable)\nr_api = requests.get('https://openlibrary.org/search.json',\n                     params={'q': 'bash', 'limit': 10, 'fields': 'title'},\n                     headers=UA, timeout=20)\nprint(f'HTML : {len(r_html.content)/1024:6.1f} KB  → requiere selectores CSS + tolerancia a markup')\nprint(f'API  : {len(r_api.content)/1024:6.1f} KB  → dict nativo, cero parsing, campos estables')\nprint(f'\\nventaja de la API: {len(r_html.content)/max(len(r_api.content),1):.1f}x menos bytes, y sin selectores que se rompan')\ntime.sleep(1.5)"},
-        {"tipo": "markdown", "contenido": "## 4. Cuando los datos JSON ya están EN el HTML (SSR/hydration)"},
-        {"tipo": "code", "contenido": "import re, json\nhtml_con_json = '''<html><body><div id=\"app\"></div>\n<script>window.__INITIAL_STATE__ = {\"cursos\": [{\"id\": 1, \"titulo\": \"Python\"}, {\"id\": 2, \"titulo\": \"Bash\"}]};</script>\n</body></html>'''\nm = re.search(r'window\\.__INITIAL_STATE__\\s*=\\s*({.*?});', html_con_json, re.DOTALL)\nif m:\n    datos = json.loads(m.group(1))\n    print('datos embebidos encontrados:', datos)\n    assert len(datos['cursos']) == 2\nelse:\n    print('no hay estado embebido → buscar endpoint XHR')"}
+      "sitios_practica": [
+        "https://openlibrary.org",
+        "https://hacker-news.firebaseio.com",
+        "https://httpbin.org"
       ],
-      "verificacion": ["assert len(libros) == 10", "assert len(resultado) > 0", "assert len(datos['cursos']) == 2"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-007 — APIs: el atajo que cambia todo\n\n**Ejercicio previo obligatorio (10 min, en tu navegador):** abre un sitio dinámico que uses (un marketplace, un periódico), pulsa F12 → Network → Fetch/XHR → recarga → encuentra la petición que devuelve los datos que ves. Copia su URL. Ese es el skill real; el código de abajo es la parte fácil."
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests\nimport requests, time, json\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)', 'Accept': 'application/json'}"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 1. API oficial y documentada: OpenLibrary (buscar libros de Python)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "r = requests.get('https://openlibrary.org/search.json',\n                 params={'q': 'python programming', 'limit': 10, 'fields': 'title,author_name,first_publish_year,edition_count,ratings_average'},\n                 headers=UA, timeout=20)\nr.raise_for_status()\ndata = r.json()\nprint('total disponible:', data.get('numFound'), '| devueltos:', len(data.get('docs', [])))\n\nlibros = []\nfor d in data.get('docs', []):\n    libros.append({\n        'titulo': d.get('title') or '',\n        'autor': (d.get('author_name') or ['desconocido'])[0],\n        'anio': d.get('first_publish_year'),\n        'ediciones': d.get('edition_count', 0),\n        'rating': d.get('ratings_average'),\n    })\nfor l in libros[:5]: print(l)\nassert len(libros) == 10\nassert all(l['titulo'] for l in libros), 'títulos vacíos: revisa el campo'\ntime.sleep(2)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 2. Paginación de API con cursor/offset + fusible"
+        },
+        {
+          "tipo": "code",
+          "contenido": "def recorrer(q, paginas=3, por_pagina=10):\n    todos, vistos = [], set()\n    for p in range(1, paginas + 1):\n        r = requests.get('https://openlibrary.org/search.json',\n                         params={'q': q, 'limit': por_pagina, 'page': p,\n                                 'fields': 'key,title,author_name'},\n                         headers=UA, timeout=20)\n        r.raise_for_status()\n        docs = r.json().get('docs', [])\n        nuevos = 0\n        for d in docs:\n            k = d.get('key')\n            if not k or k in vistos: continue\n            vistos.add(k); nuevos += 1\n            todos.append({'key': k, 'titulo': d.get('title'),\n                          'autor': (d.get('author_name') or [None])[0]})\n        print(f'página {p}: {len(docs)} docs, {nuevos} nuevos (total {len(todos)})')\n        if nuevos == 0: \n            print('  sin nuevos → fin'); break\n        time.sleep(2)\n    return todos\n\nresultado = recorrer('fluent python', paginas=3)\nprint('total único:', len(resultado))\nassert len(resultado) > 0\ntime.sleep(2)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 3. Comparativa de costos: HTML vs API (el argumento decisivo)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "# HTML: 1 petición = 120 KB de markup → parsear → 20 items (y selectores frágiles)\nr_html = requests.get('https://books.toscrape.com/', headers=UA, timeout=15)\n# API: 1 petición = 3 KB de JSON → .json() → 10 items tipados (y contrato estable)\nr_api = requests.get('https://openlibrary.org/search.json',\n                     params={'q': 'bash', 'limit': 10, 'fields': 'title'},\n                     headers=UA, timeout=20)\nprint(f'HTML : {len(r_html.content)/1024:6.1f} KB  → requiere selectores CSS + tolerancia a markup')\nprint(f'API  : {len(r_api.content)/1024:6.1f} KB  → dict nativo, cero parsing, campos estables')\nprint(f'\\nventaja de la API: {len(r_html.content)/max(len(r_api.content),1):.1f}x menos bytes, y sin selectores que se rompan')\ntime.sleep(1.5)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 4. Cuando los datos JSON ya están EN el HTML (SSR/hydration)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "import re, json\nhtml_con_json = '''<html><body><div id=\"app\"></div>\n<script>window.__INITIAL_STATE__ = {\"cursos\": [{\"id\": 1, \"titulo\": \"Python\"}, {\"id\": 2, \"titulo\": \"Bash\"}]};</script>\n</body></html>'''\nm = re.search(r'window\\.__INITIAL_STATE__\\s*=\\s*({.*?});', html_con_json, re.DOTALL)\nif m:\n    datos = json.loads(m.group(1))\n    print('datos embebidos encontrados:', datos)\n    assert len(datos['cursos']) == 2\nelse:\n    print('no hay estado embebido → buscar endpoint XHR')"
+        }
+      ],
+      "verificacion": [
+        "assert len(libros) == 10",
+        "assert len(resultado) > 0",
+        "assert len(datos['cursos']) == 2"
+      ],
       "nota_etica": "OpenLibrary y la API de Hacker News son públicas, documentadas y gratuitas: úsalas sin culpa respetando ~1 req/s. Para APIs internas no documentadas, revisa siempre los términos de servicio antes de automatizar."
     },
     "audio_script": "Esta es la habilidad de mayor palanca de todo el módulo, y casi nadie la enseña. Cuando una página muestra datos que tu scraper no encuentra, no es que el sitio te bloquee: es que los datos no están en el HTML. En sitios modernos, el servidor entrega un cascarón vacío y el navegador ejecuta JavaScript que pide los datos a un endpoint JSON y los pinta. Requests no ejecuta JavaScript, así que jamás verá ese contenido. El método para encontrar el endpoint toma diez minutos y te ahorra diez horas de selectores frágiles: abre las herramientas de desarrollador, pestaña Network, filtra por Fetch o XHR, recarga la página y busca la respuesta que contiene tus datos. Clic derecho, copiar como cURL, y ya tienes tu URL. Lo que ganas es enorme: cero parsing de HTML, datos tipados y completos, contrato estable que no se rompe cuando el diseñador cambia una clase CSS, y entre diez y cien veces menos tráfico. El diagnóstico diferencial es rapidísimo: control U para ver el código fuente y busca la palabra que esperabas. Si no aparece, hay un API detrás. Y recuerda la jerarquía: primero API oficial documentada, después endpoint interno, después HTML, y solo al final un navegador headless.",
     "video_prompt": "Video de 100 segundos. Escena 1: un scraper con linterna (requests) ilumina una página que parece vacía — solo un div id='app' — mientras el usuario ve 50 productos en pantalla. Signo de interrogación gigante. Escena 2: se abre la 'sala de máquinas' (DevTools → Network → XHR) y se revela un tubo por donde fluye JSON desde /api/cursos hacia el DOM. El scraper se conecta al tubo y recibe datos limpios y tipados. Escena 3: comparativa visual — HTML: 120KB de markup enredado que hay que desenredar con selectores (y un selector se rompe en rojo); API: 3KB de JSON cristalino que se convierte en dicts directamente. Escena 4: escalera de prioridades: API oficial → endpoint interno → HTML → navegador headless. Overlay: '10 minutos en Network = 10 horas de selectores.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 12 y 17 (APIs)", "M1.3-004 (JSON) aplicado a datos reales", "Python docs - json"],
-      "conceptos_clave": ["apis", "json", "xhr", "devtools", "spa", "endpoints", "paginacion-api", "scraping"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 12 y 17 (APIs)",
+        "M1.3-004 (JSON) aplicado a datos reales",
+        "Python docs - json"
+      ],
+      "conceptos_clave": [
+        "apis",
+        "json",
+        "xhr",
+        "devtools",
+        "spa",
+        "endpoints",
+        "paginacion-api",
+        "scraping"
+      ]
     },
-    "tags_rag": ["python", "api", "json", "scraping", "xhr", "devtools", "datos"]
+    "tags_rag": [
+      "python",
+      "api",
+      "json",
+      "scraping",
+      "xhr",
+      "devtools",
+      "datos"
+    ]
   },
   {
     "id": "M2.3-008",
@@ -472,35 +995,95 @@
       "setup_code": "import micropip\nawait micropip.install('beautifulsoup4')\nfrom bs4 import BeautifulSoup\n\nFIXTURE_A = '''\n<div class=\"catalogo\">\n  <div class=\"fila\"><div class=\"producto\"><h3>Libro A</h3><span class=\"precio\">$10</span></div></div>\n  <div class=\"fila\"><div class=\"producto\"><h3>Libro B</h3><span class=\"precio\">$20</span></div></div>\n</div>'''\n\nFIXTURE_B = '''\n<section class=\"catalogo-v2\">\n  <div class=\"grid\">\n    <article class=\"producto destacado\" data-sku=\"b1\"><h3 class=\"titulo\">Libro A</h3><span class=\"price\">$10</span></article>\n    <article class=\"producto\" data-sku=\"b2\"><h3 class=\"titulo\">Libro B</h3><span class=\"price\">$20</span></article>\n  </div>\n</section>'''\n\nFIXTURE_VACIO = '<section class=\"catalogo-v2\"><div class=\"grid\"></div></section>'",
       "codigo_inicial": "def scrapear_catalogo(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    productos = []\n    for fila in soup.select('div.catalogo > div.fila'):\n        p = fila.select_one('div.producto')\n        productos.append({\n            'titulo': p.h3.text,\n            'precio': p.select_one('span.precio').text,\n        })\n    return productos",
       "test_code": "a = scrapear_catalogo(FIXTURE_A)\nassert len(a) == 2, f'markup A: esperaba 2 productos, obtuve {len(a)}'\nassert a[0] == {'titulo': 'Libro A', 'precio': '$10'}, a[0]\nb = scrapear_catalogo(FIXTURE_B)\nassert len(b) == 2, f'markup B (rediseñado): esperaba 2 productos, obtuve {len(b)} — ¿tu selector depende de la etiqueta o de la jerarquía exacta?'\nassert b[1] == {'titulo': 'Libro B', 'precio': '$20'}, b[1]\n# La alarma: catálogo vacío debe LANZAR, no retornar [] en silencio\nlanzo = False\ntry:\n    scrapear_catalogo(FIXTURE_VACIO)\nexcept (ValueError, RuntimeError):\n    lanzo = True\nassert lanzo, 'un catalogo vacio debe lanzar una alarma explicita, no retornar [] en silencio'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["div.catalogo > div.fila", "p.h3.text"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "div.catalogo > div.fila",
+        "p.h3.text"
+      ],
       "solucion": "def scrapear_catalogo(html, minimo_esperado=1):\n    soup = BeautifulSoup(html, 'html.parser')\n    productos = []\n    for p in soup.select('[class*=\"producto\"], [data-sku], [data-id]'):\n        titulo = p.find(['h1', 'h2', 'h3', 'h4'])\n        precio = p.select_one('[class*=\"preci\"], [class*=\"price\"]')\n        if titulo is None:\n            continue\n        productos.append({\n            'titulo': titulo.get_text(' ', strip=True),\n            'precio': precio.get_text(strip=True) if precio else None,\n        })\n    if len(productos) < minimo_esperado:\n        raise ValueError(f'ALARMA: {len(productos)} productos extraidos (minimo {minimo_esperado}). ¿Cambio el markup?')\n    return productos"
     },
     "colab": {
       "objetivo": "Provocar deliberadamente la fragilidad de un selector y construir la alarma de calidad que la detecta.",
-      "sitios_practica": ["https://books.toscrape.com"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-008 — Selectores frágiles vs resilientes + alarmas"},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, logging\nfrom bs4 import BeautifulSoup\nlogging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')\nlog = logging.getLogger('scraper')\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nhtml = requests.get('https://books.toscrape.com/', headers=UA, timeout=15).text"},
-        {"tipo": "markdown", "contenido": "## 1. El selector frágil: funciona hoy, [] mañana"},
-        {"tipo": "code", "contenido": "def fragil(h):\n    soup = BeautifulSoup(h, 'html.parser')\n    out = []\n    # ruta estructural absoluta (lo que Copilot/ChatGPT suelen generar desde DevTools)\n    for el in soup.select('body > div > div > div > section > div:nth-child(3) > ol > li:nth-child(n) > article'):\n        t = el.select_one('h3 a')\n        out.append(t['title'] if t else None)\n    return out\n\nprint('selector frágil   →', len(fragil(html)), 'items')\nprint('⚠️ si el sitio inserta UN div contenedor, esto devuelve 0 sin ningún error')"},
-        {"tipo": "markdown", "contenido": "## 2. El selector resiliente: anclas semánticas + fallbacks"},
-        {"tipo": "code", "contenido": "SELECTORES_ITEM = ['[data-testid=\"product\"]', 'article.product_pod', '[class*=\"product\"]', 'li.item']\n\ndef primer_match(soup, selectores):\n    for s in selectores:\n        e = soup.select(s)\n        if e: return e, s\n    return [], None\n\ndef resiliente(h, minimo=1):\n    soup = BeautifulSoup(h, 'html.parser')\n    items, sel = primer_match(soup, SELECTORES_ITEM)\n    if not items:\n        raise ValueError('selectores agotados: markup desconocido')\n    log.info('%d items con %r', len(items), sel)\n    libros, sin_titulo = [], 0\n    for el in items:\n        t = el.select_one('h3 a') or el.select_one('h2 a') or el.select_one('a[title]')\n        p = el.select_one('.price_color') or el.select_one('[class*=\"price\"]')\n        if t is None: sin_titulo += 1\n        libros.append({'titulo': t['title'] if t else None,\n                       'precio': p.get_text(strip=True) if p else None})\n    # ALARMA DE CALIDAD\n    if len(libros) < minimo:\n        raise ValueError(f'ALARMA cantidad: {len(libros)} < {minimo}')\n    if sin_titulo / max(len(libros),1) > 0.2:\n        raise ValueError(f'ALARMA calidad: {sin_titulo}/{len(libros)} sin título')\n    log.info('OK: %d libros, sin_titulo=%d', len(libros), sin_titulo)\n    return libros\n\nlibros = resiliente(html, minimo=10)\nprint('selector resiliente →', len(libros), 'items | muestra:', libros[0])\nassert len(libros) == 20"},
-        {"tipo": "markdown", "contenido": "## 3. Simulación del desastre: el markup cambia y la alarma lo detecta"},
-        {"tipo": "code", "contenido": "html_rediseniado = html.replace('product_pod', 'card-v3').replace('price_color', 'cost')\ntry:\n    resiliente(html_rediseniado, minimo=10)\n    print('⚠️ no detectó el cambio')\nexcept ValueError as e:\n    print('✅ ALARMA disparada:', e)\n    print('   → sin la alarma, habrías guardado 0 libros creyendo que todo iba bien')\n\n# Y con fallbacks, el selector [class*=\"product\"] aún lo salva:\nsoup = BeautifulSoup(html_rediseniado, 'html.parser')\nprint('   items recuperables con [class*=\"product\"]:', len(soup.select('[class*=\"product\"]')))"},
-        {"tipo": "markdown", "contenido": "## 4. Contrato de supervisión: métricas por corrida"},
-        {"tipo": "code", "contenido": "def metricas(libros):\n    n = max(len(libros), 1)\n    return {\n        'items': len(libros),\n        'tasa_titulo_nulo': round(sum(1 for l in libros if not l['titulo'])/n, 3),\n        'tasa_precio_nulo': round(sum(1 for l in libros if not l['precio'])/n, 3),\n        'precio_min': min((float(l['precio'].replace('£','').replace('Â','')) for l in libros if l['precio']), default=None),\n    }\nm = metricas(libros)\nfor k, v in m.items(): print(f'{k:20s} {v}')\nassert m['tasa_titulo_nulo'] == 0.0 and m['tasa_precio_nulo'] == 0.0\nprint('\\nRegla: si alguna tasa supera 0.2 en producción → el markup cambió. Investiga HOY.')"}
+      "sitios_practica": [
+        "https://books.toscrape.com"
       ],
-      "verificacion": ["assert len(libros) == 20", "assert m['tasa_titulo_nulo'] == 0.0"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-008 — Selectores frágiles vs resilientes + alarmas"
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, logging\nfrom bs4 import BeautifulSoup\nlogging.basicConfig(level=logging.INFO, format='%(levelname)s %(message)s')\nlog = logging.getLogger('scraper')\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nhtml = requests.get('https://books.toscrape.com/', headers=UA, timeout=15).text"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 1. El selector frágil: funciona hoy, [] mañana"
+        },
+        {
+          "tipo": "code",
+          "contenido": "def fragil(h):\n    soup = BeautifulSoup(h, 'html.parser')\n    out = []\n    # ruta estructural absoluta (lo que Copilot/ChatGPT suelen generar desde DevTools)\n    for el in soup.select('body > div > div > div > section > div:nth-child(3) > ol > li:nth-child(n) > article'):\n        t = el.select_one('h3 a')\n        out.append(t['title'] if t else None)\n    return out\n\nprint('selector frágil   →', len(fragil(html)), 'items')\nprint('⚠️ si el sitio inserta UN div contenedor, esto devuelve 0 sin ningún error')"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 2. El selector resiliente: anclas semánticas + fallbacks"
+        },
+        {
+          "tipo": "code",
+          "contenido": "SELECTORES_ITEM = ['[data-testid=\"product\"]', 'article.product_pod', '[class*=\"product\"]', 'li.item']\n\ndef primer_match(soup, selectores):\n    for s in selectores:\n        e = soup.select(s)\n        if e: return e, s\n    return [], None\n\ndef resiliente(h, minimo=1):\n    soup = BeautifulSoup(h, 'html.parser')\n    items, sel = primer_match(soup, SELECTORES_ITEM)\n    if not items:\n        raise ValueError('selectores agotados: markup desconocido')\n    log.info('%d items con %r', len(items), sel)\n    libros, sin_titulo = [], 0\n    for el in items:\n        t = el.select_one('h3 a') or el.select_one('h2 a') or el.select_one('a[title]')\n        p = el.select_one('.price_color') or el.select_one('[class*=\"price\"]')\n        if t is None: sin_titulo += 1\n        libros.append({'titulo': t['title'] if t else None,\n                       'precio': p.get_text(strip=True) if p else None})\n    # ALARMA DE CALIDAD\n    if len(libros) < minimo:\n        raise ValueError(f'ALARMA cantidad: {len(libros)} < {minimo}')\n    if sin_titulo / max(len(libros),1) > 0.2:\n        raise ValueError(f'ALARMA calidad: {sin_titulo}/{len(libros)} sin título')\n    log.info('OK: %d libros, sin_titulo=%d', len(libros), sin_titulo)\n    return libros\n\nlibros = resiliente(html, minimo=10)\nprint('selector resiliente →', len(libros), 'items | muestra:', libros[0])\nassert len(libros) == 20"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 3. Simulación del desastre: el markup cambia y la alarma lo detecta"
+        },
+        {
+          "tipo": "code",
+          "contenido": "html_rediseniado = html.replace('product_pod', 'card-v3').replace('price_color', 'cost')\ntry:\n    resiliente(html_rediseniado, minimo=10)\n    print('⚠️ no detectó el cambio')\nexcept ValueError as e:\n    print('✅ ALARMA disparada:', e)\n    print('   → sin la alarma, habrías guardado 0 libros creyendo que todo iba bien')\n\n# Y con fallbacks, el selector [class*=\"product\"] aún lo salva:\nsoup = BeautifulSoup(html_rediseniado, 'html.parser')\nprint('   items recuperables con [class*=\"product\"]:', len(soup.select('[class*=\"product\"]')))"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 4. Contrato de supervisión: métricas por corrida"
+        },
+        {
+          "tipo": "code",
+          "contenido": "def metricas(libros):\n    n = max(len(libros), 1)\n    return {\n        'items': len(libros),\n        'tasa_titulo_nulo': round(sum(1 for l in libros if not l['titulo'])/n, 3),\n        'tasa_precio_nulo': round(sum(1 for l in libros if not l['precio'])/n, 3),\n        'precio_min': min((float(l['precio'].replace('£','').replace('Â','')) for l in libros if l['precio']), default=None),\n    }\nm = metricas(libros)\nfor k, v in m.items(): print(f'{k:20s} {v}')\nassert m['tasa_titulo_nulo'] == 0.0 and m['tasa_precio_nulo'] == 0.0\nprint('\\nRegla: si alguna tasa supera 0.2 en producción → el markup cambió. Investiga HOY.')"
+        }
+      ],
+      "verificacion": [
+        "assert len(libros) == 20",
+        "assert m['tasa_titulo_nulo'] == 0.0"
+      ],
       "nota_etica": "Una sola petición al sitio de práctica. La lección es de diseño: un scraper sin métricas de calidad es indistinguible de un scraper roto."
     },
     "audio_script": "El scraper que te genera una inteligencia artificial tiene un defecto de fábrica, y es el más peligroso de todos porque no produce errores. La IA copia el selector que ve en el inspector del navegador: body mayor div mayor div mayor section mayor li. Esa ruta es una huella digital del diseño actual del sitio. El día que alguien inserta un div contenedor, o cambia un div por un article, o renombra una clase, tu selector deja de coincidir. Y aquí viene lo grave: select no lanza una excepción cuando no encuentra nada, retorna una lista vacía. Tu pipeline termina sin errores, guarda cero registros, y durante tres semanas crees que el sitio simplemente no publicó nada nuevo. La defensa tiene dos capas. Primera: ancla tus selectores a la semántica, no a la estructura. Prefiere data-attributes, que existen precisamente para automatización; luego roles y etiquetas semánticas; luego selectores de clase por contenido, que toleran variantes como producto destacado. Y deja la ruta estructural absoluta para el último lugar, o mejor, nunca. Segunda capa, y es la que realmente te salva: alarmas cuantitativas. Si tu página siempre trae veinte items y hoy trajo cero, eso es una excepción, no un día tranquilo. Si más del veinte por ciento de tus títulos sale nulo, algo se rompió. Sin esas alarmas, un scraper sano y un scraper muerto se ven exactamente igual.",
     "video_prompt": "Video de 100 segundos estilo 'el desastre silencioso'. Línea de tiempo de 30 días. Días 1-18: un scraper con selector estructural extrae 20 libros diarios, gráficas verdes, logs limpios. Día 19: un desarrollador del sitio inserta un div contenedor (animación del DOM cambiando una sola capa). Día 19-30: el mismo scraper corre, termina sin errores, logs en verde… pero la base de datos se llena de filas vacías y la gráfica de items cae a 0 en rojo mientras el panel dice 'OK'. Zoom al código: `select()` devolviendo `[]` sin excepción. Rewind y solución: selector semántico `[class*=\"product\"]` sobreviviendo al cambio de markup + alarma que lanza ValueError al detectar 0 items (sirena, panel en rojo, alerta al dueño). Cierre con la jerarquía de selectores como escalera: data-testid → rol → clase por contenido → clase exacta → ruta absoluta (tachada en rojo). Overlay: 'Sin alarma de cantidad, un scraper roto y uno sano se ven iguales.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 12", "Effective Python Item 25 (observabilidad)", "M2.2-009 (auditoría y alarmas)"],
-      "conceptos_clave": ["selectores-fragiles", "fallo-silencioso", "alarmas-calidad", "fallbacks", "code-review", "observabilidad", "scraping"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 12",
+        "Effective Python Item 25 (observabilidad)",
+        "M2.2-009 (auditoría y alarmas)"
+      ],
+      "conceptos_clave": [
+        "selectores-fragiles",
+        "fallo-silencioso",
+        "alarmas-calidad",
+        "fallbacks",
+        "code-review",
+        "observabilidad",
+        "scraping"
+      ]
     },
-    "tags_rag": ["python", "scraping", "selectores", "codigo-ia", "fallo-silencioso", "alarmas", "auditoria"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "selectores",
+      "codigo-ia",
+      "fallo-silencioso",
+      "alarmas",
+      "auditoria"
+    ]
   },
   {
     "id": "M2.3-009",
@@ -535,35 +1118,96 @@
       "setup_code": "import micropip\nawait micropip.install('beautifulsoup4')\nfrom bs4 import BeautifulSoup\n\nFIXTURE = '''\n<div class=\"listado\">\n  <div class=\"card\">\n    <h2 class=\"titulo\">\n      Curso <em>Avanzado</em> de Python\n    </h2>\n    <span class=\"precio\">$1,200</span>\n  </div>\n  <div class=\"card\">\n    <h2 class='titulo'>Bash desde Cero</h2>\n    <span class=\"precio\">$800</span>\n  </div>\n  <div class=\"card\">\n    <h2 class=\"titulo\">Regex &amp; Texto</h2>\n    <span class=\"precio\">$650</span>\n  </div>\n  <div class=\"card\">\n    <h2 class=\"titulo\">SQL <strong>Práctico</strong></h2>\n  </div>\n</div>\n'''",
       "codigo_inicial": "import re\n\ndef extraer_titulos(html):\n    return re.findall(r'<h2 class=\"titulo\">(.*?)</h2>', html)\n\ndef extraer_precios(html):\n    return re.findall(r'<span class=\"precio\">\\$(.*?)</span>', html)",
       "test_code": "titulos = extraer_titulos(FIXTURE)\nprecios = extraer_precios(FIXTURE)\nassert len(titulos) == 4, f'esperaba 4 titulos, obtuve {len(titulos)}: {titulos} (¿comillas simples? ¿multilínea?)'\nassert titulos[0] == 'Curso Avanzado de Python', f'tags internos sin limpiar: {titulos[0]!r}'\nassert titulos[1] == 'Bash desde Cero', f'comillas simples no detectadas: {titulos[1]!r}'\nassert titulos[2] == 'Regex & Texto', f'entidades sin decodificar: {titulos[2]!r}'\nassert titulos[3] == 'SQL Práctico', f'{titulos[3]!r}'\nassert precios == ['$1,200', '$800', '$650'], f'precios incorrectos: {precios}'\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["re.findall(r'<h2", "re.findall(r'<span"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "re.findall(r'<h2",
+        "re.findall(r'<span"
+      ],
       "solucion": "from bs4 import BeautifulSoup\n\ndef extraer_titulos(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    return [h.get_text(' ', strip=True) for h in soup.select('h2.titulo')]\n\ndef extraer_precios(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    return [p.get_text(strip=True) for p in soup.select('span.precio')]"
     },
     "colab": {
       "objetivo": "Comparar regex vs parser sobre HTML real malformado y ver con tus ojos por qué regex pierde.",
-      "sitios_practica": ["https://books.toscrape.com", "https://quotes.toscrape.com"],
-      "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-009 — Regex vs parser sobre HTML real"},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, re\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nhtml = requests.get('https://quotes.toscrape.com/', headers=UA, timeout=15).text\nprint('tamaño del HTML real:', len(html), 'bytes | líneas:', html.count(chr(10)))"},
-        {"tipo": "markdown", "contenido": "## 1. Regex contra HTML real multilínea: el fallo silencioso"},
-        {"tipo": "code", "contenido": "sin_dotall = re.findall(r'<span class=\"text\".*?>(.*?)</span>', html)\ncon_dotall = re.findall(r'<span class=\"text\".*?>(.*?)</span>', html, re.DOTALL)\nprint('regex SIN re.DOTALL:', len(sin_dotall), 'resultados')\nprint('regex CON re.DOTALL:', len(con_dotall), 'resultados')\nprint('\\nmuestra CON DOTALL (observa el markup residual y los saltos de línea):')\nprint(repr(con_dotall[0][:120]) if con_dotall else '(vacío)')"},
-        {"tipo": "markdown", "contenido": "## 2. BeautifulSoup: mismo trabajo, resultado limpio"},
-        {"tipo": "code", "contenido": "soup = BeautifulSoup(html, 'html.parser')\ntextos = [s.get_text(strip=True) for s in soup.select('span.text')]\nprint('bs4:', len(textos), 'resultados')\nprint('muestra:', repr(textos[0][:100]))\nassert len(textos) == 10\n# Comparación directa de calidad:\nsucio = con_dotall[0] if con_dotall else ''\nprint('\\n¿el regex dejó tags/newlines dentro del dato?', bool(re.search(r'<|\\n', sucio)))\nprint('¿bs4 devolvió texto limpio?', not re.search(r'<', textos[0]))"},
-        {"tipo": "markdown", "contenido": "## 3. El caso imposible: anidamiento"},
-        {"tipo": "code", "contenido": "anidado = '<div class=\"x\">a<div class=\"x\">b<div class=\"x\">c</div></div></div>'\nprint('regex  :', re.findall(r'<div class=\"x\">(.*?)</div>', anidado))\nsoup2 = BeautifulSoup(anidado, 'html.parser')\nprint('bs4    :', [d.get_text() for d in soup2.select('div.x')])\nprint('\\nEl regex corta en el primer </div> que encuentra: no puede contar profundidad.')"},
-        {"tipo": "markdown", "contenido": "## 4. Dónde regex SÍ brilla: limpiar el texto ya extraído"},
-        {"tipo": "code", "contenido": "import unicodedata\ndef limpiar(s):\n    s = unicodedata.normalize('NFC', s).replace('\\xa0', ' ')\n    return re.sub(r'\\s+', ' ', s).strip()\n\ncrudo = soup.select_one('span.text').get_text()\nprint('crudo  :', repr(crudo[:80]))\nprint('limpio :', repr(limpiar(crudo)[:80]))\nprint('\\nRegla: parser para la ESTRUCTURA, regex para el TEXTO.')"}
+      "sitios_practica": [
+        "https://books.toscrape.com",
+        "https://quotes.toscrape.com"
       ],
-      "verificacion": ["assert len(textos) == 10", "assert not re.search(r'<', textos[0])"],
+      "celdas": [
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-009 — Regex vs parser sobre HTML real"
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, re\nfrom bs4 import BeautifulSoup\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\nhtml = requests.get('https://quotes.toscrape.com/', headers=UA, timeout=15).text\nprint('tamaño del HTML real:', len(html), 'bytes | líneas:', html.count(chr(10)))"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 1. Regex contra HTML real multilínea: el fallo silencioso"
+        },
+        {
+          "tipo": "code",
+          "contenido": "sin_dotall = re.findall(r'<span class=\"text\".*?>(.*?)</span>', html)\ncon_dotall = re.findall(r'<span class=\"text\".*?>(.*?)</span>', html, re.DOTALL)\nprint('regex SIN re.DOTALL:', len(sin_dotall), 'resultados')\nprint('regex CON re.DOTALL:', len(con_dotall), 'resultados')\nprint('\\nmuestra CON DOTALL (observa el markup residual y los saltos de línea):')\nprint(repr(con_dotall[0][:120]) if con_dotall else '(vacío)')"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 2. BeautifulSoup: mismo trabajo, resultado limpio"
+        },
+        {
+          "tipo": "code",
+          "contenido": "soup = BeautifulSoup(html, 'html.parser')\ntextos = [s.get_text(strip=True) for s in soup.select('span.text')]\nprint('bs4:', len(textos), 'resultados')\nprint('muestra:', repr(textos[0][:100]))\nassert len(textos) == 10\n# Comparación directa de calidad:\nsucio = con_dotall[0] if con_dotall else ''\nprint('\\n¿el regex dejó tags/newlines dentro del dato?', bool(re.search(r'<|\\n', sucio)))\nprint('¿bs4 devolvió texto limpio?', not re.search(r'<', textos[0]))"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 3. El caso imposible: anidamiento"
+        },
+        {
+          "tipo": "code",
+          "contenido": "anidado = '<div class=\"x\">a<div class=\"x\">b<div class=\"x\">c</div></div></div>'\nprint('regex  :', re.findall(r'<div class=\"x\">(.*?)</div>', anidado))\nsoup2 = BeautifulSoup(anidado, 'html.parser')\nprint('bs4    :', [d.get_text() for d in soup2.select('div.x')])\nprint('\\nEl regex corta en el primer </div> que encuentra: no puede contar profundidad.')"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## 4. Dónde regex SÍ brilla: limpiar el texto ya extraído"
+        },
+        {
+          "tipo": "code",
+          "contenido": "import unicodedata\ndef limpiar(s):\n    s = unicodedata.normalize('NFC', s).replace('\\xa0', ' ')\n    return re.sub(r'\\s+', ' ', s).strip()\n\ncrudo = soup.select_one('span.text').get_text()\nprint('crudo  :', repr(crudo[:80]))\nprint('limpio :', repr(limpiar(crudo)[:80]))\nprint('\\nRegla: parser para la ESTRUCTURA, regex para el TEXTO.')"
+        }
+      ],
+      "verificacion": [
+        "assert len(textos) == 10",
+        "assert not re.search(r'<', textos[0])"
+      ],
       "nota_etica": "Una petición al sitio de práctica. Este chunk cierra el círculo con M1.4-008: ahora viste el límite teórico con HTML real."
     },
     "audio_script": "Ya habíamos hablado de esto en el módulo de regex, pero ahora lo vas a ver con HTML real, y la diferencia entre teoría y práctica es brutal. Las expresiones regulares no pueden parsear HTML, y no es una cuestión de habilidad ni de escribir un regex más largo: es un teorema. HTML permite anidamiento recursivo de profundidad arbitraria, y los lenguajes regulares no pueden contar profundidad. Los parsers sí, porque construyen un árbol con una pila. En la práctica esto se manifiesta de tres formas que medimos. Primera: el punto asterisco no codicioso captura todo lo que hay entre las etiquetas, incluidos otros tags. Terminas con em强 avanzado em dentro de tu campo de título. Segunda: el HTML real siempre es multilínea, y el punto no cruza saltos de línea salvo que actives DOTALL. Sin esa bandera, tu regex devuelve una lista vacía sin ningún error. Tercera: el sitio puede usar comillas simples, que es HTML perfectamente válido, y tu regex con comillas dobles no coincide con nada. La regla que te llevas es corta: parser para la estructura, regex para el texto. BeautifulSoup extrae; después, si quieres colapsar espacios o sacar los dígitos de un precio, usas regex sobre ese texto ya limpio. Ahí sí es la herramienta correcta.",
     "video_prompt": "Video de 95 segundos. Un HTML real mostrado como un edificio con pisos anidados (divs dentro de divs). Un regex llega con una regla de medir plana: intenta medir 'desde <h2> hasta </h2>' pero su regla no puede doblar esquinas — corta en el primer cierre que encuentra y se lleva markup residual pegado (`<em>Avanzado</em>`). Comparativa: BeautifulSoup llega como un arquitecto con el plano completo del edificio (árbol de nodos) y extrae exactamente el texto del piso correcto, limpio. Tres carteles de fallo en el regex: 'tags internos', 'multilínea → []', \"comillas simples\". Escena final con la regla de oro en una balanza: STRUCTURE → parser | TEXT → regex. Overlay: 'No es tu regex. Es un límite teórico.'",
     "trazabilidad": {
-      "libros_fuente": ["M1.4-008 (límites de regex)", "Automate the Boring Stuff Cap 12", "Fluent Python Cap 4"],
-      "conceptos_clave": ["regex-vs-parser", "html", "anidamiento", "lenguajes-regulares", "beautifulsoup", "dotall", "auditoria"]
+      "libros_fuente": [
+        "M1.4-008 (límites de regex)",
+        "Automate the Boring Stuff Cap 12",
+        "Fluent Python Cap 4"
+      ],
+      "conceptos_clave": [
+        "regex-vs-parser",
+        "html",
+        "anidamiento",
+        "lenguajes-regulares",
+        "beautifulsoup",
+        "dotall",
+        "auditoria"
+      ]
     },
-    "tags_rag": ["python", "regex", "html", "beautifulsoup", "parser", "codigo-ia", "limites"]
+    "tags_rag": [
+      "python",
+      "regex",
+      "html",
+      "beautifulsoup",
+      "parser",
+      "codigo-ia",
+      "limites"
+    ]
   },
   {
     "id": "M2.3-010",
@@ -597,24 +1241,62 @@
       "setup_code": "",
       "codigo_inicial": "import json, os, sqlite3, re, unicodedata\n\ndef limpiar(s):\n    return s.strip()          # ← sin NFC, sin &nbsp;, sin colapsar espacios internos\n\ndef parsear_precio(txt):\n    return float(txt.replace('$', ''))   # ← ValueError con 'Consultar' o '$ 1,250.50'\n\ndef extraer(html, fuente, instante):\n    from bs4 import BeautifulSoup\n    soup = BeautifulSoup(html, 'html.parser')\n    regs = []\n    for card in soup.select('article.curso'):\n        regs.append({\n            'id_externo': card.get('data-id'),\n            'titulo': card.h3.text,                       # ← crashea si falta h3\n            'precio': parsear_precio(card.select_one('.precio').text),  # ← crashea si falta\n            'nivel': card.select_one('.nivel').text,       # ← crashea si falta\n            'url_detalle': card.select_one('a')['href'],\n            'fuente': fuente, 'scrapeado_en': instante,\n        })\n    return regs, []\n\ndef guardar(db_path, regs):\n    conn = sqlite3.connect(db_path)\n    conn.execute(\"\"\"CREATE TABLE IF NOT EXISTS cursos (\n        id INTEGER PRIMARY KEY, id_externo TEXT, titulo TEXT,\n        precio REAL, nivel TEXT, url_detalle TEXT, fuente TEXT, scrapeado_en TEXT)\"\"\")\n    for r in regs:                                    # ← sin UNIQUE ni UPSERT: duplica\n        conn.execute(\"INSERT INTO cursos (id_externo,titulo,precio,nivel,url_detalle,fuente,scrapeado_en) VALUES (?,?,?,?,?,?,?)\",\n                     (r['id_externo'], r['titulo'], r['precio'], r['nivel'], r['url_detalle'], r['fuente'], r['scrapeado_en']))\n    conn.commit()\n    total = conn.execute('SELECT COUNT(*) FROM cursos').fetchone()[0]\n    conn.close()\n    return total\n\ndef publicar(db_path, json_out):\n    conn = sqlite3.connect(db_path)\n    rows = conn.execute('SELECT titulo, precio, nivel, url_detalle FROM cursos ORDER BY titulo').fetchall()\n    conn.close()\n    with open(json_out, 'w') as f:                     # ← sin encoding, sin atomicidad\n        json.dump([list(r) for r in rows], f)          # ← sin ensure_ascii=False, sin indent, y como listas no dicts\n    return len(rows)",
       "test_code": "import tempfile, os, json\nfrom datetime import datetime, timezone\n\nd = tempfile.mkdtemp()\ndb, out = os.path.join(d, 'cursos.db'), os.path.join(d, 'cursos.json')\n\nHTML = '''\n<div class=\"cursos\">\n  <article class=\"curso\" data-id=\"py-101\">\n    <h3>  Python  desde  Cero </h3>\n    <span class=\"precio\">$ 1,299.00 MXN</span>\n    <span class=\"nivel\">Principiante</span>\n    <a href=\"/cursos/py-101\">detalle</a>\n  </article>\n  <article class=\"curso\" data-id=\"py-101\">\n    <h3>Python desde Cero</h3>\n    <span class=\"precio\">$1,299.00</span>\n    <span class=\"nivel\">Principiante</span>\n    <a href=\"/cursos/py-101\">detalle</a>\n  </article>\n  <article class=\"curso\" data-id=\"bs-201\">\n    <h3>Bash &amp; Automatización</h3>\n    <span class=\"precio\">Consultar</span>\n    <span class=\"nivel\">Intermedio</span>\n    <a href=\"/cursos/bs-201\">detalle</a>\n  </article>\n  <article class=\"curso\" data-id=\"ml-300\">\n    <h3>ML con Scikit</h3>\n    <span class=\"precio\">$2,500.00</span>\n    <a href=\"/cursos/ml-300\">detalle</a>\n  </article>\n</div>\n'''\n\ninstante = datetime.now(timezone.utc).isoformat(timespec='seconds')\nregs, probs = extraer(HTML, 'https://cursos.example', instante)\nassert len(regs) == 4, f'esperaba 4 bloques parseados (incluido el duplicado), obtuve {len(regs)}'\nassert regs[0]['titulo'] == 'Python desde Cero', f'whitespace sin colapsar: {regs[0][\"titulo\"]!r}'\nassert regs[0]['precio'] == 1299.0, f'precio mal parseado: {regs[0][\"precio\"]!r}'\nassert regs[2]['titulo'] == 'Bash & Automatización', f'entidad sin decodificar: {regs[2][\"titulo\"]!r}'\nassert regs[2]['precio'] is None, \"'Consultar' debe ser None, no crashear\"\nassert regs[3]['nivel'] is None, 'nivel ausente debe ser None'\nassert len(probs) >= 1, 'debes reportar los problemas detectados'\n\nguardar(db, regs)\nguardar(db, regs)   # segunda ingesta: NO debe duplicar\n\nimport sqlite3 as _s\nc = _s.connect(db)\ntotal = c.execute('SELECT COUNT(*) FROM cursos').fetchone()[0]\nnulos_precio = c.execute('SELECT COUNT(*) FROM cursos WHERE precio IS NULL').fetchone()[0]\nc.close()\nassert total == 3, f'ingesta no idempotente: {total} filas tras 2 corridas (esperaba 3 únicas)'\nassert nulos_precio == 1, f'esperaba 1 precio nulo (Consultar), hay {nulos_precio}'\n\nn = publicar(db, out)\nraw = open(out, encoding='utf-8').read()\ndatos = json.loads(raw)\nassert n == 3 and len(datos) == 3\nassert isinstance(datos[0], dict), f'deben ser dicts con claves, no listas: {datos[0]!r}'\nassert 'Automatización' in raw, f'acentos escapados: falta ensure_ascii=False'\nassert '\\n' in raw, 'falta indent para legibilidad'\nassert any(x['titulo'] == 'Bash & Automatización' and x['precio'] is None for x in datos)\nprint('OK')",
-      "asserts_stdout": ["OK"],
-      "asserts_forbidden": ["float(txt.replace('$', ''))", "json.dump([list(r) for r in rows], f)"],
+      "asserts_stdout": [
+        "OK"
+      ],
+      "asserts_forbidden": [
+        "float(txt.replace('$', ''))",
+        "json.dump([list(r) for r in rows], f)"
+      ],
       "solucion": "import json, os, re, sqlite3, tempfile, unicodedata\nfrom bs4 import BeautifulSoup\n\n_ESP = re.compile(r'\\s+')\n_NUM = re.compile(r'[\\d.,]+')\n\ndef limpiar(s):\n    return _ESP.sub(' ', unicodedata.normalize('NFC', s or '').replace('\\xa0', ' ')).strip()\n\ndef parsear_precio(txt):\n    m = _NUM.search((txt or '').replace(' ', ''))\n    if not m:\n        return None\n    try:\n        return float(m.group().replace(',', ''))\n    except ValueError:\n        return None\n\ndef extraer(html, fuente, instante):\n    soup = BeautifulSoup(html, 'html.parser')\n    regs, problemas = [], []\n    for i, card in enumerate(soup.select('article.curso')):\n        h = card.find(['h2', 'h3', 'h4'])\n        titulo = limpiar(h.get_text(' ', strip=True)) if h else ''\n        p_el = card.select_one('.precio')\n        precio = parsear_precio(p_el.get_text(strip=True)) if p_el else None\n        n_el = card.select_one('.nivel')\n        a = card.select_one('a[href]')\n        if not titulo:\n            problemas.append((i, 'sin titulo'))\n        if precio is None:\n            problemas.append((i, 'precio no numerico'))\n        regs.append({\n            'id_externo': card.get('data-id') or f'idx-{i}',\n            'titulo': titulo,\n            'precio': precio,\n            'nivel': limpiar(n_el.get_text(strip=True)) if n_el else None,\n            'url_detalle': a['href'] if a else None,\n            'fuente': fuente,\n            'scrapeado_en': instante,\n        })\n    return regs, problemas\n\ndef guardar(db_path, regs):\n    conn = sqlite3.connect(db_path)\n    with conn:\n        conn.execute(\"\"\"CREATE TABLE IF NOT EXISTS cursos (\n            id INTEGER PRIMARY KEY,\n            id_externo TEXT NOT NULL,\n            titulo TEXT NOT NULL,\n            precio REAL, nivel TEXT, url_detalle TEXT,\n            fuente TEXT NOT NULL, scrapeado_en TEXT NOT NULL,\n            UNIQUE(id_externo, fuente))\"\"\")\n        conn.executemany(\"\"\"\n            INSERT INTO cursos (id_externo,titulo,precio,nivel,url_detalle,fuente,scrapeado_en)\n            VALUES (:id_externo,:titulo,:precio,:nivel,:url_detalle,:fuente,:scrapeado_en)\n            ON CONFLICT(id_externo,fuente) DO UPDATE SET\n              titulo=excluded.titulo, precio=excluded.precio,\n              nivel=excluded.nivel, url_detalle=excluded.url_detalle,\n              scrapeado_en=excluded.scrapeado_en\"\"\", regs)\n    total = conn.execute('SELECT COUNT(*) FROM cursos').fetchone()[0]\n    conn.close()\n    return total\n\ndef publicar(db_path, json_out):\n    conn = sqlite3.connect(db_path)\n    conn.row_factory = sqlite3.Row\n    rows = [dict(r) for r in conn.execute(\n        'SELECT titulo, precio, nivel, url_detalle FROM cursos ORDER BY titulo')]\n    conn.close()\n    dirn = os.path.dirname(os.path.abspath(json_out)) or '.'\n    fd, tmp = tempfile.mkstemp(dir=dirn, suffix='.tmp')\n    try:\n        with os.fdopen(fd, 'w', encoding='utf-8') as f:\n            json.dump(rows, f, ensure_ascii=False, indent=2)\n        os.replace(tmp, json_out)\n    except BaseException:\n        if os.path.exists(tmp):\n            os.unlink(tmp)\n        raise\n    return len(rows)"
     },
     "colab": {
       "objetivo": "Ejecutar el pipeline completo contra un sitio real y producir el JSON que consume tu PWA.",
-      "sitios_practica": ["https://books.toscrape.com", "https://quotes.toscrape.com"],
+      "sitios_practica": [
+        "https://books.toscrape.com",
+        "https://quotes.toscrape.com"
+      ],
       "celdas": [
-        {"tipo": "markdown", "contenido": "# M2.3-010 — Pipeline completo: scrape → limpiar → SQLite → JSON\n\nEste notebook es el embrión de tu recolector de datos real. Cópialo y adáptalo a cada fuente que quieras incorporar a tu PWA."},
-        {"tipo": "code", "contenido": "!pip -q install requests beautifulsoup4\nimport requests, re, json, sqlite3, unicodedata, pathlib, time\nfrom datetime import datetime, timezone\nfrom bs4 import BeautifulSoup\nfrom urllib.parse import urljoin\n\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\n_ESP, _NUM = re.compile(r'\\s+'), re.compile(r'[\\d.,]+')\n\ndef limpiar(s):\n    return _ESP.sub(' ', unicodedata.normalize('NFC', s or '').replace('\\xa0',' ')).strip()\n\ndef parsear_precio(txt):\n    m = _NUM.search((txt or '').replace(' ',''))\n    if not m: return None\n    try: return float(m.group().replace(',',''))\n    except ValueError: return None"},
-        {"tipo": "markdown", "contenido": "## Etapa 1+2: EXTRAER y LIMPIAR (tolerante, con reporte de problemas)"},
-        {"tipo": "code", "contenido": "BASE = 'https://books.toscrape.com/'\n\ndef extraer_libros(html, fuente, instante):\n    soup = BeautifulSoup(html, 'html.parser')\n    regs, problemas = [], []\n    for i, art in enumerate(soup.select('article.product_pod')):\n        t = art.select_one('h3 a')\n        p = art.select_one('.price_color')\n        s = art.select_one('.availability')\n        r = art.select_one('p.star-rating')\n        titulo = limpiar(t['title']) if t and t.get('title') else ''\n        precio_txt = p.get_text(strip=True) if p else ''\n        precio = parsear_precio(precio_txt)\n        if not titulo: problemas.append((i, 'sin titulo'))\n        if precio is None: problemas.append((i, f'precio: {precio_txt!r}'))\n        regs.append({\n            'id_externo': (t['href'] if t else f'idx-{i}'),\n            'titulo': titulo,\n            'precio': precio,\n            'moneda': 'GBP' if '£' in precio_txt or 'Â£' in precio_txt else None,\n            'nivel': limpiar(s.get_text(' ', strip=True)) if s else None,\n            'rating': r['class'][1] if r and len(r.get('class', [])) > 1 else None,\n            'url_detalle': urljoin(BASE + 'catalogue/', t['href']) if t else None,\n            'fuente': fuente, 'scrapeado_en': instante,\n        })\n    return regs, problemas\n\ninstante = datetime.now(timezone.utc).isoformat(timespec='seconds')\nresp = requests.get(BASE, headers=UA, timeout=15); resp.raise_for_status()\nregs, probs = extraer_libros(resp.text, BASE, instante)\nprint('extraídos:', len(regs), '| problemas:', probs)\nprint('muestra:', json.dumps(regs[0], ensure_ascii=False, indent=2))\nassert len(regs) == 20 and all(r['titulo'] for r in regs)"},
-        {"tipo": "markdown", "contenido": "## Etapa 3: GUARDAR en SQLite (idempotente, con proveniencia)"},
-        {"tipo": "code", "contenido": "DB = 'dataset.db'\n\ndef guardar(db_path, regs):\n    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row\n    with conn:\n        conn.execute('''CREATE TABLE IF NOT EXISTS items (\n            id INTEGER PRIMARY KEY,\n            id_externo TEXT NOT NULL,\n            titulo TEXT NOT NULL,\n            precio REAL, moneda TEXT, nivel TEXT, rating TEXT, url_detalle TEXT,\n            fuente TEXT NOT NULL, scrapeado_en TEXT NOT NULL,\n            UNIQUE(id_externo, fuente))''')\n        conn.execute('CREATE INDEX IF NOT EXISTS idx_items_nivel ON items(nivel)')\n        conn.executemany('''INSERT INTO items\n            (id_externo,titulo,precio,moneda,nivel,rating,url_detalle,fuente,scrapeado_en)\n            VALUES (:id_externo,:titulo,:precio,:moneda,:nivel,:rating,:url_detalle,:fuente,:scrapeado_en)\n            ON CONFLICT(id_externo,fuente) DO UPDATE SET\n              titulo=excluded.titulo, precio=excluded.precio, moneda=excluded.moneda,\n              nivel=excluded.nivel, rating=excluded.rating, scrapeado_en=excluded.scrapeado_en''', regs)\n    total = conn.execute('SELECT COUNT(*) FROM items').fetchone()[0]\n    conn.close(); return total\n\nprint('total tras 1ª ingesta:', guardar(DB, regs))\nprint('total tras 2ª ingesta (debe ser igual):', guardar(DB, regs))\nassert guardar(DB, regs) == 20, 'la ingesta no es idempotente'"},
-        {"tipo": "markdown", "contenido": "## Etapa 4: PUBLICAR JSON para tu PWA (atómico, UTF-8, indentado)"},
-        {"tipo": "code", "contenido": "def publicar(db_path, json_out, solo_con_precio=True):\n    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row\n    q = 'SELECT titulo, precio, moneda, nivel, rating, url_detalle, scrapeado_en FROM items'\n    if solo_con_precio: q += ' WHERE precio IS NOT NULL'\n    rows = [dict(r) for r in conn.execute(q + ' ORDER BY titulo')]\n    conn.close()\n    tmp = pathlib.Path(json_out).with_suffix('.tmp')\n    tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding='utf-8')\n    tmp.replace(json_out)          # atómico\n    return len(rows)\n\nn = publicar(DB, 'dataset.json')\nprint('publicados:', n)\nraw = pathlib.Path('dataset.json').read_text(encoding='utf-8')\nprint(raw[:400])\nassert n == 20"},
-        {"tipo": "markdown", "contenido": "## Supervisión: reporte de calidad con umbrales de alarma"},
-        {"tipo": "code", "contenido": "def reporte(db_path, problemas, extraidos):\n    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row\n    filas = [dict(r) for r in conn.execute('SELECT * FROM items')]\n    conn.close()\n    n = max(len(filas), 1)\n    rep = {\n        'extraidos_html': extraidos,\n        'filas_en_db': len(filas),\n        'problemas': len(problemas),\n        'tasa_precio_nulo': round(sum(1 for f in filas if f['precio'] is None)/n, 3),\n        'tasa_nivel_nulo': round(sum(1 for f in filas if not f['nivel'])/n, 3),\n        'tasa_rating_nulo': round(sum(1 for f in filas if not f['rating'])/n, 3),\n        'precio_min': min((f['precio'] for f in filas if f['precio'] is not None), default=None),\n        'precio_max': max((f['precio'] for f in filas if f['precio'] is not None), default=None),\n        'detalle_problemas': problemas[:10],\n    }\n    if rep['extraidos_html'] == 0: raise ValueError('ALARMA CRÍTICA: 0 extraídos → markup cambió')\n    if rep['tasa_precio_nulo'] > 0.5: raise ValueError('ALARMA: >50% precios nulos → selector roto')\n    return rep\n\nrep = reporte(DB, probs, len(regs))\nfor k, v in rep.items(): print(f'{k:20s} {v}')\nprint('\\n✅ Pipeline completo: HTML real → datos limpios → SQLite → JSON listo para tu PWA')\n\n# Descarga tu dataset desde Colab:\nfrom google.colab import files\nfiles.download('dataset.json')"}
+        {
+          "tipo": "markdown",
+          "contenido": "# M2.3-010 — Pipeline completo: scrape → limpiar → SQLite → JSON\n\nEste notebook es el embrión de tu recolector de datos real. Cópialo y adáptalo a cada fuente que quieras incorporar a tu PWA."
+        },
+        {
+          "tipo": "code",
+          "contenido": "!pip -q install requests beautifulsoup4\nimport requests, re, json, sqlite3, unicodedata, pathlib, time\nfrom datetime import datetime, timezone\nfrom bs4 import BeautifulSoup\nfrom urllib.parse import urljoin\n\nUA = {'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'}\n_ESP, _NUM = re.compile(r'\\s+'), re.compile(r'[\\d.,]+')\n\ndef limpiar(s):\n    return _ESP.sub(' ', unicodedata.normalize('NFC', s or '').replace('\\xa0',' ')).strip()\n\ndef parsear_precio(txt):\n    m = _NUM.search((txt or '').replace(' ',''))\n    if not m: return None\n    try: return float(m.group().replace(',',''))\n    except ValueError: return None"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Etapa 1+2: EXTRAER y LIMPIAR (tolerante, con reporte de problemas)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "BASE = 'https://books.toscrape.com/'\n\ndef extraer_libros(html, fuente, instante):\n    soup = BeautifulSoup(html, 'html.parser')\n    regs, problemas = [], []\n    for i, art in enumerate(soup.select('article.product_pod')):\n        t = art.select_one('h3 a')\n        p = art.select_one('.price_color')\n        s = art.select_one('.availability')\n        r = art.select_one('p.star-rating')\n        titulo = limpiar(t['title']) if t and t.get('title') else ''\n        precio_txt = p.get_text(strip=True) if p else ''\n        precio = parsear_precio(precio_txt)\n        if not titulo: problemas.append((i, 'sin titulo'))\n        if precio is None: problemas.append((i, f'precio: {precio_txt!r}'))\n        regs.append({\n            'id_externo': (t['href'] if t else f'idx-{i}'),\n            'titulo': titulo,\n            'precio': precio,\n            'moneda': 'GBP' if '£' in precio_txt or 'Â£' in precio_txt else None,\n            'nivel': limpiar(s.get_text(' ', strip=True)) if s else None,\n            'rating': r['class'][1] if r and len(r.get('class', [])) > 1 else None,\n            'url_detalle': urljoin(BASE + 'catalogue/', t['href']) if t else None,\n            'fuente': fuente, 'scrapeado_en': instante,\n        })\n    return regs, problemas\n\ninstante = datetime.now(timezone.utc).isoformat(timespec='seconds')\nresp = requests.get(BASE, headers=UA, timeout=15); resp.raise_for_status()\nregs, probs = extraer_libros(resp.text, BASE, instante)\nprint('extraídos:', len(regs), '| problemas:', probs)\nprint('muestra:', json.dumps(regs[0], ensure_ascii=False, indent=2))\nassert len(regs) == 20 and all(r['titulo'] for r in regs)"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Etapa 3: GUARDAR en SQLite (idempotente, con proveniencia)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "DB = 'dataset.db'\n\ndef guardar(db_path, regs):\n    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row\n    with conn:\n        conn.execute('''CREATE TABLE IF NOT EXISTS items (\n            id INTEGER PRIMARY KEY,\n            id_externo TEXT NOT NULL,\n            titulo TEXT NOT NULL,\n            precio REAL, moneda TEXT, nivel TEXT, rating TEXT, url_detalle TEXT,\n            fuente TEXT NOT NULL, scrapeado_en TEXT NOT NULL,\n            UNIQUE(id_externo, fuente))''')\n        conn.execute('CREATE INDEX IF NOT EXISTS idx_items_nivel ON items(nivel)')\n        conn.executemany('''INSERT INTO items\n            (id_externo,titulo,precio,moneda,nivel,rating,url_detalle,fuente,scrapeado_en)\n            VALUES (:id_externo,:titulo,:precio,:moneda,:nivel,:rating,:url_detalle,:fuente,:scrapeado_en)\n            ON CONFLICT(id_externo,fuente) DO UPDATE SET\n              titulo=excluded.titulo, precio=excluded.precio, moneda=excluded.moneda,\n              nivel=excluded.nivel, rating=excluded.rating, scrapeado_en=excluded.scrapeado_en''', regs)\n    total = conn.execute('SELECT COUNT(*) FROM items').fetchone()[0]\n    conn.close(); return total\n\nprint('total tras 1ª ingesta:', guardar(DB, regs))\nprint('total tras 2ª ingesta (debe ser igual):', guardar(DB, regs))\nassert guardar(DB, regs) == 20, 'la ingesta no es idempotente'"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Etapa 4: PUBLICAR JSON para tu PWA (atómico, UTF-8, indentado)"
+        },
+        {
+          "tipo": "code",
+          "contenido": "def publicar(db_path, json_out, solo_con_precio=True):\n    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row\n    q = 'SELECT titulo, precio, moneda, nivel, rating, url_detalle, scrapeado_en FROM items'\n    if solo_con_precio: q += ' WHERE precio IS NOT NULL'\n    rows = [dict(r) for r in conn.execute(q + ' ORDER BY titulo')]\n    conn.close()\n    tmp = pathlib.Path(json_out).with_suffix('.tmp')\n    tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding='utf-8')\n    tmp.replace(json_out)          # atómico\n    return len(rows)\n\nn = publicar(DB, 'dataset.json')\nprint('publicados:', n)\nraw = pathlib.Path('dataset.json').read_text(encoding='utf-8')\nprint(raw[:400])\nassert n == 20"
+        },
+        {
+          "tipo": "markdown",
+          "contenido": "## Supervisión: reporte de calidad con umbrales de alarma"
+        },
+        {
+          "tipo": "code",
+          "contenido": "def reporte(db_path, problemas, extraidos):\n    conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row\n    filas = [dict(r) for r in conn.execute('SELECT * FROM items')]\n    conn.close()\n    n = max(len(filas), 1)\n    rep = {\n        'extraidos_html': extraidos,\n        'filas_en_db': len(filas),\n        'problemas': len(problemas),\n        'tasa_precio_nulo': round(sum(1 for f in filas if f['precio'] is None)/n, 3),\n        'tasa_nivel_nulo': round(sum(1 for f in filas if not f['nivel'])/n, 3),\n        'tasa_rating_nulo': round(sum(1 for f in filas if not f['rating'])/n, 3),\n        'precio_min': min((f['precio'] for f in filas if f['precio'] is not None), default=None),\n        'precio_max': max((f['precio'] for f in filas if f['precio'] is not None), default=None),\n        'detalle_problemas': problemas[:10],\n    }\n    if rep['extraidos_html'] == 0: raise ValueError('ALARMA CRÍTICA: 0 extraídos → markup cambió')\n    if rep['tasa_precio_nulo'] > 0.5: raise ValueError('ALARMA: >50% precios nulos → selector roto')\n    return rep\n\nrep = reporte(DB, probs, len(regs))\nfor k, v in rep.items(): print(f'{k:20s} {v}')\nprint('\\n✅ Pipeline completo: HTML real → datos limpios → SQLite → JSON listo para tu PWA')\n\n# Descarga tu dataset desde Colab:\nfrom google.colab import files\nfiles.download('dataset.json')"
+        }
       ],
       "verificacion": [
         "assert len(regs) == 20 and all(r['titulo'] for r in regs)",
@@ -627,9 +1309,32 @@
     "audio_script": "Este es el pipeline que alimenta tu producto, y el principio rector es el que tú mismo dijiste: sin buena información no hay nada bueno. Cuatro etapas, cada una con un contrato. Extraer: con tolerancia total, fallando por elemento y nunca por lote, y reportando cada problema que encuentres. Limpiar: normalizar Unicode, colapsar espacios, decodificar entidades, y convertir tipos con red de seguridad, porque un precio que dice Consultar no es un número. Guardar: aquí vive la pieza más importante y la que casi nadie implementa — la proveniencia. Cada registro lleva de dónde vino y cuándo se scrapeó. Y con un constraint UNIQUE sobre la identificación externa más la fuente, combinado con un UPSERT, tu ingesta se vuelve idempotente: puedes correr el pipeline cien veces y tu base de datos no se llena de duplicados, se actualiza. Lo verificamos: cuatro bloques con uno duplicado, dos ingestas seguidas, tres filas únicas en la base. Publicar: JSON atómico, con UTF-8 explícito y ensure_ascii en falso para que tus acentos se lean, escrito a un temporal y publicado con os replace. Y encima de todo, el reporte de calidad: cuántos extrajiste, cuántos tienen precio nulo, cuántos problemas hubo, con umbrales que lanzan alarma. Sin ese reporte, un scraper que funciona y un scraper muerto se ven exactamente igual: los dos terminan sin errores.",
     "video_prompt": "Video de 120 segundos, narrativa de planta industrial en 4 estaciones. ESTACIÓN 1 'EXTRAER': HTML crudo entrando por una cinta; un brazo robótico (selectores semánticos) toma cada tarjeta; las defectuosas ('Consultar', sin título) NO detienen la cinta — caen a un contenedor etiquetado 'problemas: 1' mientras el contador sigue. ESTACIÓN 2 'LIMPIAR': túneles de normalización (NFC fusionando acentos, rodillos colapsando espacios, un decodificador &amp; → &), y una balanza de tipos donde 'Consultar' se clasifica como None en vez de explotar la máquina. ESTACIÓN 3 'GUARDAR': los registros reciben un sello de proveniencia (fuente + timestamp) y entran a SQLite; el guardián UNIQUE(id_externo, fuente) detiene un duplicado y lo desvía por un canal 'ON CONFLICT DO UPDATE' que actualiza la fila existente en vez de crear otra — contador de filas permanece en 3 tras dos corridas. ESTACIÓN 4 'PUBLICAR': salida JSON pasando por escritura atómica (temporal → os.replace como interruptor), acentos intactos, indentado legible. Cierre: tablero de control con el reporte de calidad (extraídos 4, en DB 3, precio_nulo 33%, problemas 1) y una alarma roja que se enciende cuando 'extraídos = 0'. Overlay: 'Proveniencia + idempotencia + alarmas = datos confiables.'",
     "trazabilidad": {
-      "libros_fuente": ["Automate the Boring Stuff Cap 12 (proyecto)", "Python Crash Course Cap 10 (proyecto final)", "M1.3-007 (atomicidad) + M2.2-009 (auditoría) + M2.3-003/005/008 integrados"],
-      "conceptos_clave": ["microproyecto", "pipeline", "scraping", "sqlite", "proveniencia", "idempotencia", "upsert", "reporte-calidad", "integrador"]
+      "libros_fuente": [
+        "Automate the Boring Stuff Cap 12 (proyecto)",
+        "Python Crash Course Cap 10 (proyecto final)",
+        "M1.3-007 (atomicidad) + M2.2-009 (auditoría) + M2.3-003/005/008 integrados"
+      ],
+      "conceptos_clave": [
+        "microproyecto",
+        "pipeline",
+        "scraping",
+        "sqlite",
+        "proveniencia",
+        "idempotencia",
+        "upsert",
+        "reporte-calidad",
+        "integrador"
+      ]
     },
-    "tags_rag": ["python", "scraping", "pipeline", "sqlite", "json", "microproyecto", "calidad-datos", "integrador"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "pipeline",
+      "sqlite",
+      "json",
+      "microproyecto",
+      "calidad-datos",
+      "integrador"
+    ]
   }
 ]
