@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Migrar la app de notas/tareas de JSON a SQLite conectada a la API FastAPI",
-    "modelo_mental": "SQLite es una base de datos COMPLETA que vive en un solo archivo, sin servidor — perfecta para móviles, PWAs y automatización. Desde Python (stdlib `sqlite3`) hay DOS recursos que gestionar y la mayoría los confunde: (1) la TRANSACCIÓN — `with conn:` hace commit si todo sale bien, rollback si hay excepción; (2) la CONEXIÓN — `with conn:` NO la cierra (solo gestiona la transacción). Y el detalle que destruye datos silenciosamente: sin `commit()`, tus INSERT/UPDATE/DELETE se pierden cuando la conexión se cierra. Los DDL (CREATE TABLE) sí se auto-confirman; los DML (INSERT/UPDATE/DELETE) NO.",
+    "modelo_mental": "SQLite es una base de datos COMPLETA que vive en un solo archivo, sin servidor — perfecta para móviles, PWAs y automatización. Desde Python (stdlib `sqlite3`) hay DOS recursos que gestionar y la mayoría los confunde: (1) la TRANSACCIÓN — `with conn:` hace commit si todo sale bien, rollback si hay excepción; (2) la CONEXIÓN — `with conn:` NO la cierra (solo gestiona la transacción). Y el detalle que destruye datos silenciosamente: sin `commit()`, tus `INSERT`/`UPDATE`/`DELETE` se pierden cuando la conexión se cierra. Los DDL (`CREATE TABLE`) sí se auto-confirman; los DML (`INSERT`/`UPDATE`/`DELETE`) NO.\n\nEsta confusión nace de mezclar dos conceptos: la gestión automática de transacciones y el ciclo de vida de la conexión. Cuando usas `with conn:`, Python entra en una transacción implícita: si el bloque termina sin excepciones, se llama internamente a `conn.commit()`; si lanza una excepción, se llama a `conn.rollback()`. Pero esto NO implica que la conexión se cierre al salir del bloque `with`. La conexión sigue abierta hasta que el objeto es recolectado por el GC o se llama explícitamente a `conn.close()`.\n\nPor eso el patrón correcto combina `contextlib.closing` con `with conn:`. Así garantizas que, incluso si ocurre una excepción, la conexión se cierre y libere descriptores del sistema operativo. Olvidar esto no solo causa fugas de recursos, sino que en entornos con muchas conexiones (como servidores web) agota rápidamente los límites del sistema operativo.",
     "codigo_roto": "import sqlite3\n\ndef guardar_nota(ruta, texto):\n    conn = sqlite3.connect(ruta)\n    conn.execute(\"CREATE TABLE IF NOT EXISTS notas (id INTEGER PRIMARY KEY, texto TEXT)\")\n    conn.execute(\"INSERT INTO notas (texto) VALUES (?)\", (texto,))\n    # sin commit, sin close",
-    "diagnostico": "Bug verificado en sandbox: la tabla SÍ se crea (DDL auto-confirma), pero el INSERT queda en una transacción pendiente. Cuando la función retorna, el garbage collector cierra la conexión y los datos NO confirmados se DESCARTAN. Resultado: archivo con tabla vacía, cero errores en consola. El usuario 'guarda' la nota, la app parece funcionar, y al reabrir no hay nada. Segundo bug: aunque hicieras commit, la conexión queda abierta (fuga de descriptors). Y un detalle que casi nadie enseña: `with conn:` gestiona la transacción pero TAMPOCO cierra la conexión — necesitas `contextlib.closing` o `conn.close()` explícito.",
+    "diagnostico": "1. **Falta de `commit()` antes de cerrar la conexión**: El `INSERT` está dentro de una transacción implícita que nunca se confirma. Aunque `CREATE TABLE` (DDL) se auto-confirma, las sentencias DML como `INSERT` requieren una confirmación explícita. Cuando la conexión se cierra (por el GC o por fin de función), la transacción pendiente se descarta silenciosamente. Python no lanza error porque técnicamente la operación fue válida, pero los datos no persisten.\n\n2. **Conexión no cerrada explícitamente**: Aunque Python cierra la conexión automáticamente al recolectar el objeto, esto depende del GC y no es inmediato. En aplicaciones con muchas operaciones, esto puede mantener descriptores abiertos demasiado tiempo, causando fugas de recursos. La forma robusta es usar `contextlib.closing(sqlite3.connect(...))` o llamar `conn.close()` en un bloque `finally`.\n\n3. **`with conn:` no cierra la conexión**: Muchos desarrolladores creen que `with conn:` maneja tanto la transacción como el cierre de la conexión. En realidad, solo gestiona la transacción (commit/rollback). La conexión sigue abierta, y si no se cierra explícitamente, puede causar problemas de rendimiento o bloqueo de archivos en sistemas concurrentes.",
     "codigo_corregido": "import sqlite3\nfrom contextlib import closing\n\ndef guardar_nota(ruta, texto):\n    with closing(sqlite3.connect(ruta)) as conn, conn:\n        # primer conn (closing): cierra la conexión al salir\n        # segundo conn (context manager): commit si OK, rollback si excepción\n        conn.execute(\"CREATE TABLE IF NOT EXISTS notas (id INTEGER PRIMARY KEY, texto TEXT)\")\n        conn.execute(\"INSERT INTO notas (texto) VALUES (?)\", (texto,))",
     "codigo_optimizado": "import sqlite3\nfrom contextlib import closing, contextmanager\n\n@contextmanager\ndef conectar(ruta):\n    \"\"\"Context manager propio: conexión + transacción + row_factory.\n    El patrón que usarás en TODA la app.\"\"\"\n    with closing(sqlite3.connect(ruta)) as conn:\n        conn.row_factory = sqlite3.Row      # filas accesibles por nombre de columna\n        conn.execute(\"PRAGMA foreign_keys = ON\")  # ver M2.2-003: OFF por defecto\n        with conn:                          # transacción: commit/rollback automático\n            yield conn\n\ndef guardar_nota(ruta, texto) -> int:\n    with conectar(ruta) as conn:\n        conn.execute(\"\"\"\n            CREATE TABLE IF NOT EXISTS notas (\n                id INTEGER PRIMARY KEY,\n                texto TEXT NOT NULL,\n                creada TEXT NOT NULL DEFAULT (datetime('now'))\n            )\n        \"\"\")\n        cur = conn.execute(\"INSERT INTO notas (texto) VALUES (?)\", (texto,))\n        return cur.lastrowid   # ID generado automáticamente\n\n# API esencial del módulo sqlite3:\n# conn.execute(sql, params)   → cursor directo (atajo para un solo statement)\n# cur.lastrowid               → ID del INSERT recién hecho\n# cur.rowcount                → filas afectadas por UPDATE/DELETE\n# cur.fetchall()              → todas las filas (¡cuidado en tablas grandes!)\n# cur.fetchone()              → una fila (o None)\n# conn.executemany(sql, seq)  → INSERT masivo (100x más rápido que un bucle)\n# conn.row_factory = sqlite3.Row  → fila['columna'] en vez de fila[0]\n# ':memory:'                    → DB en RAM (tests, nunca persiste)\n\n# Por qué executemany + UN commit gana siempre:\ndef insertar_masivo(ruta, textos):\n    with conectar(ruta) as conn:\n        conn.executemany(\"INSERT INTO notas (texto) VALUES (?)\", [(t,) for t in textos])\n    # Anti-patrón: execute() + commit() por fila = un fsync por fila = 100x más lento",
     "disenso_experto": "¿Abrir conexión por operación o mantener una conexión larga? Conexión por operación (como aquí) es simple, segura y suficiente para SQLite local — abrir SQLite cuesta microsegundos. Conexión larga es necesaria cuando escribes mucho (evita re-abrir y re-hacer PRAGMAs) o en servidores con concurrencia. El punto medio profesional: una conexión por 'unidad de trabajo' (request HTTP, ejecución de script), cerrada al terminar. En tu API FastAPI: la conexión vive en una dependencia con yield (M2.1-006) — se abre al inicio del request y se cierra al final.",
-    "pregunta_transferencia": "Tu script hace 10,000 INSERT con `conn.execute()` y un `conn.commit()` después de cada uno. Tarda 45 segundos. El mismo código con `executemany()` y UN solo commit tarda 0.3 segundos. Explica exactamente qué operación de sistema cuesta tanto por commit y por qué agruparlos cambia la complejidad real del programa.",
+    "pregunta_transferencia": "Imagina que tu script procesa un lote de 10,000 registros y cada `INSERT` está seguido de un `conn.commit()`. El cuello de botella no está en la escritura en disco, sino en la **sincronización del sistema de archivos** (`fsync`) que cada `commit()` fuerza. Cada `commit()` vacía el buffer de escritura del proceso al disco físico, una operación costosa que puede tardar varios milisegundos. Al agrupar todos los `INSERT` con `executemany()` y hacer un único `commit()` al final, reducirás el número de llamadas al sistema de cientos o miles a solo una, cambiando la complejidad de I/O de O(n) a O(1) en términos de operaciones de sincronización.\n\nAhora considera que SQLite usa un **bloqueo de archivo completo** durante las escrituras. Si cada `commit()` abre y cierra una transacción, el motor debe adquirir y liberar el bloqueo miles de veces, lo que genera contención innecesaria. Agrupar operaciones no solo reduce el número de `fsync`, sino que también mantiene el bloqueo activo por menos tiempo, permitiendo que otras operaciones lean mientras tú preparas el lote completo antes de confirmar.",
     "quiz": {
       "pregunta": "Ejecutas un INSERT y cierras el script SIN llamar a conn.commit(). ¿Qué hay en la base de datos al reabrirla?",
       "opciones": [
@@ -63,6 +63,57 @@
       "transacciones",
       "conexion",
       "persistencia"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué sucede si ejecutas un script que hace `conn.execute('INSERT INTO t VALUES (?)', (dato,))` sin llamar a `conn.commit()` y luego cierras la conexión con `conn.close()`?",
+        "opciones": [
+          "El INSERT se pierde porque no se confirmó la transacción",
+          "Python lanza un error de transacción no confirmada",
+          "El INSERT se guarda automáticamente al cerrar la conexión",
+          "SQLite guarda el dato en memoria temporal hasta el próximo commit"
+        ],
+        "correcta": "A",
+        "explicacion": "En SQLite, los comandos DML (como INSERT) no se persisten hasta que no se llama a `commit()`. Si cierras la conexión sin confirmar, la transacción implícita se revierte y los datos se pierden. Python no lanza error porque la operación fue válida, pero los datos no se guardan. Esto es diferente de los DDL (como CREATE TABLE), que se auto-confirmar.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué línea del siguiente código causa que los datos no se guarden en la base de datos?",
+        "opciones": [
+          "`conn = sqlite3.connect(ruta)`",
+          "`conn.execute('CREATE TABLE IF NOT EXISTS notas (id INTEGER PRIMARY KEY, texto TEXT)')`",
+          "`conn.execute('INSERT INTO notas (texto) VALUES (?)', (texto,))`",
+          "Ninguna, los datos se guardan correctamente"
+        ],
+        "correcta": "D",
+        "explicacion": "Técnicamente, ninguna línea por sí sola causa el problema. El error está en la **ausencia** de `conn.commit()` y `conn.close()`. El `CREATE TABLE` (DDL) se auto-confirma, pero el `INSERT` (DML) necesita un `commit()` explícito. Sin él, los datos se pierden al cerrar la conexión. Esta es una trampa común: el código parece correcto, pero falta una línea clave.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál es la causa raíz del siguiente error: `sqlite3.OperationalError: database is locked`?",
+        "opciones": [
+          "La conexión no fue cerrada con `conn.close()`",
+          "Se intentó hacer `commit()` dos veces",
+          "Otra conexión está escribiendo al mismo tiempo y bloqueó la base de datos",
+          "El archivo de base de datos no existe"
+        ],
+        "correcta": "C",
+        "explicacion": "El error `database is locked` ocurre cuando SQLite no puede adquirir un bloqueo de escritura porque otra conexión está escribiendo simultáneamente. SQLite usa bloqueos a nivel de archivo, y si una transacción no se cierra (por falta de `commit()` o `close()`), el bloqueo persiste. La solución es asegurar que todas las transacciones se confirmen o reviertan rápidamente y que las conexiones se cierren adecuadamente.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Qué hace que `with conn:` sea útil en SQLite, y qué NO hace?",
+        "opciones": [
+          "Hace commit automático si no hay excepciones; cierra la conexión al salir del bloque",
+          "Hace rollback automático si hay excepciones; cierra la conexión al salir del bloque",
+          "Hace commit o rollback según excepciones; NO cierra la conexión",
+          "Hace commit solo si se llama manualmente; cierra la conexión al finalizar"
+        ],
+        "correcta": "C",
+        "explicacion": "`with conn:` en SQLite gestiona la transacción: si el bloque termina sin excepciones, hace `commit()`; si lanza una excepción, hace `rollback()`. Pero NO cierra la conexión. Para cerrar la conexión, debes usar `contextlib.closing()` o llamar `conn.close()` explícitamente. Esta distinción es crucial para evitar fugas de recursos.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -180,13 +231,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Migrar la app de notas/tareas de JSON a SQLite conectada a la API FastAPI",
-    "modelo_mental": "El esquema es el contrato de integridad de tus datos: mejor definir reglas en la tabla que validar en mil lugares del código. Piezas clave: `INTEGER PRIMARY KEY` (en SQLite es alias del rowid: auto-numérico SIN necesidad de AUTOINCREMENT), `NOT NULL`, `UNIQUE`, `DEFAULT`, `CHECK` y `REFERENCES` (foreign keys). La trampa mortal exclusiva de SQLite: **las foreign keys vienen DESACTIVADAS por defecto en CADA conexión** — sin `PRAGMA foreign_keys = ON`, tus REFERENCES son decoración y puedes insertar huérfanos impunemente. Verificado en sandbox: el huérfano entra sin error.",
+    "modelo_mental": "**El esquema es el contrato de integridad de tus datos:** define reglas en la tabla que validar en miles de puntos del código. Las piezas clave son `INTEGER PRIMARY KEY` (alias del rowid en SQLite, auto‑numérico sin necesidad de AUTOINCREMENT), `NOT NULL`, `UNIQUE`, `DEFAULT`, `CHECK` y `REFERENCES`.\n\nThis herramienta funciona como un manual de normas que todo tu aplicación debe respetar, garantizando que los datos nunca violen su regla de diseño.",
     "codigo_roto": "import sqlite3\n\ndef crear_esquema(conn):\n    conn.executescript(\"\"\"\n    CREATE TABLE IF NOT EXISTS usuarios (\n        id INTEGER PRIMARY KEY,\n        nombre TEXT\n    );\n    CREATE TABLE IF NOT EXISTS notas (\n        id INTEGER PRIMARY KEY,\n        texto TEXT,\n        usuario_id INTEGER REFERENCES usuarios(id)\n    );\n    \"\"\")",
-    "diagnostico": "Cuatro defectos de integridad. (1) SIN PRAGMA: `REFERENCES usuarios(id)` está escrito pero NO se aplica — verificado en sandbox, insertar una nota con `usuario_id=999` (usuario inexistente) SUCEDE sin error. Tu base acumula basura referencial silenciosa. (2) `nombre TEXT` sin NOT NULL: usuarios sin nombre permitidos. (3) `texto TEXT` sin NOT NULL: notas vacías permitidas. (4) Sin índices para las búsquedas frecuentes (por usuario, por fecha). El esquema débil te obliga a validar TODO en Python — y basta un solo INSERT olvidado para corromper la integridad.",
+    "diagnostico": "1. Sin activar `PRAGMA foreign_keys = ON`, las restricciones `REFERENCES` no se aplican; al ejecutar `INSERT INTO notas (usuario_id, texto) VALUES (999, 'algo')` el programa acepta la operación y crea un registro huérfano.\n\n2. El campo `nombre` en la tabla `usuarios` carece de `NOT NULL`, permitiendo valores nulos que pueden causar errores en cálculos posteriores.\n\n3. De manera similar, `texto` en la tabla `notas` también permite nulos, lo que resulta en filas vacías que rompen consultas que esperan contenido.\n\n4. Ausencia de índices en columnas frecuentemente consultadas (por ejemplo `usuario_id`) genera búsquedas lineales que degradan el rendimiento.",
     "codigo_corregido": "import sqlite3\n\ndef crear_esquema(conn):\n    conn.execute(\"PRAGMA foreign_keys = ON\")   # ¡obligatorio en CADA conexión!\n    conn.executescript(\"\"\"\n    CREATE TABLE IF NOT EXISTS usuarios (\n        id INTEGER PRIMARY KEY,\n        nombre TEXT NOT NULL\n    );\n    CREATE TABLE IF NOT EXISTS notas (\n        id INTEGER PRIMARY KEY,\n        texto TEXT NOT NULL,\n        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,\n        creada TEXT NOT NULL DEFAULT (datetime('now'))\n    );\n    CREATE INDEX IF NOT EXISTS idx_notas_usuario ON notas(usuario_id);\n    \"\"\")",
     "codigo_optimizado": "import sqlite3\n\n# ===== ESQUEMA PROFESIONAL PARA TU APP DE NOTAS =====\nESQUEMA = \"\"\"\nPRAGMA foreign_keys = ON;\n\nCREATE TABLE IF NOT EXISTS usuarios (\n    id       INTEGER PRIMARY KEY,          -- rowid alias: auto-numérico gratis\n    nombre   TEXT NOT NULL UNIQUE,         -- sin duplicados\n    creada   TEXT NOT NULL DEFAULT (datetime('now'))  -- ISO 8601: ordenable\n);\n\nCREATE TABLE IF NOT EXISTS notas (\n    id          INTEGER PRIMARY KEY,\n    texto       TEXT NOT NULL CHECK (length(texto) > 0 AND length(texto) <= 5000),\n    tag         TEXT NOT NULL DEFAULT 'general' CHECK (tag <> ''),\n    completada  INTEGER NOT NULL DEFAULT 0 CHECK (completada IN (0, 1)),  -- bool en SQLite\n    usuario_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,\n    creada      TEXT NOT NULL DEFAULT (datetime('now'))\n);\n\nCREATE INDEX IF NOT EXISTS idx_notas_usuario ON notas(usuario_id);\nCREATE INDEX IF NOT EXISTS idx_notas_tag     ON notas(tag);\n\"\"\"\n\ndef crear_esquema(conn):\n    conn.executescript(ESQUEMA)\n\n# ===== REGLAS DE DISEÑO QUE ESTE ESQUEMA ENSEÑA =====\n#\n# 1. SQLite tiene type affinity, no tipos estrictos:\n#    'TEXT', 'INTEGER', 'REAL', 'BLOB', 'NUMERIC' son AFIDADES.\n#    ¡Puedes guardar un string en una columna INTEGER!\n#    La integridad real viene de NOT NULL + CHECK, no del tipo.\n#\n# 2. Booleanos: SQLite no tiene BOOL → INTEGER CHECK (x IN (0,1)).\n#\n# 3. Fechas: TEXT en ISO 8601 ('2026-09-29T10:30:00').\n#    Ordenables lexicográficamente = ordenables cronológicamente.\n#    datetime('now') las genera en UTC.\n#\n# 4. INTEGER PRIMARY KEY vs AUTOINCREMENT:\n#    INTEGER PRIMARY KEY reutiliza IDs borrados (es alias de rowid).\n#    AUTOINCREMENT prohíbe reutilizar (cuesta rendimiento y espacio).\n#    Default correcto: SIN AUTOINCREMENT salvo requisito legal/auditoría.\n#\n# 5. ON DELETE CASCADE: borrar un usuario borra sus notas.\n#    Alternativas: RESTRICT (bloquea el borrado si hay notas),\n#    SET NULL (conserva la nota sin dueño). Decide por semántica de negocio.\n#\n# 6. PRAGMA foreign_keys es POR CONEXIÓN: si abres 5 conexiones,\n#    necesitas el PRAGMA 5 veces. Por eso vive en tu helper conectar().\n\n# ===== VERIFICACIÓN DE INTEGRRIDAD (lo que el PRAGMA habilita) =====\n# INSERT huérfano          → IntegrityError: FOREIGN KEY constraint failed\n# DELETE de usuario con notas → cascade las borra (o RESTRICT lo impide)\n# UPDATE a id inexistente  → IntegrityError\n# CHECK violado            → IntegrityError: CHECK constraint failed",
     "disenso_experto": "¿Integridad en la base (constraints) o en la aplicación (Pydantic/validación)? La respuesta madura es AMBAS con roles distintos: la base es la última línea (nada la bypasea, ni scripts futuros ni otros programas que abran el archivo); la aplicación da mensajes de error amigables y valida antes de llegar a la DB. El anti-patrón es confiar solo en Pydantic: el día que alguien corra un script de migración manual contra tu archivo, los CHECK y FK son lo único entre tus datos y el caos. Constraints SIEMPRE en el esquema; validación de UX encima.",
-    "pregunta_transferencia": "Tu app borra un usuario y sus 500 notas deberían desaparecer (ON DELETE CASCADE). Funciona en tus tests pero en producción las notas huérfanas se acumulan. Descubres que el código de producción abre conexiones con un helper distinto que no ejecuta el PRAGMA. ¿Por qué CASCADE no funcionó sin el PRAGMA si la cláusula está escrita en el esquema, y qué te dice esto sobre dónde vive realmente la integridad en SQLite?",
+    "pregunta_transferencia": "Escenario: La aplicación tiene una función que elimina un usuario y, mediante una cláusula `ON DELETE CASCADE`, espera que todas sus notas se borren automáticamente. En tus pruebas unitarias todo funciona, pero en producción las notas huérfanas se acumulan porque el helper que maneja la conexión en producción no ejecuta el `PRAGMA foreign_keys = ON`. ¿Por qué la cláusula `CASCADE` no se comportó como se esperaba sin activar las foreign keys?\n\nPista: La integridad referencial en SQLite reside en el estado de la conexión, no únicamente en la definición del esquema.",
     "quiz": {
       "pregunta": "¿Cuál es el estado por defecto de las foreign keys en SQLite?",
       "opciones": [
@@ -237,6 +288,57 @@
       "pragma",
       "constraints",
       "integridad"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En SQLite, cómo se declara la clave primaria más comúnmente para obtener un identificador único y auto‑incrementante sin necesidad de AUTOINCREMENT?",
+        "opciones": [
+          "A) `id INTEGER NOT NULL`",
+          "B) `id INTEGER PRIMARY KEY`",
+          "C) `PRIMARY KEY (id)`",
+          "D) `auto_increment id`"
+        ],
+        "correcta": "B",
+        "explicacion": "Solo la opción B combina `INTEGER` con `PRIMARY KEY`, lo cual en SQLite crea un identificador único y auto‑incrementante que actúa como clave primaria sin requerir declaraciones adicionales como `NOT NULL` o `AUTOINCREMENT`. Las otras opciones son incompletas o incorrectas para SQLite.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto `crear_esquema`, después de ejecutar las sentencias `CREATE TABLE` ¿cuál de las siguientes acciones provocará un error de integridad cuando se intenta insertar una nota con `usuario_id = 999` si no se ha activado el PRAGMA?",
+        "opciones": [
+          "A) Falta de `NOT NULL` en la columna `nombre` de la tabla `usuarios`",
+          "B) Falta de índice en la columna `usuario_id` de la tabla `notas`",
+          "C) Ausencia de `PRAGMA foreign_keys = ON` en el script",
+          "D) Uso de `executescript` en lugar de `execute`"
+        ],
+        "correcta": "A",
+        "explicacion": "La ausencia de `NOT NULL` permite almacenar valores `NULL` en la columna `nombre`, lo que provoca un `IntegrityError` al insertar una fila sin valor. Las opciones B, C y D afectan rendimiento u otro comportamiento pero no generan un error inmediato de integridad por este caso específico.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Después de habilitar las restricciones con `PRAGMA foreign_keys = ON`, intentas borrar un usuario que tiene notas asociadas y obtienes un error. ¿Cuál es la causa raíz del fallo y cómo se resuelve?",
+        "opciones": [
+          "A) Los foreign keys siguen desactivados por error al llamar a `delete`",
+          "B) Se necesita ejecutar `PRAGMA foreign_keys = ON` antes de realizar la eliminación",
+          "C) Las transacciones deben estar abiertas durante el borrado",
+          "D) Hay que usar un procedimiento almacenado en lugar de SQL nativo"
+        ],
+        "correcta": "B",
+        "explicacion": "El error surge porque, aunque las restricciones están definidas en el esquema, SQLite las activa solo cuando se establece el PRAGMA. Si se omite, la eliminación deja huérfanos. Activando el PRAGMA antes de ejecutar el `DELETE` se restablece la integridad referencial y permite la cascada deseada.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes afirmaciones describe correctamente una claves primaria en SQLite?",
+        "opciones": [
+          "A) `id INTEGER PRIMARY KEY`",
+          "B) `id INTEGER NOT NULL`",
+          "C) `PRIMARY KEY (id, nombre)`",
+          "D) `autoincrement id`"
+        ],
+        "correcta": "A",
+        "explicacion": "En SQLite, la combinación `INTEGER PRIMARY KEY` es el modo predeterminado para crear una clave primaria auto‑incrementante. Las demás opciones son sintaxis incorrecta o describen reglas que no existen en SQLite.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -718,13 +820,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Migrar la app de notas/tareas de JSON a SQLite conectada a la API FastAPI",
-    "modelo_mental": "Una migración es código que transforma el esquema de una versión a otra, y tiene dos propiedades innegociables: **idempotencia** (ejecutarla N veces = ejecutarla 1 vez, sin crashear ni duplicar) y **preservación de datos** (los datos del usuario sobreviven al cambio de esquema). El bug clásico — verificado en sandbox — es el `ALTER TABLE ADD COLUMN` ciego: la primera ejecución funciona, la segunda crashea con 'duplicate column name'. SQLite además es limitado: no soporta DROP COLUMN antes de 3.35 (verificado: syntax error en 3.27), ni modificar tipos — para eso existe el patrón oficial de reconstrucción de tabla.",
+    "modelo_mental": "Una migración es código que transforma el esquema de una versión a otra, y tiene dos propiedades innegociables: **idempotencia** (ejecutarla N veces = ejecutarla 1 vez, sin crashear ni duplicar) y **preservación de datos** (los datos del usuario sobreviven al cambio de esquema). El bug clásico — verificado en sandbox — es el `ALTER TABLE ADD COLUMN` ciego: la primera ejecución funciona, la segunda crashea con 'duplicate column name'. SQLite además es limitado: no soporta DROP COLUMN antes de 3.35 (verificado: syntax error en 3.27), ni modificar tipos — para esito existe el patrón oficial de reconstrucción de tabla.\n\nLa analogía central es pensar en una migración como una receta de cocina: si la receta dice 'añade sal' pero ya está la sal, no debes añadir más ni crashear, simplemente verifica y continúa. Esto importa porque las migraciones se ejecutan en contextos impredecibles: al arranque de la app, tras un redeploy, o cuando el usuario actualiza tu PWA y tu código de setup corre otra vez. Un esquema que crashea en la segunda pasada hace la app inutilizable tras el primer reinicio.\n\nEste enfoque previene errores comunes como asumir que 'siempre es la primera vez' (¡el usuario pudo haber reiniciado 50 veces!), o intentar forzar operaciones que SQLite no soporta sin usar el patrón de reconstrucción de tabla (crear tabla nueva, copiar datos, borrar vieja, renombrar). La idempotencia no es un lujo: es la diferencia entre una app que sobrevive a los reinicios y una que se muere en el segundo arranque.",
     "codigo_roto": "import sqlite3\n\ndef migrar(conn):\n    conn.execute(\"ALTER TABLE usuarios ADD COLUMN email TEXT\")\n    conn.commit()",
-    "diagnostico": "Verificado en sandbox: primera ejecución OK, segunda ejecución → `sqlite3.OperationalError: duplicate column name: email`. Y las migraciones SE re-ejecutan: al reiniciar la app, al desplegar en dos máquinas, cuando el usuario actualiza la PWA y tu código de setup corre otra vez. Un esquema que crashea en la segunda pasada hace la app inutilizable tras el primer reinicio. Segundo problema: no hay registro de QUÉ migraciones ya corrieron — sin versión de esquema, cada arranque tiene que adivinar el estado de la base.",
+    "diagnostico": "1. **Error: `sqlite3.OperationalError: duplicate column name: email`** — Ocurre porque `ALTER TABLE ADD COLUMN email TEXT` no verifica si la columna ya existe. Python/Bash no lanza este error por mala suerte: SQLite mantiene el esquema en el archivo `.sqlite` y cada `ADD COLUMN` intenta crear físicamente la columna. Si ya existe, el motor rechaza la operación. El patrón general es: **cualquier operación DDL que no sea idempotente naturamente** (como `CREATE TABLE` sin `IF NOT EXISTS`, o `ADD COLUMN` sin guarda). Solución: envolver en `try/except` o consultar `PRAGMA table_info(usuarios)` antes de ejecutar.\n\n2. **Error: No hay registro de qué migraciones ya corrieron** — Sin una tabla de versiones de esquema (ej. `migrations_applied`), cada arranque debe adivinar el estado. Esto lleva a migraciones duplicadas, saltadas o aplicadas en orden incorrecto. El patrón general es: **falta de estado explícito**. Solución: crear una tabla `schema_migrations(version TEXT PRIMARY KEY)` y registrar cada migración completada. SQLite no impone esto, pero tu app sí debe hacerlo.\n\n3. **Error: `syntax error` al intentar `DROP COLUMN` en SQLite < 3.35** — Verificado en sandbox con SQLite 3.27. El patrón general es: **asumir que todas las funciones DDL están disponibles**. Solución: usar el patrón de reconstrucción (crear tabla nueva con columnas deseadas, copiar datos con `INSERT INTO ... SELECT`, borrar tabla vieja, renombrar).",
     "codigo_corregido": "import sqlite3\n\ndef migrar(conn):\n    # Idempotente: verificar antes de alterar\n    columnas = {row[1] for row in conn.execute(\"PRAGMA table_info(usuarios)\")}\n    if 'email' not in columnas:\n        conn.execute(\"ALTER TABLE usuarios ADD COLUMN email TEXT\")\n        conn.commit()",
     "codigo_optimizado": "import sqlite3\n\n# ===== SISTEMA DE MIGRACIONES VERSIONADAS (patrón profesional mínimo) =====\n# SQLite tiene un contador de versión INTEGRADO: PRAGMA user_version\n\nMIGRACIONES = {\n    1: [\n        \"\"\"CREATE TABLE IF NOT EXISTS usuarios (\n               id INTEGER PRIMARY KEY,\n               nombre TEXT NOT NULL)\"\"\",\n        \"\"\"CREATE TABLE IF NOT EXISTS notas (\n               id INTEGER PRIMARY KEY,\n               texto TEXT NOT NULL,\n               tag TEXT NOT NULL DEFAULT 'general',\n               usuario_id INTEGER REFERENCES usuarios(id))\"\"\",\n    ],\n    2: [\n        \"ALTER TABLE usuarios ADD COLUMN email TEXT\",\n        \"CREATE INDEX IF NOT EXISTS idx_notas_tag ON notas(tag)\",\n    ],\n    3: [\n        \"ALTER TABLE notas ADD COLUMN completada INTEGER NOT NULL DEFAULT 0\",\n    ],\n}\n\ndef version_actual(conn) -> int:\n    return conn.execute(\"PRAGMA user_version\").fetchone()[0]\n\ndef migrar_hasta(conn, objetivo: int):\n    \"\"\"Aplica migraciones pendientes en orden. Idempotente y transaccional.\"\"\"\n    actual = version_actual(conn)\n    for v in range(actual + 1, objetivo + 1):\n        with conn:                       # cada versión = una transacción\n            for sql in MIGRACIONES[v]:\n                conn.execute(sql)\n            conn.execute(f\"PRAGMA user_version = {v}\")\n    return version_actual(conn)\n\n# Uso: al arrancar la app\n# conn = sqlite3.connect('app.db')\n# migrar_hasta(conn, objetivo=3)   # de la versión que sea → 3, sin repetir\n\n# ===== EL PATRÓN DE RECONSTRUCCIÓN (cuando ALTER no alcanza) =====\n# SQLite < 3.35 no tiene DROP COLUMN (verificado: syntax error en 3.27)\n# y nunca tuvo MODIFY COLUMN. El procedimiento oficial de 12 pasos, resumido:\ndef reconstruir_tabla(conn):\n    \"\"\"Ejemplo: quitar columna 'temporal' de notas sin perder datos.\"\"\"\n    with conn:\n        conn.execute(\"PRAGMA foreign_keys = OFF\")   # durante la reconstrucción\n        conn.execute(\"\"\"\n            CREATE TABLE notas_nueva (\n                id INTEGER PRIMARY KEY,\n                texto TEXT NOT NULL,\n                tag TEXT NOT NULL DEFAULT 'general',\n                usuario_id INTEGER REFERENCES usuarios(id)\n            )\"\"\")\n        conn.execute(\"\"\"\n            INSERT INTO notas_nueva (id, texto, tag, usuario_id)\n            SELECT id, texto, tag, usuario_id FROM notas\n        \"\"\")                      # ← copia explícita: sobreviven los datos\n        conn.execute(\"DROP TABLE notas\")\n        conn.execute(\"ALTER TABLE notas_nueva RENAME TO notas\")\n        conn.execute(\"PRAGMA foreign_keys = ON\")\n\n# ===== REGLAS DE ORO DE MIGRACIONES =====\n# 1. BACKUP antes de migrar: copia el archivo .db (es UN archivo, cp basta)\n# 2. Cada migración = una transacción (with conn:)\n# 3. Idempotencia: PRAGMA table_info / user_version antes de alterar\n# 4. Las migraciones NUNCA se editan después de aplicadas: se AGREGA la v+1\n# 5. Probar la migración sobre una COPIA de datos reales antes del deploy\n# 6. Alembic es la herramienta profesional cuando usas SQLAlchemy\n#    (autogenera migraciones comparando modelos vs esquema real)",
     "disenso_experto": "¿Sistema casero (PRAGMA user_version + dict de SQL) o Alembic? Para una app单体 con SQLite (tu PWA con datos locales), el patrón casero versionado es suficiente, transparente y no añade dependencias — es exactamente lo que hacen apps como Obsidian. Alembic brilla con SQLAlchemy + Postgres/MySQL en equipos: autogenera diffs entre modelos y esquema, maneja downgrades y ramas de versiones. Costo real de Alembic: complejidad de configuración y una curva que no paga en apps personales. Regla: SQLite local → user_version; servidor multi-entorno con ORM → Alembic.",
-    "pregunta_transferencia": "Lanzas la v2 de tu PWA: la migración agrega la columna 'email'. Un usuario con la v1 tiene 10,000 notas en su SQLite local dentro del navegador (OPFS/IndexedDB). Describe la secuencia completa: ¿cuándo corre la migración, qué pasa si el usuario tiene dos pestañas abiertas y ambas la ejecutan a la vez, y por qué 'cada migración en su propia transacción + idempotencia' hace que ese escenario de doble pestaña sea inofensivo?",
+    "pregunta_transferencia": "Lanzas la v2 de tu PWA: la migración agrega la columna 'email'. Un usuario con la v1 tiene 10,000 notas en su SQLite local dentro del navegador (OPFS/IndexedDB). Describe la secuencia completa: ¿cuándo corre la migración, qué pasa si el usuario tiene dos pestañas abiertas y ambas la ejecutan a la vez, y por qué 'cada migración en su propia transacción + idempotencia' hace que ese escenario de doble pestaña sea inofensivo?\n\nPista: piensa en cómo SQLite maneja bloqueos de escritura entre pestañas, y cómo una migración idempotente (que verifica si la columna existe antes de añadirla) evita que la segunda pestaña crashee. El orden correcto es: abrir conexión → verificar estado de esquema → aplicar solo si es necesario → commit en transacción aislada. Si ambas pestañas usan `BEGIN IMMEDIATE`, una esperará a la otra, y la segunda no hará nada porque la columna ya existe.",
     "quiz": {
       "pregunta": "¿Qué significa que una migración sea 'idempotente'?",
       "opciones": [
@@ -774,6 +876,57 @@
       "esquema",
       "idempotencia",
       "user-version"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué sucede al ejecutar `conn.execute(\"ALTER TABLE usuarios ADD COLUMN email TEXT\")` dos veces seguidas sobre la misma base de datos SQLite?",
+        "opciones": [
+          "La segunda ejecución es ignorada silenciosamente y no hay error",
+          "La segunda ejecución lanza `sqlite3.OperationalError: duplicate column name: email`",
+          "La segunda ejecución crea una columna duplicada con un nombre generado automáticamente",
+          "La segunda ejecución sobrescribe la columna existente sin error"
+        ],
+        "correcta": "B",
+        "explicacion": "SQLite no permite columnas duplicadas en una tabla. Al intentar agregar una columna que ya existe, el motor lanza `sqlite3.OperationalError: duplicate column name: email`. La opción A es incorrecta porque SQLite no ignora silenciosamente operaciones inválidas. La opción C es falsa porque SQLite no genera nombres automáticos. La opción D es incorrecta porque `ADD COLUMN` no sobrescribe, solo agrega. La solución es verificar con `PRAGMA table_info()` antes de ejecutar o usar `try/except`.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la salida del siguiente código en Python con SQLite 3.27?",
+        "opciones": [
+          "Crea la tabla y la columna sin error",
+          "Lanza `sqlite3.OperationalError: near \"DROP\": syntax error`",
+          "Lanza `sqlite3.OperationalError: no such table: usuarios\"",
+          "Crea la tabla pero ignora la eliminación de la columna"
+        ],
+        "correcta": "B",
+        "explicacion": "En SQLite 3.27 (anterior a 3.35), `DROP COLUMN` no es soportado. El motor lanza un error de sintaxis al encontrar `DROP COLUMN`. La opción A es incorrecta porque la operación DDL falla. La opción C es falsa porque la tabla sí se crea antes del error. La opción D es incorrecta porque SQLite no ignora comandos inválidos. La solución es usar el patrón de reconstrucción de tabla.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Por qué es crítico que las migraciones sean idempotententes en aplicaciones PWA con IndexedDB/OPFS?",
+        "opciones": [
+          "Porque IndexedDB no soporta transacciones, lo que requiere migraciones manuales",
+          "Porque el usuario puede tener múltiples pestañas abiertas y el código de migración puede ejecutarse más de una vez",
+          "Porque las PWA no tienen conexión a internet y no pueden descargar migraciones nuevas",
+          "Porque SQLite en el navegador no persiste los datos entre sesiones"
+        ],
+        "correcta": "B",
+        "explicacion": "En una PWA, el usuario puede abrir múltiples pestañas o ventanas, y cada una podría ejecutar el código de migración al cargar. Si la migración no es idempotente, la segunda pestaña crasheará al intentar agregar una columna que ya existe. La opción A es incorrecta porque IndexedDB sí soporta transacciones. La opción C es falsa porque la conectividad no afecta la idempotencia. La opción D es incorrecta porque los datos sí persisten en IndexedDB/OPFS.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué patrón oficial recomienda SQLite para modificar el tipo de una columna o eliminar una columna en versiones anteriores a 3.35?",
+        "opciones": [
+          "Usar `ALTER TABLE ... MODIFY COLUMN` con cláusula `IF EXISTS`",
+          "Crear una nueva tabla con el esquema deseado, copiar los datos, eliminar la tabla antigua y renombrar",
+          "Usar `PRAGMA schema_version` para forzar el cambio de tipo",
+          "Ejecutar `DROP COLUMN` dentro de una transacción con `BEGIN IMMEDIATE`"
+        ],
+        "correcta": "B",
+        "explicacion": "El patrón oficial de SQLite para modificaciones complejas de esquema (como cambiar tipos o eliminar columnas en versiones < 3.35) es la reconstrucción de tabla: crear una nueva tabla con el esquema deseado, copiar los datos existentes, eliminar la tabla antigua y renombrar la nueva. La opción A es incorrecta porque `MODIFY COLUMN` no existe en SQLite. La opción C es falsa porque `PRAGMA schema_version` solo gestiona versiones, no modifica esquemas. La opción D es incorrecta porque `DROP COLUMN` no es soportado en versiones anteriores a 3.35.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
