@@ -521,13 +521,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Pipeline scraper → limpieza → SQLite → JSON que alimenta tu PWA",
-    "modelo_mental": "HTTP es sin estado: cada petición es independiente. Las cookies son el mecanismo que le da memoria, y `requests.Session` es el objeto que las administra por ti. Una sesión te da tres cosas: (1) **persistencia de cookies** (login, CSRF, preferencias), (2) **reutilización de conexiones TCP** (keep-alive → 2-5x más rápido en muchas peticiones al mismo host), (3) **headers por defecto** (tu User-Agent configurado una sola vez). Sin sesión, cada `requests.get()` es un huérfano: no recuerda que ya te autenticaste.",
+    "modelo_mental": "HTTP es sin estado: cada petición es como enviar una carta sin sobre que indique quién la envió; **las cookies** son el sobre que el servidor guarda para reconocer al remitente en la siguiente entrega. `requests.Session` actúa como un buzón personal que almacena esas sobres y, además, reutiliza el mismo sobre (conexión TCP) para múltiples envíos, evitando el costo de abrir y cerrar la conexión cada vez.\n\nEsto importa porque, sin sesión, cada `requests.get()` crea una nueva conexión TCP, lo que puede ser 2‑5 veces más lento cuando se hacen muchas peticiones al mismo host, y además pierde cualquier cookie de autenticación, CSRF o preferencias que el servidor haya establecido. Al usar una sesión obtienes tres ventajas clave: (1) **persistencia de cookies** (el login permanece válido), (2) **reutilización de conexiones TCP** (keep‑alive) y (3) **headers por defecto** (por ejemplo, tu User‑Agent configurado una sola vez).\n\nCon estas ventajas se evitan errores silenciosos como scrapear repetidamente la página de login pensando que son datos, se reduce el consumo de recursos del servidor y del cliente, y se previene que el sitio te bloquee por enviar encabezados sospechosos o por establecer demasiadas conexiones en corto tiempo.",
     "codigo_roto": "import requests\n\ndef scrapear_area_privada(base, usuario, clave, urls):\n    # Login con una petición suelta\n    requests.post(base + '/login', data={'user': usuario, 'pass': clave})\n    resultados = []\n    for u in urls:\n        r = requests.get(base + u)     # ← nueva conexión, SIN cookies\n        resultados.append(r.text)\n    return resultados",
-    "diagnostico": "El login se descarta inmediatamente: `requests.post()` sin sesión guarda la cookie de autenticación en un jar temporal que se tira al terminar la llamada. Las peticiones siguientes llegan sin cookies → el servidor responde la página de login (¡con status 200!) y tu scraper 'extrae' 500 veces el formulario de login creyendo que son datos. Es el bug más silencioso del scraping autenticado: cero errores, datos 100% basura. Además: nueva conexión TCP por URL (lento) y las credenciales viajan en `data=` sin verificar que el sitio use HTTPS.",
+    "diagnostico": "1. **Cookie de autenticación descartada**: La llamada `requests.post(...)` se ejecuta fuera de una sesión, por lo que el jar de cookies es temporal y se destruye al finalizar la función. Python no lanza una excepción; simplemente la cookie de sesión que el servidor envió en `Set‑Cookie` se pierde, y las peticiones siguientes llegan sin ella, provocando que el servidor devuelva la página de login (con status 200) en vez del contenido protegido.\n\n2. **Nueva conexión TCP por URL**: Cada `requests.get(base + u)` abre un nuevo handshake TCP porque no hay reutilización de conexiones. Esto genera latencia adicional y consume más recursos en el servidor y en el cliente; el patrón general es que cualquier cliente HTTP que no use keep‑alive paga el costo de establecimiento de conexión en cada petición.\n\n3. **Credenciales enviadas sin verificación de HTTPS**: Los datos del login van en el cuerpo `data=` de una petición POST. Si el sitio no usa HTTPS (o si se ignora la validación de certificados), el nombre de usuario y la contraseña viajan en texto plano, lo que constituye un riesgo de seguridad. Aunque Python no lanza un error, el patrón es que cualquier transmisión de credenciales sin cifrado es vulnerable a interceptación.",
     "codigo_corregido": "import requests\n\ndef scrapear_area_privada(base, usuario, clave, urls):\n    with requests.Session() as s:\n        s.headers.update({'User-Agent': 'MiBotEducativo/1.0 (+https://mipwa.example/bot)'})\n        login = s.post(base + '/login', data={'user': usuario, 'pass': clave}, timeout=15)\n        login.raise_for_status()\n        resultados = []\n        for u in urls:\n            r = s.get(base + u, timeout=15)   # misma sesión → cookies presentes\n            r.raise_for_status()\n            resultados.append(r.text)\n        return resultados",
     "codigo_optimizado": "import time\nimport requests\nfrom bs4 import BeautifulSoup\n\n# ===== SESIÓN PROFESIONAL: auth + rate limit + verificación =====\nclass ScraperAutenticado:\n    def __init__(self, base_url, min_intervalo=1.5, ua='MiBotEducativo/1.0 (+https://mipwa.example/bot)'):\n        self.base = base_url.rstrip('/')\n        self.min_intervalo = min_intervalo\n        self._ultimo = 0.0\n        self.s = requests.Session()\n        self.s.headers.update({'User-Agent': ua, 'Accept-Language': 'es-MX,es;q=0.9'})\n        self.autenticado = False\n\n    def _esperar(self):\n        falta = self.min_intervalo - (time.monotonic() - self._ultimo)\n        if falta > 0:\n            time.sleep(falta)\n        self._ultimo = time.monotonic()\n\n    def login_formulario(self, path, credenciales):\n        \"\"\"Login clásico por formulario. Muchos sitios piden un token CSRF\n        que debes extraer PRIMERO de la página de login.\"\"\"\n        self._esperar()\n        pagina = self.s.get(self.base + path, timeout=15)\n        pagina.raise_for_status()\n        soup = BeautifulSoup(pagina.text, 'html.parser')\n\n        # Token CSRF: campo oculto en el formulario (nombre típico: csrf_token / csrfmiddlewaretoken)\n        csrf_input = soup.select_one('input[name*=csrf i]')\n        payload = dict(credenciales)\n        if csrf_input and csrf_input.get('value'):\n            payload[csrf_input['name']] = csrf_input['value']\n\n        form = soup.select_one('form')\n        action = self.base + (form.get('action') or path) if form else self.base + path\n\n        self._esperar()\n        r = self.s.post(action, data=payload, timeout=15)\n        r.raise_for_status()\n        # VERIFICAR el login: no asumas que funcionó\n        self.autenticado = self._verificar_login()\n        return self.autenticado\n\n    def _verificar_login(self) -> bool:\n        \"\"\"Comprueba empíricamente que estás dentro: busca un elemento\n        que SOLO existe para usuarios autenticados (o la ausencia del form de login).\"\"\"\n        r = self.s.get(self.base + '/dashboard', timeout=15)\n        soup = BeautifulSoup(r.text, 'html.parser')\n        return soup.select_one('form[action*=login]') is None and r.status_code == 200\n\n    def get(self, path, **kw):\n        self._esperar()\n        r = self.s.get(self.base + path, timeout=15, **kw)\n        r.raise_for_status()\n        r.encoding = r.apparent_encoding or r.encoding\n        return r\n\n    def close(self):\n        self.s.close()\n\n    def __enter__(self):\n        return self\n\n    def __exit__(self, *exc):\n        self.close()\n\n# ===== USO =====\n# with ScraperAutenticado('https://ejemplo.com', min_intervalo=2.0) as sc:\n#     if sc.login_formulario('/login', {'user': 'me@mail.com', 'pass': os.environ['CLAVE']}):\n#         html = sc.get('/mi-area').text\n\n# ===== AUTENTICACIÓN POR API (Bearer token) — el caso moderno =====\ndef cliente_con_token(token):\n    s = requests.Session()\n    s.headers.update({\n        'Authorization': f'Bearer {token}',\n        'User-Agent': 'MiBotEducativo/1.0',\n        'Accept': 'application/json',\n    })\n    return s\n\n# ===== SECRETS: NUNCA en el código =====\n# MAL:  s.post(url, data={'pass': 'MiClave123'})          ← queda en git para siempre\n# BIEN: import os; clave = os.environ['MI_CLAVE']         ← variable de entorno\n# En Colab:  from google.colab import userdata\n#            clave = userdata.get('MI_CLAVE')\n\n# ===== DIAGNÓSTICO DE COOKIES =====\n# print(s.cookies.get_dict())          ← ¿tengo la cookie de sesión?\n# print(r.history)                     ← ¿hubo redirects? (302 a /login = no autenticado)\n# print(r.url)                         ← ¿terminé en /login sin querer?\n\n# ===== CUÁNDO NO DEBES SCRAPEAR UN ÁREA AUTENTICADA =====\n# Si existe una API oficial (aunque sea no documentada), úsala: es más estable,\n# más rápida y suele estar permitida. Scrapear detrás de login viola casi siempre\n# los términos de servicio. Ver M2.3-005 y M2.3-007.",
     "disenso_experto": "¿Scraping autenticado o API oficial? Casi siempre existe un endpoint JSON detrás de la página que ves (M2.3-007 enseña a encontrarlo con DevTools → Network). Usarlo es 10x más rápido, mucho más estable (no depende del markup) y frecuentemente permitido. Scrapear HTML detrás de login es el último recurso: frágil, lento y en zona gris legal. Regla: busca el JSON primero; scrapea HTML solo si no hay alternativa.",
-    "pregunta_transferencia": "Tu scraper autenticado funcionó durante 3 semanas. Hoy todas las páginas retornan el formulario de login con status 200. Enumera 4 causas distintas (cookie expirada, IP bloqueada, CSRF rotado, cambio de markup) y describe una prueba de una línea para distinguirlas usando `s.cookies`, `r.history` y `r.url`.",
+    "pregunta_transferencia": "Tu scraper autenticado funcionó sin problemas durante tres semanas, pero hoy todas las peticiones devuelven el formulario de login con código de estado 200, lo que indica que el servidor no reconoce que ya estás autenticado. Este síntoma puede deberse a varios factores que interrumpen la persistencia de la sesión o que cambian las condiciones bajo las cuales el servidor valida la autenticación.\n\nPara diagnosticar rápidamente, puedes inspeccionar el objeto de sesión después del login: verifica si la cookie de sesión aún está presente con `s.cookies.get_dict()`, examina el historial de redirecciones mediante `r.history` para ver si hubo un salto a una página de login, y compara la URL final (`r.url`) con la esperada para detectar cambios en el dominio o en el path que puedan indicar un bloqueo de IP o un cambio de marca.",
     "quiz": {
       "pregunta": "¿Cuál es la ventaja de rendimiento de usar `requests.Session()` además de la persistencia de cookies?",
       "opciones": [
@@ -646,6 +646,57 @@
       "autenticacion",
       "requests",
       "csrf"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la principal razón por la que usar `requests.Session` mejora el rendimiento al hacer varias peticiones al mismo host?",
+        "opciones": [
+          "Reutiliza la conexión TCP subyacente mediante keep‑alive.",
+          "Reintenta automáticamente las peticiones fallidas.",
+          "Cambia todas las peticiones GET a POST.",
+          "Desactiva la verificación de certificados SSL."
+        ],
+        "correcta": "A",
+        "explicacion": "La sesión mantiene abierto el socket TCP entre peticiones, evitando el handshake de tres vías en cada solicitud. Esto reduce la latencia y el consumo de recursos. Las otras opciones describen funcionalidades que no están relacionadas con el rendimiento de conexión: los reintentos son una política de reintento, cambiar GET a POST altera la semántica de la petición y desactivar SSL afecta la seguridad, no la velocidad.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto proporcionado, después de ejecutar la línea `requests.post(base + '/login', data={'user': usuario, 'pass': clave})`, ¿qué contenido es más probable que obtenga cada llamada subsiguiente a `requests.get(base + u)`?",
+        "opciones": [
+          "Los datos privados de la página solicitada.",
+          "El formulario de login HTML (página de autenticación).",
+          "Una respuesta vacía (cadena de longitud cero).",
+          "Un objeto JSON con un token de acceso."
+        ],
+        "correcta": "B",
+        "explicacion": "Como el login se realizó fuera de una sesión, la cookie de autenticación se descartó al finalizar la petición POST. Las siguientes GET llegan sin esa cookie, por lo que el servidor, al no detectar una sesión válida, responde mostrando nuevamente el formulario de login (con código 200). No se obtiene un cuerpo vacío ni un JSON de token porque el endpoint no está diseñado para devolver esos datos sin autenticación.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Cuál de los siguientes cambios corregiría la pérdida de autenticación sin modificar la lógica general del scraper?",
+        "opciones": [
+          "Añadir un encabezado `User-Agent` personalizado a cada petición.",
+          "Cambiar el método `POST` por `GET` en la petición de login.",
+          "Envolver tanto el login como las peticiones subsiguientes en un mismo objeto `requests.Session()`.",
+          "Codificar las credenciales en formato JSON y enviarlas con `json=` en lugar de `data=`"
+        ],
+        "correcta": "C",
+        "explicacion": "Al crear un `requests.Session()` y usar ese mismo objeto tanto para el POST de login como para los GET posteriores, la sesión conserva el jar de cookies entre llamadas, de modo que la cookie de autenticación recibida en la respuesta del login se envía automáticamente en las peticiones siguientes. Las otras opciones no abordan la causa raíz: cambiar el encabezado no guarda cookies, usar GET para login suele fallar por diseño del endpoint y enviar credenciales como JSON no afecta la persistencia de la sesión.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de los siguientes NO es un caso de uso típico de `requests.Session`?",
+        "opciones": [
+          "Mantener el estado de login (cookies) entre varias peticiones a un sitio protegido.",
+          "Establecer un encabezado `User-Agent` común para todas las peticiones.",
+          "Realizar peticiones asíncronas usando `asyncio` sin bloquear el hilo principal.",
+          "Aprovechar la agrupación de conexiones (connection pooling) para reducir la latencia."
+        ],
+        "correcta": "C",
+        "explicacion": "`requests.Session` está diseñado para uso síncrono y proporciona persistencia de cookies, headers por defecto y reutilización de conexiones. No brinda capacidades asíncronas; para eso se utilizan bibliotecas como `httpx` o `aiohttp`. Las otras tres opciones describen exactamente los beneficios que ofrece una sesión.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
@@ -818,13 +869,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Pipeline scraper → limpieza → SQLite → JSON que alimenta tu PWA",
-    "modelo_mental": "Todo crawl tiene DOS conjuntos de visitados que la mayoría confunde: **páginas visitadas** (para no recorrer dos veces la misma lista y cortar loops infinitos) e **items descubiertos** (para no duplicar el mismo producto que aparece en dos páginas). Verificado en sandbox: mi primer crawler deduplicaba solo páginas y produjo `/libros/b` dos veces. Los tres componentes de un crawl robusto: cola de URLs, tope de páginas (`max_paginas` como fusible), y dedup en ambos niveles. Y el detalle que casi todos olvidan: `urljoin()` para resolver URLs relativas — `'page/2'` no es lo mismo que `'/page/2'`.",
+    "modelo_mental": "Todo crawl robusto depende de reconocer que hay **dos conjuntos de visitados distintos**, algo que la mayoría de los principiantes confunde. El primer conjunto, **páginas visitadas**, evita recorrer dos veces la misma lista de resultados y corta bucles infinitos causados por enlaces de paginación mal formados. El segundo conjunto, **items descubiertos**, garantiza que un mismo producto que aparece en múltiples páginas no se registre más de una vez. Esta distinción es clave porque las URLs de páginas (`'/libros?page=1'`) y las URLs de items (`'/libros/b'`) pertenecen a espacios de nombres completamente diferentes: compararlas directamente es como usar una lista de nombres de archivos para deduplicar ent entradas de un directorio. Verificado en sandbox: mi primer crawler solo deduplicaba páginas y produjo `/libros/b` dos veces sin darse cuenta.\n\nEl patrón general de un crawl sólido incluye tres componentes: una **cola de URLs** para gestionar el orden de exploración, un **tope de páginas** (`max_paginas` como fusible de seguridad contra sitios infinitos), y **deduplicación en ambos niveles**. Sin embargo, hay un detalle que casi todos olvidan: usar `urljoin()` para resolver URLs relativas. Una URL como `'page/2'` se resuelve de forma diferente a `'/page/2'` dependiendo del contexto base, y si no normalizas las URLs antes de compararlas, terminarás tratando como distintas a dos referencias que apuntan al mismo recurso, rompiendo tu lógica de deduplicación y desperdiciando solicitudes.",
     "codigo_roto": "from bs4 import BeautifulSoup\n\ndef crawl(url_inicial, fetch, max_paginas=50):\n    vistos, urls_libros, cola = set(), [], [url_inicial]\n    n = 0\n    while cola and n < max_paginas:\n        url = cola.pop(0)\n        if url in vistos:\n            continue\n        vistos.add(url); n += 1\n        html = fetch(url)\n        if html is None:\n            continue\n        soup = BeautifulSoup(html, 'html.parser')\n        for a in soup.select('a.book'):\n            href = a.get('href')\n            if href and href not in vistos:      # ← compara items contra PÁGINAS\n                urls_libros.append(href)\n        nxt = soup.select_one('a.next')\n        if nxt and nxt.get('href'):\n            cola.append(nxt['href'])\n    return urls_libros, n",
-    "diagnostico": "Bug verificado en sandbox: con 3 páginas donde `/libros/b` aparece en las dos primeras, retorna `['/libros/a','/libros/b','/libros/b','/libros/c','/libros/d']` — 5 elementos para 4 libros reales. La causa es conceptual: `vistos` contiene URLs de PÁGINAS (`/libros?page=1`), pero se compara contra URLs de ITEMS (`/libros/b`), que nunca estarán en ese conjunto, así que la guarda jamás deduplica. En la vida real esto significa: registros duplicados en tu base de datos, conteos inflados, y estadísticas falsas que nadie detecta porque 'el scraper funcionó'.",
+    "diagnostico": "1. **Error conceptual: deduplicación cruzada entre páginas e items.** El conjunto `vistos` almacena URLs de páginas como `'/libros?page=1'`, pero el código compara directamente contra URLs de items como `'/libros/b'`. Python no lanza un error aquí porque ambas son cadenas y la comparación es válida, pero el resultado es un fracaso lógico: `'/libros/b'` nunca estará en `vistos`, así que `if href and href not in vistos` siempre será `True` para items nuevos. El patrón general es confundir el espacio de nombres de control de crawleo con el espacio de nombres de datos; la solución es mantener un conjunto separado (`items_vistos`) para los productos descubiertos.\n\n2. **Error de resolución de URLs relativas.** El código extrae `href` directamente con `a.get('href')` sin pasarlo por `urljoin(base_url, href)`. Esto significa que URLs relativas como `'page/2'` o `'/libros/b'` se almacenan tal cual, sin normalizar. Bash y Python no lanzan errores porque las operaciones son válidas, pero el patrón general es acumular URLs inconsistentes: `'/libros/b'` y `'libros/b'` se tratan como distintas, lo que rompe la deduplicación y genera solicitudes duplicadas. La solución es siempre resolver URLs con `urljoin()` antes de agregarlas a cualquier conjunto.\n\n3. **Error de orden de operaciones en la cola.** El código agrega URLs de paginación a `cola` sin verificar primero si ya están en `vistos`, lo que puede causar que una misma página se encolué más de una vez antes de ser procesada. Aunque `vistos` evita procesarla dos veces, la cola crece innecesariamente. El patrón general es verificar membresía antes de encolar, no después de desencolar.",
     "codigo_corregido": "from bs4 import BeautifulSoup\n\ndef crawl(url_inicial, fetch, max_paginas=50):\n    paginas_vistas, items_vistos, urls_items = set(), set(), []\n    cola, visitadas = [url_inicial], 0\n    while cola and visitadas < max_paginas:\n        url = cola.pop(0)\n        if url in paginas_vistas:\n            continue\n        paginas_vistas.add(url); visitadas += 1\n        html = fetch(url)\n        if html is None:\n            continue\n        soup = BeautifulSoup(html, 'html.parser')\n        for a in soup.select('a.book'):\n            href = a.get('href')\n            if href and href not in items_vistos:   # conjunto PROPIO de items\n                items_vistos.add(href)\n                urls_items.append(href)\n        nxt = soup.select_one('a.next')\n        if nxt and nxt.get('href') and nxt['href'] not in paginas_vistas:\n            cola.append(nxt['href'])\n    return urls_items, visitadas",
     "codigo_optimizado": "from urllib.parse import urljoin, urlparse\nfrom bs4 import BeautifulSoup\nfrom collections import deque\n\n# ===== CRAWLER PROFESIONAL: paginación + dedup doble + límites + absolutización =====\ndef crawl(url_inicial, fetch, max_paginas=50, selector_item='a.book',\n          selector_next='a.next', mismo_dominio=True):\n    \"\"\"\n    fetch(url) -> html | None.  Retorna (urls_items_unicas, estadisticas).\n    \"\"\"\n    dominio_base = urlparse(url_inicial).netloc\n    paginas_vistas, items_vistos = set(), set()\n    urls_items = []\n    cola = deque([url_inicial])          # deque: popleft es O(1) (ver M1.2-005)\n    visitadas, errores = 0, 0\n\n    while cola and visitadas < max_paginas:\n        url = cola.popleft()\n        if url in paginas_vistas:\n            continue\n        if mismo_dominio and urlparse(url).netloc != dominio_base:\n            continue\n        paginas_vistas.add(url)\n        visitadas += 1\n\n        html = fetch(url)\n        if html is None:\n            errores += 1\n            continue\n        soup = BeautifulSoup(html, 'html.parser')\n\n        # 1) ITEMS: dedup por URL absoluta (no por relativa: 'x' y '/x' son distintos)\n        for a in soup.select(selector_item):\n            href = a.get('href')\n            if not href:\n                continue\n            absoluto = urljoin(url, href)      # ← resuelve relativas correctamente\n            if absoluto not in items_vistos:\n                items_vistos.add(absoluto)\n                urls_items.append(absoluto)\n\n        # 2) SIGUIENTE PÁGINA\n        nxt = soup.select_one(selector_next)\n        if nxt and nxt.get('href'):\n            siguiente = urljoin(url, nxt['href'])\n            if siguiente not in paginas_vistas:\n                cola.append(siguiente)\n\n    return urls_items, {'paginas': visitadas, 'items': len(urls_items), 'errores': errores}\n\n# ===== PATRONES DE PAGINACIÓN QUE ENCONTRARÁS EN LA WILD =====\n# A) Enlace 'next'            → selector_next='a.next' / 'li.next > a' / 'a[rel=\"next\"]'\n# B) URLs numeradas predecibles → genera el rango, no busques enlaces:\n#    urls = [f'https://x.com/listado?page={i}' for i in range(1, 51)]\n# C) Offset/limit en query     → detecta el paso en la URL actual y suma\n# D) Botón 'Cargar más' (JS)   → NO hay HTML que scrapear: busca el endpoint JSON\n#                                 en DevTools → Network (ver M2.3-007)\n# E) Scroll infinito (JS)      → igual que D: hay un API paginada detrás\n\n# ===== DETECCIÓN DE FIN DE PAGINACIÓN (3 señales, usa las 3) =====\n# 1. No existe el enlace 'next'\n# 2. La página retornó 0 items nuevos (todos duplicados)\n# 3. Alcanzaste max_paginas (fusible de seguridad SIEMPRE presente)\n\n# ===== FUSIBLES QUE NUNCA DEBEN FALTAR =====\n# - max_paginas: sin él, un enlace cíclico = bucle infinito\n# - paginas_vistas: corta loops ('siguiente' que apunta a sí mismo o a la anterior)\n# - mismo_dominio: evita salirte del sitio y scrapear medio internet\n# - persistencia incremental: guarda items cada N páginas (un crash no borra el trabajo)",
     "disenso_experto": "¿BFS (cola, por niveles) o DFS (pila, en profundidad)? BFS con deque explora nivel por nivel — mejor para paginación lineal y para limitar profundidad. DFS con pila se hunde en cada rama — útil para seguir jerarquías (categoría → subcategoría → producto). Para paginación simple ambos son equivalentes; para crawls de sitio completo, BFS te da control de profundidad y mejor locality. Lo que NUNCA debes usar es una lista con pop(0) (M1.2-001: O(n) por pop → O(n²) total).",
-    "pregunta_transferencia": "Tu crawl de un e-commerce retorna 8,000 items pero el sitio declara 5,000 productos en su sitemap. Los 3,000 extra son URLs absolutas y relativas del mismo producto (`https://x.com/p/1` y `/p/1`). ¿Qué línea del código causa la duplicación, por qué `urljoin` la resuelve, y qué segunda fuente de verdad usarías para reconciliar tus conteos?",
+    "pregunta_transferencia": "Imagina que estás rastreando un e-commerce con cientos de páginas de listados donde cada producto aparece en múltiples categorías y filtros. Tu crawler retorna 8,000 items, pero el sitemap oficial declara solo 5,000 productos únicos. Las 3,000 URLs adicionales son versiones absolutas y relativas del mismo producto (`https://tienda.com/p/1` vs `/p/1`). La pista clave está en cómo se almacenan las URLs de items: si no normalizas con `urljoin()` y no mantienes un conjunto separado para items descubiertos, estarás confundiendo variantes de la misma URL con productos distintos. Una segunda fuente de verdad sería comparar tu lista de items contra el sitemap XML del sitio, que contiene la autoridad canónica de todas las URLs válidas.",
     "quiz": {
       "pregunta": "¿Por qué necesitas DOS conjuntos de visitados (páginas e items) en un crawl?",
       "opciones": [
@@ -925,6 +976,57 @@
       "dedup",
       "urljoin",
       "bfs"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la diferencia fundamental entre las URLs almacenadas en `vistos` y las URLs de items extraídas de los enlaces?",
+        "opciones": [
+          "Las URLs en `vistos` son páginas HTML y las de items son recursos específicos como productos",
+          "Las URLs en `vistos` son absolutas y las de items son relativas",
+          "Las URLs en `vistos` incluyen parámetros GET y las de items no",
+          "Las URLs en `vistos` son enlaces de navegación y las de items son imágenes"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta porque `vistos` contiene URLs de páginas (listados/paginación) mientras que los items son URLs de productos específicos. La opción B es incorrecta porque tanto `vistos` como los items pueden ser relativos o absolutos. La opción C es parcialmente cierta pero no es la diferencia fundamental. La opción D es incorrecta porque `vistos` no solo contiene enlaces de navegación.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el código roto, si `/libros/b` aparece en dos páginas distintas, ¿qué sucede con la lista `urls_libros`?",
+        "opciones": [
+          "Se agrega una sola vez porque `vistos` previene duplicados",
+          "Se agrega dos veces porque `vistos` solo contiene URLs de páginas",
+          "Genera un error de Python porque las URLs no coinciden",
+          "No se agrega porque `href not in vistos` siempre es False"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta: `vistos` contiene URLs de páginas como `/libros?page=1`, nunca `/libros/b`, así que la condición `href not in vistos` es siempre True para items, permitiendo duplicados. La opción A es incorrecta porque la deduplicación falla. La opción C es incorrecta porque no hay error en Python. La opción D es incorrecta porque la condición es True, no False.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué línea del código es responsable de que URLs relativas como `'page/2'` no se resuelvan correctamente?",
+        "opciones": [
+          "`href = a.get('href')`",
+          "`if href and href not in vistos`",
+          "`soup = BeautifulSoup(html, 'html.parser')`",
+          "`cola.append(nxt['href'])`"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A es correcta: extrae el href sin pasarlo por `urljoin()` para resolverlo contra la URL base. La opción B es incorrecta porque es la lógica de deduplicación, no la extracción. La opción C es incorrecta porque BeautifulSoup funciona correctamente. La opción D es incorrecta porque aunque también podría necesitar `urljoin()`, la línea A es la responsable directa de la falla en items.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Si ejecutas el código roto con 3 páginas donde `/libros/b` aparece en las dos primeras, ¿qué retorna `urls_libros`?",
+        "opciones": [
+          "['/libros/a', '/libros/b', '/libros/c', '/libros/d']",
+          "['/libros/a', '/libros/b', '/libros/b', '/libros/c', '/libros/d']",
+          "['/libros/a', '/libros/b', '/libros/c']",
+          "Error de Python: elemento duplicado en lista"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción B es correcta: el bug permite que `/libros/b` se agregue dos veces porque `vistos` no contiene URLs de items. La opción A es incorrecta porque no hay deduplicación efectiva. La opción C es incorrecta porque omite elementos. La opción D es incorrecta porque Python permite elementos duplicados en listas.",
+        "tipo": "codigo"
+      }
     ]
   },
   {
@@ -934,13 +1036,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Pipeline scraper → limpieza → SQLite → JSON que alimenta tu PWA",
-    "modelo_mental": "Toda página dinámica (React, Vue, Angular, 'Cargar más', scroll infinito) es HTML vacío + una petición XHR/fetch a un endpoint JSON que trae los datos. Si encuentras ese endpoint, tu scraper pasa de frágil a blindado: **sin parsing de HTML, sin selectores que se rompen, datos tipados y completos, y 10-100x menos tráfico**. El método: DevTools → Network → filtrar XHR/Fetch → recargar → buscar la respuesta que contiene tus datos → copiar la URL como cURL. La habilidad de leer JSON anidado con tolerancia a None es entonces tu extractor.",
+    "modelo_mental": "Toda página dinámica (como React, Vue o Angular) funciona como un casco vacío que el navegador llena mediante peticiones asíncronas a un endpoint JSON. Imagina un restaurante donde el menú inicial está en blanco hasta que el camero (JavaScript) entra y sirve la comida (los datos) desde la cocina (API). El modelo mental correcto es que los datos no viven en el HTML estático que recibes, sino en una respuesta JSON separada. Esto permite pasar de un scraper frágil, que depende de selectores visuales, a uno blindado que extrae datos tipados y completos, reduciendo el tráfico y los fallos por cambios de diseño.",
     "codigo_roto": "import requests\nfrom bs4 import BeautifulSoup\n\n# El sitio carga los cursos con JavaScript: requests ve solo el HTML inicial vacío\ndef extraer_cursos(url):\n    r = requests.get(url, timeout=15)\n    soup = BeautifulSoup(r.text, 'html.parser')\n    return [c.get_text(strip=True) for c in soup.select('div.curso')]\n\n# Retorna [] siempre. El dev concluye: 'el sitio bloquea scrapers'.\n# Realidad: los cursos NO están en el HTML, llegan por fetch a /api/cursos",
-    "diagnostico": "El bug no es de código sino de modelo mental: asumes que los datos están en el HTML servido. En sitios dinámicos, el HTML inicial es un cascarón (`<div id=\"app\"></div>`) y el navegador ejecuta JavaScript que pide los datos a un endpoint JSON y los inyecta en el DOM. `requests` NO ejecuta JavaScript, así que nunca verá el contenido renderizado. Tres síntomas que lo delatan: `select()` retorna `[]` pero tú ves los datos en el navegador; el HTML pesa poco (5-20KB) aunque la página muestra cientos de items; hay un `<script src=\"bundle.js\">` y divs vacíos. Las salidas: (a) encontrar el endpoint JSON (correcto y barato), (b) ejecutar JS con Playwright/Selenium (costoso, último recurso).",
+    "diagnostico": "1. Error de modelo mental: Asumir que el HTML servido contiene los datos finales. El resultado es que `soup.select('div.curso')` retorna `[]` porque el contenedor `<div>` existe pero está vacío al iniciar la conexión.\n2. Error de herramienta: Utilizar `requests` en sitios que manipulan JavaScript. `requests` es un cliente pasivo que descarga el HTML crudo y no ejecuta ninguna lógica del frontend.\n3. Patrón general: Estos sitios son Single Page Applications (SPA) que ocultan su estructura real tras llamadas XHR/Fetch. La solución es identificar la URL JSON subyacente usando las herramientas de desarrollador y consumirla directamente, evitando la fragilidad de los selectores CSS.",
     "codigo_corregido": "import requests\n\n# Paso 1 (manual, en DevTools → Network → XHR): descubres el endpoint real\nAPI = 'https://ejemplo.com/api/cursos?page=1'\n\ndef extraer_cursos(url_api):\n    r = requests.get(url_api, timeout=15, headers={'Accept': 'application/json'})\n    r.raise_for_status()\n    data = r.json()                    # ← dict nativo, CERO parsing de HTML\n    return data.get('results', [])",
     "codigo_optimizado": "import requests\n\n# ===== EXTRACCIÓN TOLERANTE DESDE JSON ANIDADO =====\n# Verificado en sandbox: sobrevive a None en todos los niveles\ndef extraer_de_api(payload: dict) -> list:\n    out = []\n    for r in payload.get('results', []):\n        if not r.get('id'):\n            continue                       # registro sin clave: se descarta\n        price = r.get('price') or {}         # ← 'or {}' evita None.some_key\n        instr = r.get('instructor') or {}\n        out.append({\n            'id': r['id'],\n            'titulo': r.get('title') or '',         # None → '' (campo estable)\n            'precio': price.get('amount'),           # None si falta: honesto\n            'moneda': price.get('currency'),\n            'tags': ','.join(r.get('tags') or []),   # lista → string plano\n            'instructor': instr.get('name'),\n            'rating': instr.get('rating'),\n        })\n    return out\n\n# ===== PAGINACIÓN DE API (4 formas de señalar 'hay más') =====\ndef hay_mas(payload: dict) -> bool:\n    if payload.get('next'):                      return True    # URL de siguiente\n    if 'page' in payload and 'total_pages' in payload:\n        return payload['page'] < payload['total_pages']\n    if 'offset' in payload and 'total' in payload:\n        return payload['offset'] + len(payload.get('results', [])) < payload['total']\n    return False\n\ndef recorrer_api(primer_url, fetch, max_paginas=100, min_intervalo=1.0):\n    \"\"\"fetch(url) -> dict | None. Recorre la paginación con fusible y ritmo.\"\"\"\n    import time\n    vistos, registros, url, n = set(), [], primer_url, 0\n    while url and url not in vistos and n < max_paginas:\n        vistos.add(url); n += 1\n        payload = fetch(url)\n        if payload is None:\n            break\n        registros.extend(extraer_de_api(payload))\n        url = payload.get('next') or (f'{primer_url.split(\"?\")[0]}?page={n+1}'\n                                      if hay_mas(payload) else None)\n        time.sleep(min_intervalo)\n    return registros\n\n# ===== CÓMO DESCUBRIR EL ENDPOINT (el método, paso a paso) =====\n# 1. Abre la página en el navegador\n# 2. F12 → pestaña Network → filtro 'Fetch/XHR'\n# 3. Recarga la página (Ctrl+R)\n# 4. Revisa las respuestas: busca la que contiene TUS datos\n#    (tip: pestaña Preview/Response, o filtra por texto con Ctrl+F en Network)\n# 5. Clic derecho en la petición → Copy → 'Copy as cURL'\n# 6. Convierte el cURL a Python: herramientas como curlconverter.com,\n#    o a mano: URL + headers + params\n#\n# ===== SEÑALES DE QUE HAY UN API DETRÁS =====\n# ✓ requests retorna HTML casi vacío pero el navegador muestra datos\n# ✓ Botón 'Cargar más' o scroll infinito\n# ✓ La URL del listado cambia con ?page= o #/ruta (SPA con hash routing)\n# ✓ En View Source ves window.__INITIAL_STATE__ = {...} o <script type=\"application/json\">\n#    → ¡los datos ya están en el HTML, pero como JSON! Extráelos así:\n#      import json, re\n#      m = re.search(r'window\\.__INITIAL_STATE__\\s*=\\s*({.*?});', html, re.DOTALL)\n#      datos = json.loads(m.group(1))\n\n# ===== ÉTICA Y LÍMITES DE LAS APIs NO DOCUMENTADAS =====\n# Que exista no significa que puedas usarla:\n# - Revisa términos de servicio y robots.txt igual que con HTML\n# - Las APIs internas suelen rate-limitar agresivamente (429 enseguida)\n# - Pueden cambiar sin aviso ni versionado → tu scraper se rompe igual\n# - Si el sitio ofrece API oficial (documentada, con clave), ÚSALA: es el camino\n#   soportado. Ejemplos reales: GitHub, Wikipedia, Hacker News (Firebase),\n#   OpenLibrary, datos.gob.mx — todas gratuitas y legales.",
     "disenso_experto": "¿API oculta, API oficial o Playwright? Jerarquía profesional: (1) API oficial/dataset público — soportada, estable, legal, rápida; (2) endpoint JSON interno — mucho más robusto que HTML pero puede cambiar sin aviso y violar ToS; (3) scraping de HTML — frágil pero es lo que el sitio 'muestra al público'; (4) Playwright/Selenium — ejecuta JS real, caro en recursos y tiempo, último recurso. La IA salta directo a (3) o (4) porque es lo que le pides literalmente; el ingeniero busca (1) y (2) primero. Regla: 10 minutos en DevTools Network ahorran 10 horas de selectores.",
-    "pregunta_transferencia": "Encuentras el endpoint interno `/api/v2/cursos?limit=20&cursor=abc123` con cursor opaco. Tu crawl de 500 páginas funciona hoy; mañana retorna siempre la misma primera página. Enumera 3 causas probables relacionadas con el cursor y describe cómo haces tu crawler a prueba de ese fallo (pista: dedup + detección de 'página repetida').",
+    "pregunta_transferencia": "Estás automatizando el listado de cursos de una plataforma que usa JavaScript para renderizar el contenido. Descubres que el endpoint `/api/v2/cursos?limit=20&cursor=abc123` funciona hoy, pero mañana te devuelve siempre la misma primera página sin avanzar. Enumera tres causas probables relacionadas con el cursor y describe cómo hacer tu crawler resistente a este fallo (hint: dedup + detección de página repetida).",
     "quiz": {
       "pregunta": "Tu `soup.select('div.curso')` retorna [] pero en el navegador ves 50 cursos. ¿Cuál es la causa MÁS probable?",
       "opciones": [
@@ -1051,6 +1153,45 @@
       "xhr",
       "devtools",
       "datos"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué el módulo `requests` falla al intentar extraer datos de una página web que utiliza una aplicación de una sola página (SPA) que carga sus datos mediante XHR/Fetch?",
+        "opciones": [
+          "Porque no maneja sesiones de cookies",
+          "Porque no ejecuta JavaScript y solo lee el HTML inicial",
+          "Porque es demasiado lento para peticiones asíncronas",
+          "Porque solo soporta protocolos HTTP estáticos"
+        ],
+        "correcta": "B",
+        "explicacion": "El `requests` es un cliente HTTP síncrono que descarga el documento HTML bruto. En las SPAs, el HTML inicial es minimal y el contenido se carga mediante llamadas asíncronas que el navegador ejecuta internamente. Como `requests` no ejecuta JavaScript, nunca ve los datos dinámicos y siempre obtiene el contenido vacío o incompleto.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto proporcionado, la función `extraer_cursos` devuelve una lista vacía. ¿Cuál es la razón principal de este comportamiento?",
+        "opciones": [
+          "El selector 'div.curso' es incorrecto para el HTML actual",
+          "El servidor devuelve un error 404 al consultar la URL",
+          "La variable `r` no se captura correctamente dentro de la función",
+          "BeautifulSoup no soporta el parsing de URLs JSON"
+        ],
+        "correcta": "B",
+        "explicacion": "El HTML inicial que `requests` recibe es un contenedor vacío (ej. `<div id=\"app\"></div>`). Aunque el navegador renderiza la lista de cursos llamando a `/api/cursos`, el `requests` nunca ejecuta esa llamada. Por tanto, la lista de textos extraídos permanece vacía. El error no es sintáctico, sino de comprensión del flujo de datos asíncrono.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Si encuentras el endpoint interno `/api/v2/cursos?limit=20&cursor=...` y el cursor opaco parece no avanzar, ¿cómo debes estructurar tu lógica de paginación para evitar bucles infinitos y asegurar cobertura total?",
+        "opciones": [
+          "Reutilizar el mismo cursor siempre y esperar a que el usuario haga scroll manualmente",
+          "Implementar deduplicación basada en el hash del cursor y un bucle que verifique si el cursor ha cambiado en cada respuesta",
+          "Ignorar el cursor y usar un número secuencial de página para solicitar datos",
+          "Saltar todos los cursores encontrados y pedir el primer page solo"
+        ],
+        "correcta": "B",
+        "explicacion": "La clave es tratar el cursor como un identificador único de estado. Si el cursor opaco no avanza, es probable que el servidor reutilice el mismo estado o que el cliente haya enviado un cursor inválido. Una estrategia robusta es guardar los cursores procesados y compararlos con nuevos, o simplemente iterar incrementando un contador numérico si el cursor es opaco, asegurando que se visite cada página sin repeticiones ni saltos.",
+        "tipo": "concepto"
+      }
     ]
   },
   {
