@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 3,
     "microproyecto": "Suite de tests para tu orquestador y pipeline de datos",
-    "modelo_mental": "Un test es código que **verifica** código. Las tres reglas estructurales: (1) el archivo se llama `test_*.py` o `*_test.py`, (2) cada función se llama `test_*`, (3) dentro usas `assert` de Python — pytest intercepta el fallo y **reescribe la expresión** mostrando los valores reales en ambos lados. Esto hace que un `assert resultado == esperado` te diga exactamente qué difiere, sin necesidad de mensajes manuales. El segundo concepto clave: **AAA** (Arrange, Act, Assert) — prepara el estado, ejecuta la acción, verifica el resultado. Si tu test mezcla estas tres fases, se vuelve ilegible y frágil.",
+    "modelo_mental": "Un test es un fragmento de código que **verifica** otro código. Piensa en ello como un **revisor de redacción** que lee cada oración (la función que pruebas) y marca exactamente dónde difiere del esperado, en lugar de simplemente decir \"hay un error\". Las tres reglas estructurales hacen que pytest reconozca un test: (1) el archivo debe llamarse `test_*.py` o `*_test.py`, (2) cada función debe empezar con `test_`, y (3) dentro de la función debes usar `assert` de Python. Cuando fallan los tres requisitos, pytest ignora el archivo por completo, dejando al programador con la ilusión de tener pruebas que en realidad no existen.\n\nEl concepto clave es el patrón **AAA** (Arrange, Act, Assert). En la fase de **Arrange** preparas el entorno (creas objetos, estableces el estado), en **Act** ejecutas la operación que quieres probar, y en **Assert** verificas el resultado con `assert`. Mantener estas tres fases separadas hace que el test sea legible, reutilizable y robusto frente a cambios. Mezclarlas (por ejemplo, calcular el valor esperado dentro de la aserción) genera tests frágiles que se rompen fácilmente con refactorizaciones menores.",
     "codigo_roto": "# El usuario escribió estos 'tests' que NO son tests pytest reales:\ndef verificar_sumar():\n    r = sumar(2, 3)\n    if r != 5:\n        print('falla')\n\ndef probar_restar():\n    r = restar(5, 3)\n    # sin assert: siempre 'pasa' aunque falle\n    return r == 2",
-    "diagnostico": "Tres defectos estructurales que hacen que estos tests **nunca se ejecuten con pytest**: (1) no se llaman `test_*` (pytest los ignora por convención de nombres); (2) `verificar_sumar` usa print en vez de assert — pytest no lo detecta como fallo; (3) `probar_restar` retorna un booleano — pytest no lo interpreta como resultado. Verificado: `pytest` reporta **0 collected** sobre este archivo. El usuario cree que tiene tests y en realidad tiene funciones sueltas que nadie ejecuta.",
+    "diagnostico": "1. **Nombres de función no coinciden con la convención `test_***`.** pytest recolecta funciones cuyos nombres empiezan con `test_`. Si el archivo contiene `verificar_sumar` o `probar_restar`, pytest los ignora, por lo que el archivo reporta **0 collected**.\n\n2. **Uso de `print` en lugar de `assert`.** `verificar_sumar` imprime un mensaje de falla, pero pytest solo detecta errores a través de aserciones. El print no es capturado por el framework, por lo que el fallo nunca se reporta como un error de test.\n\n3. **Devolver un valor booleano.** `probar_restar` devuelve `r == 2`. pytest espera que una función de test ejecute aserciones; el valor de retorno se ignora. Devolver un booleano hace que el test parezca pasar aunque la lógica sea incorrecta.\n\nEstos tres defectos siguen un patrón común: el programador escribe código que *parece* un test pero no sigue las expectativas del marco de testing. El resultado es una falsa sensación de cobertura y unCI que no detecta regresiones.",
     "codigo_corregido": "def test_sumar_basicos():\n    assert sumar(2, 3) == 5\n\ndef test_sumar_negativos():\n    assert sumar(-1, -2) == -3\n\ndef test_restar():\n    assert restar(5, 3) == 2",
     "codigo_optimizado": "# ===== LOS 4 PILARES DE UN TEST BIEN ESCRITO =====\n#\n# 1. NOMBRE DESCRIPTIVO: test_<qué_prueba>_<caso_específico>\n#    MAL:  test_1, test_sumar, test_caso1\n#    BIEN: test_sumar_con_negativos_retorna_suma_algebraica\n#         test_parsear_precio_consultar_retorna_none\n#         test_pipeline_aborta_en_primer_paso_critico_fallido\n#\n# 2. AAA (Arrange/Act/Assert) — tres fases claramente separadas:\n#    def test_parsear_precio_con_coma_de_miles():\n#        # Arrange: preparar\n#        entrada = '$ 1,250.50 MXN'\n#        # Act: ejecutar\n#        resultado = parsear_precio(entrada)\n#        # Assert: verificar\n#        assert resultado == 1250.5\n#\n#    Cuando el test es trivial, una línea basta:\n#    def test_parsear_precio_consultar():\n#        assert parsear_precio('Consultar') is None\n#\n# 3. UN SOLO CONCEPTO POR TEST:\n#    MAL: un test que verifica sumar, restar y multiplicar\n#    BIEN: tres tests separados (uno por operación)\n#    Razón: cuando falla, sabes exactamente QUÉ falló sin leer el test.\n#\n# 4. NOMBRES DE VARIABLES QUE DOCUMENTAN:\n#    MAL:  x = sumar(2, 3); assert x == 5\n#    BIEN: resultado = sumar(2, 3); assert resultado == 5\n#    BIEN: assert sumar(2, 3) == 5   (cuando es trivial)\n\n# ===== ASSERT INTELIGENTE DE PYTEST =====\n# pytest reescribe el bytecode de tus asserts para mostrar los valores reales:\n#   assert 2 + 2 == 5\n#   → AssertionError: assert 4 == 5\n#\n#   assert 'hola' in ['adios', 'bye']\n#   → AssertionError: assert 'hola' in ['adios', 'bye']\n#\n#   assert {'a': 1, 'b': 2} == {'a': 1, 'b': 3}\n#   → AssertionError: assert {'a': 1, 'b': 2} == {'a': 1, 'b': 3}\n#     Differing items:\n#     {'b': 2} != {'b': 3}\n#\n# Por eso NO necesitas mensajes personalizados en la mayoría de los casos:\n# pytest te muestra exactamente qué valor difiere.\n#\n# CUÁNDO SÍ poner mensaje:\n#   assert usuario.activo is True, f'usuario {usuario.id} debería estar activo'\n# Solo cuando el assert genérico no da suficiente contexto.\n\n# ===== COMPARADORES COMUNES =====\n# assert x == y          # igualdad\n# assert x != y          # diferencia\n# assert x is y          # identidad (mismo objeto)\n# assert x is None       # None específico (no 0, no '', no False)\n# assert x               # truthy\n# assert not x           # falsy\n# assert x in coleccion\n# assert isinstance(x, Clase)\n# assert re.match(patron, texto)\n\n# ===== COMPARACIÓN DE FLOTAS (el bug #1) =====\n# NUNCA:   assert 0.1 + 0.2 == 0.3             # falla por precisión\n# SIEMPRE: assert math.isclose(0.1 + 0.2, 0.3)\n#          assert 0.1 + 0.2 == pytest.approx(0.3)\nimport math\nassert math.isclose(0.1 + 0.2, 0.3)              # ok\n\n# ===== QUÉ TESTEAR: la regla 80/20 =====\n# Testear TODO es imposible y contraproducente. Testea:\n#   ✓ El contrato público de cada función/módulo (inputs → outputs)\n#   ✓ Casos de borde: None, string vacío, lista vacía, cero, negativos\n#   ✓ El camino feliz (caso típico)\n#   ✓ Un caso de error por cada excepción que tu código puede lanzar\n#   ✓ Los bugs que encontraste (test de regresión)\n#\n# NO testees:\n#   ✗ Implementación interna (que usa un dict en vez de un set)\n#   ✗ Lógica de librerías estándar (ya la probaron sus autores)\n#   ✗ Getters/setters triviales",
     "disenso_experto": "¿Test-Driven Development (TDD) obligatorio o opcional? TDD (escribir el test antes que el código) produce código más testeable y mejor diseñado, pero duplica el tiempo inicial. La postura pragmática: TDD obligatorio para lógica de negocio crítica (cálculos, validaciones, parsers) y opcional para glue code y scripts. Lo que nunca es opcional: tests de regresión para cada bug que encuentres.",
-    "pregunta_transferencia": "Encuentras un test llamado `test_usuario()` con 50 asserts verificando nombre, email, edad, roles, permisos, última conexión y preferencias. Cuando falla en CI, el mensaje solo dice 'AssertionError' sin contexto. ¿Qué 3 defectos tiene este test, y cómo lo reescribes aprovechando pytest para que el fallo te diga exactamente QUÉ campo y QUÉ valor falló?",
+    "pregunta_transferencia": "Tienes un test llamado `test_usuario()` que contiene alrededor de 50 aserciones individuales, cada una comprobando un atributo como nombre, email, edad, roles, permisos, última conexión y preferencias. Cuando el pipeline de CI falla, el único mensaje que aparece es un genérico `AssertionError` sin indicar qué aserción falló ni los valores involucrados.\n\n¿Cuáles son tres defectos en este test que causan la falta de información útil? Y, ¿cómo reescribirías el test aprovechando las características de pytest (por ejemplo, mensajes personalizados, parametrización, o aserciones con formato) para que un fallo muestre exactamente qué campo falló y qué valor se obtuvo?",
     "quiz": {
       "pregunta": "¿Por qué `assert 0.1 + 0.2 == 0.3` falla en Python y cómo lo resuelves en un test?",
       "opciones": [
@@ -31,17 +31,95 @@
       "setup_code": "# helper correr_tests() inyectado por la app\n# funciones bajo test ya disponibles:\ndef sumar(a, b): return a + b\ndef es_palindromo(s): return s == s[::-1]",
       "codigo_inicial": "# Escribe aquí 5 tests pytest (funciones que empiecen con test_)\n# que verifiquen sumar() y es_palindromo() con distintos casos.\n# Ejemplo de la forma correcta:\n#\n# def test_sumar_positivos():\n#     assert sumar(2, 3) == 5\n#\n# ... 4 tests más ...\n",
       "tests_code": "# Los tests los escribe el usuario; el simulador los concatena al final\n# del código del usuario y ejecuta pytest.main() sobre el archivo resultante.\n# No hay tests fijos aquí: la verificación es estructural (5 tests que pasen).",
-      "asserts_pytest": ["5 passed", "0 failed"],
-      "asserts_forbidden": ["print(", "return True", "return False"],
+      "asserts_pytest": [
+        "5 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "print(",
+        "return True",
+        "return False"
+      ],
       "solucion": "def test_sumar_positivos():\n    assert sumar(2, 3) == 5\n\ndef test_sumar_negativos():\n    assert sumar(-1, -2) == -3\n\ndef test_sumar_cero():\n    assert sumar(0, 0) == 0\n\ndef test_palindromo_valido():\n    assert es_palindromo('ana') is True\n\ndef test_palindromo_invalido():\n    assert es_palindromo('hola') is False"
     },
     "audio_script": "Un test es código que verifica código, y pytest te obliga a seguir tres reglas estructurales para que los tests realmente se ejecuten. Primera: el archivo debe llamarse test algo punto py o algo test punto py. Segunda: cada función debe llamame test guion bajo algo. Tercera: dentro usas assert de Python, y aquí viene la magia de pytest: intercepta cada fallo y reescribe la expresión para mostrarte los valores reales en ambos lados. Si escribes assert dos más dos igual cinco, pytest te responde assert cuatro igual cinco. No necesitas mensajes personalizados porque pytest ya te está diciendo exactamente qué difiere. La estructura mental de un buen test es AAA: Arrange prepara el estado, Act ejecuta la acción, Assert verifica el resultado. Cuando mezclas esas tres fases el test se vuelve ilegible y frágil. Y la regla de oro de los nombres: test guion bajo qué prueba guion bajo caso específico. Test sumar con negativos retorna suma algebraica. Si tu test se llama test uno, cuando falle no vas a saber qué pasó sin leerlo entero. Finalmente, el bug número uno al comparar floats: cero punto uno más cero punto dos NO es igual a cero punto tres por precisión IEEE setecientos cincuenta y cuatro. Usa pytest punto approx o math punto isclose.",
     "video_prompt": "Video de 80 segundos. Una función 'sumar' siendo inspeccionada por un test. ESCENA 1: el test está mal escrito — se llama 'verificar_sumar', usa 'print' en vez de 'assert', y pytest muestra '0 collected' porque no lo reconoce como test. ESCENA 2: renombrado a 'test_sumar_negativos', con assert puro; pytest lo ejecuta y, cuando falla, muestra 'assert -2 == -3' con los valores exactos resaltados. ESCENA 3: tres tests apilados como tarjetas AAA (Arrange/Act/Assert) con colores distintos para cada fase. ESCENA 4: el bug de los floats — 'assert 0.1 + 0.2 == 0.3' falla en rojo, y se reemplaza por 'pytest.approx(0.3)' pasando en verde. Cierre: una lista de nombres de tests buenos vs malos. Overlay: 'test_ + nombre + caso. assert puro. AAA.'",
     "trazabilidad": {
-      "libros_fuente": ["Python Crash Course Cap 11 (testing)", "Automate the Boring Stuff (tests en proyectos)", "pytest docs - Getting Started", "Effective Python Item 25"],
-      "conceptos_clave": ["pytest", "test-funciones", "assert", "aaa", "nombres", "floats", "approx"]
+      "libros_fuente": [
+        "Python Crash Course Cap 11 (testing)",
+        "Automate the Boring Stuff (tests en proyectos)",
+        "pytest docs - Getting Started",
+        "Effective Python Item 25"
+      ],
+      "conceptos_clave": [
+        "pytest",
+        "test-funciones",
+        "assert",
+        "aaa",
+        "nombres",
+        "floats",
+        "approx"
+      ]
     },
-    "tags_rag": ["python", "pytest", "testing", "assert", "aaa", "nombres"]
+    "tags_rag": [
+      "python",
+      "pytest",
+      "testing",
+      "assert",
+      "aaa",
+      "nombres"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Según la convención de pytest, cuál es el nombre de archivo correcto para un archivo de tests que contiene una función llamada `test_calcular_area`?",
+        "opciones": [
+          "`tests_calcular.py`",
+          "`test_calcular_area.py`",
+          "`calcular_test.py`",
+          "`my_tests.py`"
+        ],
+        "correcta": "B",
+        "explicacion": "pytest recolecta automáticamente funciones de archivos cuyo nombre empieza con `test_` o termina con `_test.py`. `test_calcular_area.py` cumple ambas condiciones, por lo que pytest lo reconocerá como un archivo de tests.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Cuál es la salida de este test cuando se ejecuta con pytest?\npython\ndef test_suma():\n    resultado = 2 + 3\n    assert resultado == 6\n",
+        "opciones": [
+          "pasa",
+          "falla",
+          "no se ejecuta",
+          "genera un error"
+        ],
+        "correcta": "B",
+        "explicacion": "El test calcula `2 + 3` (resultado 5) y luego asume que es igual a 6, lo cual es falso. pytest reportará un fallo con el mensaje `assert resultado == 6`.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Por qué pytest reporta \"0 collected\" para un archivo de tests que contiene las siguientes funciones?\npython\ndef verificar_sumar():\n    assert sumar(2, 3) == 5\n\ndef probar_restar():\n    return restar(5, 3) == 2\n",
+        "opciones": [
+          "El archivo no sigue la convención de nombres `test_*.py` o `*_test.py`.",
+          "Las funciones no empiezan con `test_`.",
+          "Las funciones usan `assert` y devuelven un booleano.",
+          "Todas las anteriores."
+        ],
+        "correcta": "D",
+        "explicacion": "pytest ignora el archivo porque (1) el nombre del archivo no sigue la convención, (2) las funciones no empiezan con `test_`, y (3) una de las funciones devuelve un booleano en lugar de usar `assert`. Los tres problemas combinados causan que no se recoja ningún test.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Cuál es el principal beneficio de seguir el patrón AAA (Arrange, Act, Assert) en un test?",
+        "opciones": [
+          "Permite que el test se ejecute más rápido.",
+          "Separa la preparación, la ejecución y la verificación, haciendo el test más legible y mantenible.",
+          "Reduce el número de aserciones necesarias.",
+          "Evita el uso de `assert`."
+        ],
+        "correcta": "B",
+        "explicacion": "El patrón AAA organiza el test en tres fases claras: preparar el entorno (Arrange), ejecutar el código bajo prueba (Act), y verificar el resultado (Assert). Esta separación hace que el test sea fácil de entender, reutilizar y modificar sin afectar otras partes.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.1-002",
@@ -75,17 +153,42 @@
       "setup_code": "# helper correr_tests() inyectado por la app\n# Clase bajo test ya disponible:\nclass Contador:\n    def __init__(self): self._n = 0\n    def incrementar(self): self._n += 1\n    def decrementar(self): self._n -= 1\n    def valor(self): return self._n",
       "codigo_inicial": "# Escribe:\n# 1. Una fixture 'contador' que cree un Contador() fresco por test\n# 2. 4 tests pytest que la usen:\n#    - test_iniciar_en_cero\n#    - test_incrementar_una_vez\n#    - test_incrementar_y_decrementar\n#    - test_aislamiento: incrementa 100 veces y verifica valor==100\n#      (si la fixture NO es function-scoped, este test falla por contaminación)\n#\n# PISTA: la fixture es así:\n# @pytest.fixture\n# def contador():\n#     return Contador()\n",
       "tests_code": "# Tests definidos por el usuario; verificación estructural.",
-      "asserts_pytest": ["4 passed", "0 failed"],
-      "asserts_forbidden": ["scope='session'", "scope='module'"],
+      "asserts_pytest": [
+        "4 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "scope='session'",
+        "scope='module'"
+      ],
       "solucion": "import pytest\n\n@pytest.fixture\ndef contador():\n    return Contador()\n\ndef test_iniciar_en_cero(contador):\n    assert contador.valor() == 0\n\ndef test_incrementar_una_vez(contador):\n    contador.incrementar()\n    assert contador.valor() == 1\n\ndef test_incrementar_y_decrementar(contador):\n    contador.incrementar()\n    contador.incrementar()\n    contador.decrementar()\n    assert contador.valor() == 1\n\ndef test_aislamiento(contador):\n    # Si la fixture fuera session-scoped, este test fallaría por contaminación\n    # de los otros tests. Con function scope (default), siempre empieza en 0.\n    for _ in range(100):\n        contador.incrementar()\n    assert contador.valor() == 100"
     },
     "audio_script": "Las fixtures son la pieza que convierte un montón de tests aislados en una suite mantenible. Resuelven tres problemas de una sola vez. Primero: evitan que dupliques el mismo setup en veinte tests distintos — lo defines una vez y pytest lo inyecta automáticamente. Segundo: garantizan aislamiento — cada test recibe su propia instancia limpia, así que el orden de ejecución no importa. Tercero: manejan el teardown con la misma garantía que un finally, incluso si el test lanza una excepción. La palabra clave es yield: todo lo que va antes es setup, todo lo que va después es teardown, y pytest garantiza que el teardown corre SIEMPRE. Las fixtures se componen: una fixture puede recibir otra como argumento, y pytest resuelve el grafo de dependencias automáticamente. Esto te permite construir fixtures específicas sobre fixtures generales — por ejemplo, una fixture db con datos pre-cargados que depende de una fixture db vacía. El scope controla cuánto vive la fixture: function por defecto crea y destruye por cada test, module comparte una instancia por archivo, session por toda la corrida. La regla profesional es empezar siempre con function, porque garantiza aislamiento total, y solo subir el scope cuando los tests son realmente lentos y verificas que ningún test dependa del estado dejado por otro.",
     "video_prompt": "Video de 90 segundos. ESCENA 1 (antes): 5 tests con el mismo bloque de setup de 10 líneas duplicado en cada uno — el código parece una fotocopia en espiral. Cuando falla el test 3, el usuario tiene que depurar en 5 lugares. ESCENA 2 (con fixture): los 5 tests tienen 3 líneas cada uno y reciben 'db' como parámetro. Arriba, una sola fixture 'db' con setup, yield, teardown. Animación del flujo: pytest llama la fixture → ejecuta el setup → yield pasa la conexión al test → test corre → yield devuelve el control → teardown corre (aunque el test haya fallado). ESCENA 3 (scope): 4 carriles con los 4 scopes — function (una DB por test, aislada), class (una DB por clase), module (una DB por archivo), session (una DB para todo, compartida). El carril 'session' muestra un test contaminando al siguiente con datos sucios. Overlay: 'yield = setup + teardown garantizado. Scope = cuánto vive.'",
     "trazabilidad": {
-      "libros_fuente": ["pytest docs - Fixtures", "Python Crash Course Cap 11", "Effective Python Item 25 (composición)"],
-      "conceptos_clave": ["pytest", "fixtures", "yield", "scope", "conftest", "composicion", "aislamiento"]
+      "libros_fuente": [
+        "pytest docs - Fixtures",
+        "Python Crash Course Cap 11",
+        "Effective Python Item 25 (composición)"
+      ],
+      "conceptos_clave": [
+        "pytest",
+        "fixtures",
+        "yield",
+        "scope",
+        "conftest",
+        "composicion",
+        "aislamiento"
+      ]
     },
-    "tags_rag": ["python", "pytest", "fixtures", "yield", "scope", "testing"]
+    "tags_rag": [
+      "python",
+      "pytest",
+      "fixtures",
+      "yield",
+      "scope",
+      "testing"
+    ]
   },
   {
     "id": "M3.1-003",
@@ -94,13 +197,13 @@
     "nivel": "principiante",
     "fase": 3,
     "microproyecto": "Suite de tests para tu orquestador y pipeline de datos",
-    "modelo_mental": "`@pytest.mark.parametrize` ejecuta la MISMA función de test múltiples veces con diferentes entradas/salidas esperadas. Convierte un test de 3 líneas en 20 casos sin duplicar código. La gran ventaja: si cambias la lógica de la función bajo test, solo actualizas un test, no 20. Los parámetros se declaran como `('arg1,arg2,resultado', [(v1,v2,r1), ...])` — cada tupla es un caso. Además `pytest.param(..., id='nombre')` te da nombres legibles a cada caso en la salida, y `pytest.param(..., marks=pytest.mark.xfail)` marca casos que sabes que fallan y quieres documentar.",
+    "modelo_mental": "**Analogía central:** El uso de `@pytest.mark.parametrize` es como tener una **lupa inteligente** que enfoca la misma función en muchos escenarios a la vez. Imagina que tienes una lupa que puede mirar simultáneamente 20 objetos distintos, pero la luz (el código) que ilumina la imagen es la misma para todas. Esta vista agrupada evita la duplicación de código y facilita la detección de regressiones cuando la lógica cambia.\n\n**Por qué importa:** reduce la redundancia, simplifica el mantenimiento y hace que el historial de pruebas sea legible gracias a los identificadores asignados a cada caso. **Errores previne:** evita inconsistencias entre pruebas similares y permite detectar rápidamente si un cambio en la función subyacente afecta a varios casos al modificar solo la definición del test parametrizado.",
     "codigo_roto": "# 10 tests que son el MISMO test con valores distintos:\ndef test_parsear_precio_1():\n    assert parsear_precio('$ 10') == 10.0\n\ndef test_parsear_precio_2():\n    assert parsear_precio('$ 1,250.50') == 1250.5\n\ndef test_parsear_precio_3():\n    assert parsear_precio('1.250,50') == 1250.5\n\ndef test_parsear_precio_4():\n    assert parsear_precio('Consultar') is None\n\n# ... 6 tests más idénticos en estructura ...",
-    "diagnostico": "El código está correcto en contenido pero es **anti-mantenimiento**: 10 tests con la misma estructura. Cuando cambia la función bajo test (ej: ahora retorna Decimal en vez de float), tienes que editar 10 asserts. Cuando agregas un caso nuevo, tienes que crear una función nueva con nombre inventado. El reporte de pytest muestra 10 nombres genéricos que no distinguen qué caso es cada uno. Y si un caso falla, el nombre `test_parsear_precio_7` no te dice NADA del input que falló. `@pytest.mark.parametrize` convierte esos 10 tests en uno solo de 15 líneas.",
+    "diagnostico": "1. Duplicidad estructural: Hay diez funciones test casi idénticas con el mismo nombre. Esto obliga a editar cada assert individualmente cuando se modifica la lógica de `parsear_precio`, aumentando la probabilidad de errores humanos y haciendo la base de pruebas frágil.\n\n2. Nombres genéricos: Pytest genera nombres como `test_parsear_precio_7` que no revelan el valor de entrada ni el resultado esperado, dificultando la localización de fallos.\n\n3. Pérdida de contexto en fallos: Si un caso falla, el mensaje solo muestra el nombre del test sin mostrar los argumentos proporcionados, impidiendo diagnosticar rápidamente cuál entrada causó el problema. El patrón general es la falta de parametrización adecuada, donde un solo test parametrizado podría cubrir todos los casos con una única definición.",
     "codigo_corregido": "import pytest\n\n@pytest.mark.parametrize('entrada,esperado', [\n    ('$ 10',           10.0),\n    ('$ 1,250.50',     1250.5),\n    ('$1250.50',       1250.5),\n    ('1.250,50',       1250.5),\n    ('1250,50',        1250.5),\n    ('  $  99.99  ',   99.99),\n    ('Consultar',      None),\n    ('Gratis',         None),\n    ('',               None),\n    (None,             None),\n])\ndef test_parsear_precio(entrada, esperado):\n    assert parsear_precio(entrada) == esperado",
     "codigo_optimizado": "import pytest\n\n# ===== SINTAXIS BÁSICA =====\n# @pytest.mark.parametrize('arg1,arg2,esperado', [\n#     (v1, v2, r1),\n#     (v3, v4, r2),\n#     ...\n# ])\n# def test_algo(arg1, arg2, esperado):\n#     assert funcion(arg1, arg2) == esperado\n\n# ===== IDS LEGIBLES: el secreto de reportes útiles =====\n# Por defecto pytest muestra: test_parsear_precio[entrada0-esperado0]\n# que no dice nada. Con `id=` le das un nombre a cada caso:\n\n@pytest.mark.parametrize('entrada,esperado', [\n    pytest.param('$ 10',           10.0,   id='simple_sin_decimales'),\n    pytest.param('$ 1,250.50',     1250.5, id='anglosajon_coma_miles'),\n    pytest.param('1.250,50',       1250.5, id='europeo_punto_miles'),\n    pytest.param('  $  99.99  ',   99.99,  id='con_espacios_y_simbolo'),\n    pytest.param('Consultar',      None,   id='texto_no_numerico'),\n    pytest.param('Gratis',         None,   id='palabra_reservada'),\n    pytest.param('',               None,   id='string_vacio'),\n    pytest.param(None,             None,   id='entrada_none'),\n])\ndef test_parsear_precio_con_ids(entrada, esperado):\n    assert parsear_precio(entrada) == esperado\n\n# Salida de pytest: cada caso tiene nombre propio:\n# test_parsear_precio_con_ids[simple_sin_decimales] PASSED\n# test_parsear_precio_con_ids[anglosajon_coma_miles] PASSED\n# test_parsear_precio_con_ids[europeo_punto_miles] PASSED\n# test_parsear_precio_con_ids[entrada_none] PASSED\n# ...\n# → Si falla, sabes INMEDIATAMENTE qué caso es.\n\n# ===== MARCAR CASOS QUE FALLAN INTENCIONALMENTE =====\n# Cuando sabes que un caso falla (bug conocido, feature no implementada),\n# lo marcas como xfail para que NO rompa el build pero quede documentado:\n\n@pytest.mark.parametrize('entrada,esperado', [\n    pytest.param('$ 10',       10.0,   id='normal'),\n    pytest.param('$1.000.000', 1e6,    id='millon', marks=pytest.mark.skip(reason='formato no soportado aún')),\n    pytest.param('MXN $100',   100.0,  id='con_moneda_detras', marks=pytest.mark.xfail(reason='por implementar')),\n])\ndef test_parsear_precio_con_marcas(entrada, esperado):\n    assert parsear_precio(entrada) == esperado\n\n# pytest muestra 'x' en verde para xfail (fallo esperado)\n# y 'X' en rojo para xpass (pasó algo que esperabas que fallara — alerta!)\n\n# ===== PARAMETRIZACIÓN DE FIXTURES =====\n# Una fixture puede producir múltiples instancias. Cada test que la use\n# se ejecuta N veces (una por cada valor del parámetro):\n\n@pytest.fixture(params=['sqlite', 'postgres', 'mysql'])\ndef db(request):\n    if request.param == 'sqlite':\n        conn = conectar_sqlite()\n    elif request.param == 'postgres':\n        conn = conectar_postgres()\n    else:\n        conn = conectar_mysql()\n    yield conn\n    conn.close()\n\ndef test_insertar_nota(db):\n    # Este test corre 3 veces, una por cada motor\n    db.execute(\"INSERT INTO notas (texto) VALUES ('x')\")\n    n = db.execute('SELECT COUNT(*) FROM notas').fetchone()[0]\n    assert n == 1\n\n# ===== CASOS DERIVADOS: producto cartesiano =====\n# Si parametrizas DOS argumentos, pytest hace el producto cartesiano:\n\n@pytest.mark.parametrize('a', [1, 2, 3])\n@pytest.mark.parametrize('b', [10, 20])\ndef test_suma_combinada(a, b):\n    # corre 3 × 2 = 6 veces: (1,10), (1,20), (2,10), (2,20), (3,10), (3,20)\n    assert sumar(a, b) == a + b\n\n# ===== PARAMETRIZACIÓN DESDE DATOS EXTERNOS =====\n# Para tablas de casos grandes, léelas de un archivo:\nimport json, pathlib\n\ndef cargar_casos(ruta):\n    return json.loads(pathlib.Path(ruta).read_text(encoding='utf-8'))\n\n# casos_parsear.json:\n# [\n#   {\"entrada\": \"$ 10\",       \"esperado\": 10.0},\n#   {\"entrada\": \"Consultar\",  \"esperado\": null}\n# ]\n#\n# @pytest.mark.parametrize('caso', cargar_casos('casos_parsear.json'),\n#                          ids=lambda c: str(c['entrada']))\n# def test_parsear_desde_json(caso):\n#     assert parsear_precio(caso['entrada']) == caso['esperado']\n\n# ===== REGLAS PRÁCTICAS =====\n# - Hasta ~10 casos: lista literal en el test\n# - 10-50 casos: archivo JSON/CSV cargado\n# - 50+ casos: pytest.mark.parametrize con generador\n# - Nunca parametrices con datos aleatorios (tests no deterministas):\n#   usa semillas fijas: random.seed(42) al inicio del test",
     "disenso_experto": "¿Parametrizar siempre que haya más de 2 casos? Casi siempre sí, pero hay una excepción: cuando cada caso requiere setup/teardown distinto (ej: un test necesita una DB con usuario admin y otro con usuario invitado). Ahí es mejor dos tests separados con fixtures distintas. Regla: parametriza cuando el setup es idéntico y solo cambian input/output.",
-    "pregunta_transferencia": "Tienes un parser que acepta 8 formatos de fecha distintos. Escribes un solo test parametrizado con los 8 casos. Un día un formato deja de parsear correctamente (cambio en la regex interna) pero el test sigue PASANDO porque la nueva regex devuelve una fecha distinta pero 'válida'. ¿Cómo rediseñas el test para que detecte el cambio?",
+    "pregunta_transferencia": "Tienes un parser que reconoce ocho formatos distintos de fecha y has escrito un test parametrizado con los ocho casos. Un día la expresión regular interna cambia y ahora interpreta mal un formato legacy, devolviendo una fecha diferente pero aún considerada válida por el test existente. ¿Cómo rediseñas el test para asegurarte de que cualquier cambio en la regex sea detectado? (Pista: introduce una verificación explícita de la cadena original o usa grupos de parámetros que marquen formatos conocidos como inválidos).",
     "quiz": {
       "pregunta": "¿Qué hace `pytest.param(..., marks=pytest.mark.xfail(reason='...'))`?",
       "opciones": [
@@ -119,17 +222,93 @@
       "setup_code": "# helper correr_tests() inyectado por la app\ndef es_bisiesto(anio):\n    if anio % 400 == 0: return True\n    if anio % 100 == 0: return False\n    return anio % 4 == 0",
       "codigo_inicial": "# Escribe UN SOLO test parametrizado con al menos 8 casos\n# que verifique es_bisiesto(). Cada caso debe tener un id legible\n# usando pytest.param(..., id='descripcion').\n#\n# PISTA de casos a cubrir:\n# - 2024 (bisiesto normal: múltiplo de 4)\n# - 2023 (no bisiesto)\n# - 1900 (NO bisiesto: múltiplo de 100 pero no de 400)\n# - 2000 (SÍ bisiesto: múltiplo de 400)\n# - 2100 (NO bisiesto: múltiplo de 100)\n# - 1600 (SÍ bisiesto: múltiplo de 400)\n# - 2025 (no bisiesto)\n# - 2028 (bisiesto)\n",
       "tests_code": "# Verificación estructural: debe haber un test parametrizado con >= 8 casos",
-      "asserts_pytest": ["8 passed", "0 failed"],
-      "asserts_forbidden": ["def test_bisiesto_1", "def test_bisiesto_2", "def test_bisiesto_3"],
+      "asserts_pytest": [
+        "8 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "def test_bisiesto_1",
+        "def test_bisiesto_2",
+        "def test_bisiesto_3"
+      ],
       "solucion": "import pytest\n\n@pytest.mark.parametrize('anio,esperado', [\n    pytest.param(2024, True,  id='bisiesto_normal_2024'),\n    pytest.param(2023, False, id='no_bisiesto_2023'),\n    pytest.param(1900, False, id='multiplo_de_100_no_de_400'),\n    pytest.param(2000, True,  id='multiplo_de_400'),\n    pytest.param(2100, False, id='multiplo_de_100_futuro'),\n    pytest.param(1600, True,  id='multiplo_de_400_historico'),\n    pytest.param(2025, False, id='impar'),\n    pytest.param(2028, True,  id='bisiesto_futuro'),\n])\ndef test_es_bisiesto(anio, esperado):\n    assert es_bisiesto(anio) == esperado"
     },
     "audio_script": "La parametrización convierte un test de tres líneas en veinte casos sin duplicar código, y es la herramienta que más impacto tiene en la mantenibilidad de tu suite. La sintaxis es directa: pytest punto mark punto parametrize recibe dos cosas — los nombres de los argumentos como string y una lista de tuplas con los valores para cada caso. Pytest ejecuta la misma función una vez por cada tupla, y el reporte final muestra un resultado por caso. Pero aquí está el secreto que separa tests legibles de tests crípticos: usar pytest punto param con el argumento id. Sin id, pytest muestra test algo entrada cero esperado cero, que no dice nada. Con id igual bisiesto normal dos mil veinticuatro, el reporte te dice exactamente qué caso es cada uno. Cuando un caso falla, lo identificas en un segundo. La segunda herramienta poderosa son las marcas. pytest punto xfail documenta un caso que sabes que va a fallar, con la razón. Si un día el test pasa, pytest te avisa en rojo: algo cambió y probablemente arreglaste un bug sin darte cuenta. Es documentación ejecutable. Y un detalle que casi nadie usa: si parametrizas dos argumentos, pytest hace el producto cartesiano automáticamente. Tres valores por cuatro valores son doce combinaciones sin que tengas que escribir una sola línea extra.",
     "video_prompt": "Video de 85 segundos. ESCENA 1: 10 tests apilados verticalmente, cada uno con la misma estructura 'assert parsear(entrada) == esperado' pero distintos valores. El usuario hace un cambio en la función y tiene que editar los 10 asserts. ESCENA 2 (parametrizado): los 10 tests se fusionan en uno solo con una tabla de casos. Pytest despliega visualmente las 10 ejecuciones como un abanico. ESCENA 3 (con ids): cada caso del abanico tiene su nombre propio ('anglosajon', 'europeo', 'texto') en vez de 'caso0', 'caso1'. Un caso falla y el reporte muestra el nombre exacto. ESCENA 4 (xfail): un caso marcado como 'x' en verde (fallo esperado documentado) y otro que pasó inesperadamente mostrando 'X' en rojo con una alerta. Cierre: producto cartesiano visual de 3 × 2 = 6 combinaciones generadas automáticamente. Overlay: 'Una función. N casos. Ids legibles. xfail para bugs conocidos.'",
     "trazabilidad": {
-      "libros_fuente": ["pytest docs - Parametrize", "Python Testing with pytest (Brian Okken)", "Effective Python Item 25"],
-      "conceptos_clave": ["pytest", "parametrize", "pytest-param", "xfail", "ids", "producto-cartesiano"]
+      "libros_fuente": [
+        "pytest docs - Parametrize",
+        "Python Testing with pytest (Brian Okken)",
+        "Effective Python Item 25"
+      ],
+      "conceptos_clave": [
+        "pytest",
+        "parametrize",
+        "pytest-param",
+        "xfail",
+        "ids",
+        "producto-cartesiano"
+      ]
     },
-    "tags_rag": ["python", "pytest", "parametrize", "testing", "ids", "xfail"]
+    "tags_rag": [
+      "python",
+      "pytest",
+      "parametrize",
+      "testing",
+      "ids",
+      "xfail"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la principal ventaja de usar @pytest.mark.parametrize para convertir un único test en una suite de múltiples casos?",
+        "opciones": [
+          "A) Reduce la cantidad de líneas de código",
+          "B) Simplifica el mantenimiento cuando la función subyacente cambia",
+          "C) Permite generar dinámicamente fixtures complejos",
+          "D) Elimina la necesidad de usar sentencias assert"
+        ],
+        "correcta": "B",
+        "explicacion": "El uso de parametrize crea una sola definición de prueba que se ejecuta con múltiples conjuntos de parámetros, reduciendo la repetición y facilitando la actualización de una sola línea para modificar la lógica de la función test.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código roto, parsear_precio devuelve float cuando el input empieza con '$'. Si modificamos internamente para usar Decimal, el test fallará porque la comparación usa ==. ¿Qué patrón de diseño evita este problema?",
+        "opciones": [
+          "A) Cambiar el tipo de retorno a Decimal en toda la cadena de tests",
+          "B) Aplicar una decorator que convierta automáticamente el resultado a float antes de la comparación",
+          "C) Utilizar comparación aproximada con math.isclose",
+          "D) No cambiar nada"
+        ],
+        "correcta": "C",
+        "explicacion": "La comparación directa de un float calculado con Decimal puede ser inexacta debido a diferencias de precisión. Emplear una función auxiliar que normalice la salida a la misma representación numérica (float o decimal) antes de la comparación garantiza que los errores de tipo no se propaguen.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si un test de parsing de precio falla al recibir la entrada 'Consultar' que debería devolver None, pero la función devuelve False, ¿cuál es la causa probable y cómo depurarlo?",
+        "opciones": [
+          "A) Falta de manejo de cadenas no numéricas en el parser",
+          "B) Uso incorrecto de isinstance vs type en la verificación",
+          "C) Confusión entre None y False en el flujo lógico",
+          "D) Error tipográfico en la variable return"
+        ],
+        "correcta": "A",
+        "explicacion": "El parser espera un valor numérico y, ante un texto como 'Consultar', devuelve False en lugar de None. Esto ocurre porque la condición que detecta entradas válidas no incluye la ruta de retorno None, provocando que la función intercepte la entrada errónea y retorne un falso booleano. Para depurar, se debe inspeccionar el bloque de manejo de excepciones o la rama que evalúa la cadena y asegurar que se retorne None para entradas no válidas.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Al añadir un nuevo formato de fecha que el parser debe reconocer, ¿qué estrategia de parametrización permite integrar el nuevo caso sin romper los tests existentes?",
+        "opciones": [
+          "A) Crear una función test separada con nombre nuevo",
+          "B) Extender la lista de tuplas en parametrize con una nueva entrada",
+          "C) Reemplazar todo el suite con un solo test sin parámetros",
+          "D) Usar pytest.parametrize con mark.skip"
+        ],
+        "correcta": "B",
+        "explicacion": "Añadir el nuevo caso a la tupla que ya existe dentro del marcador parametrize mantiene el conjunto de pruebas intacto y permite que el runner repare las ejecuciones sin alterar las definiciones previas.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.1-004",
@@ -138,13 +317,13 @@
     "nivel": "principiante",
     "fase": 3,
     "microproyecto": "Suite de tests para tu orquestador y pipeline de datos",
-    "modelo_mental": "Testear excepciones es tan importante como testear valores de retorno: una función que **debe** lanzar en ciertos casos y no lo hace es un bug silencioso. `pytest.raises(TipoExcepcion)` es un context manager que ejecuta el código dentro y **falla si la excepción NO se lanza**. Además captura la excepción en un objeto para que puedas inspeccionar el mensaje y los atributos. Lo mismo aplica para warnings con `pytest.warns`. El bug más común es usar `try/except` dentro del test — que enmascara fallos y hace el test más largo.",
+    "modelo_mental": "Testear excepciones es tan crucial como verificar los valores de retorno, porque una función que **debe** lanzar un error en ciertos casos y no lo hace introduce un bug silencioso que puede corromper el flujo de la aplicación. **Piensa en esto como un sistema de alarma de seguridad: si la alarma no suena cuando se forza una puerta, pero tú no la pruebas, crees que el sistema es fiable cuando no lo está**. `pytest.raises(TipoExcepcion)` actúa como tu detector automático: ejecuta el código dentro del contexto y **falla inmediatamente si la excepción NO se lanza**, forzando que el test falle cuando el comportamiento es incorrecto. Además, captura la excepción en un objeto, permitiendo inspeccionar el mensaje y atributos con `match` o accediendo a `exc_info`, lo que facilita el debugging. Lo mismo aplica para warnings con `pytest.warns`, donde se verifica que se emita una advertencia. El error más común es recurrir a un bloque `try-except` dentro del test, que enmascara fallos porque, si la función no lanza, el except no se activa y el test pasa sin ningún assert, volviéndose inútil.",
     "codigo_roto": "# Test INCORRECTO de que una función lanza excepción:\ndef test_dividir_por_cero_lanza():\n    try:\n        dividir(10, 0)\n    except ZeroDivisionError:\n        pass  # 'pasó' si lanza\n    # BUG: si dividir NO lanza, el test TAMBIÉN pasa silenciosamente\n    # (no hay assert que verifique que se lanzó)",
-    "diagnostico": "Verificado en sandbox: si `dividir(10, 0)` NO lanza (bug en la función), el test **pasa igual** porque no hay ningún assert. Es un test que siempre pasa, sin importar el comportamiento real de la función — peor que no tener test. Además, el `except` atrapa CUALQUIER excepción del tipo esperado, pero no verifica el mensaje ni atributos específicos. Y si `dividir` lanza una excepción de otro tipo (ej: `TypeError`), el test falla con un traceback en vez de un mensaje claro.",
+    "diagnostico": "1. El test proporcionado carece de un assert que verifique que la excepción se lanzó, lo que significa que si la función `dividir(10, 0)` NO lanza `ZeroDivisionError` (por un bug en la función), el test **pasa silenciosamente**. En Python, esto es un error lógico grave porque el test no realiza validación alguna, siendo peor que no tener test, ya que da una falsa sensación de seguridad. 2. El bloque `except` atrapa cualquier excepción del tipo `ZeroDivisionError`, pero no inspecciona el mensaje ni atributos específicos. Por ejemplo, si la función lanza un `ZeroDivisionError` con un mensaje personalizado, el test no asegura que ese mensaje sea el esperado, lo que podría ocultar información clave para corregir el error. 3. Si `dividir` lanza una excepción de otro tipo, como `TypeError`, el test falla con un traceback genérico en lugar de un mensaje claro. Esto ocurre porque el `except` solo maneja `ZeroDivisionError`, permitiendo que otras excepciones se propaguen sin un manejo adecuado, dificultando el diagnóstico.",
     "codigo_corregido": "import pytest\n\ndef test_dividir_por_cero_lanza_zero_division():\n    with pytest.raises(ZeroDivisionError):\n        dividir(10, 0)\n\ndef test_dividir_por_cero_mensaje_correcto():\n    with pytest.raises(ZeroDivisionError, match='divisor.*cero'):\n        dividir(10, 0)",
     "codigo_optimizado": "import pytest\n\n# ===== SINTAXIS BÁSICA =====\n# with pytest.raises(TipoExcepcion):\n#     codigo_que_debe_lanzar()\n#\n# El test PASA si se lanza la excepción esperada.\n# El test FALLA si NO se lanza (o se lanza una de tipo distinto).\n\n# ===== VERIFICAR EL MENSAJE =====\n# match= acepta una regex que se aplica al str(excepcion):\n\ndef test_error_de_validacion_con_mensaje():\n    with pytest.raises(ValueError, match='rango.*1.*10'):\n        validar_rango(100)\n\n# 'match' usa re.search, así que busca en cualquier parte del mensaje.\n# Si quieres ancla al inicio: match='^Error de validación'.\n\n# ===== INSPECCIONAR LA EXCEPCIÓN COMPLETA =====\n# El context manager expone la excepción en .value:\n\ndef test_error_con_codigo_interno():\n    with pytest.raises(APIError) as exc_info:\n        llamar_api_restringida()\n    # Inspeccionar atributos:\n    assert exc_info.value.codigo == 403\n    assert 'permiso' in exc_info.value.mensaje.lower()\n    # exc_info.value es la instancia real de la excepción\n    # exc_info.typename es el nombre de la clase como string\n\n# ===== PROBAR QUE NO SE LANZA =====\n# Para verificar que una función NO lanza en ciertos casos, NO uses raises:\n# simplemente llama la función. Si lanza, pytest falla automáticamente.\n\ndef test_operacion_valida_no_lanza():\n    # Si dividir lanza algo, este test falla — sin necesidad de assert\n    resultado = dividir(10, 2)\n    assert resultado == 5\n\n# ===== JERARQUÍA DE EXCEPCIONES =====\n# pytest.raises acepta una clase base y pasa si se lanza CUALQUIER subclase:\n\nwith pytest.raises(Exception):\n    raise ValueError('x')        # pasa: ValueError es subclase de Exception\n\n# Pero es mejor ser específico: prueba la excepción EXACTA que debe ocurrir.\n\n# ===== TESTING DE WARNINGS =====\n# pytest.warns verifica que se emita un warning específico:\n\ndef test_funcion_obsoleta_emite_warning():\n    with pytest.warns(DeprecationWarning, match='usa.*nueva_funcion'):\n        funcion_obsoleta()\n\n# Para verificar que NO se emiten warnings:\nimport warnings\n\ndef test_sin_warnings():\n    with warnings.catch_warnings():\n        warnings.simplefilter('error')  # convierte warnings en errores\n        funcion_que_no_debe_advertir()\n\n# ===== ANTI-PATRÓN: TRY/EXCEPT EN EL TEST =====\n# MAL:\ndef test_mal():\n    try:\n        dividir(10, 0)\n    except ZeroDivisionError:\n        pass\n    else:\n        pytest.fail('debió lanzar ZeroDivisionError')\n\n# BIEN (equivalente y más corto):\ndef test_bien():\n    with pytest.raises(ZeroDivisionError):\n        dividir(10, 0)\n\n# ===== CASOS DE BORDE FRECUENTES =====\n\n# 1. Excepción dentro de un context manager anidado:\nwith pytest.raises(ValueError):\n    with open('archivo.txt') as f:  # este with SÍ se ejecuta completo\n        raise ValueError('x')\n# El with de open() ejecuta su __exit__ ANTES de que pytest.raises capture.\n\n# 2. Aserción dentro del with pytest.raises:\nwith pytest.raises(ValueError) as exc_info:\n    dividir(10, 0)\n# Los asserts van FUERA del with:\nassert 'cero' in str(exc_info.value)\n\n# 3. Excepción esperada en un test parametrizado:\n@pytest.mark.parametrize('entrada,excepcion', [\n    ('',       ValueError),\n    (None,     TypeError),\n    (-1,       ValueError),\n])\ndef test_entradas_invalidas(entrada, excepcion):\n    with pytest.raises(excepcion):\n        parsear_entrada(entrada)\n\n# 4. Verificar que un código SILENCIA una excepción (no la propaga):\ndef test_silenciar_excepcion():\n    # Si silenciar() propaga, pytest falla aquí automáticamente\n    resultado = silenciar(lambda: 1/0)\n    assert resultado is None",
     "disenso_experto": "¿Probar excepciones específicas o `Exception` genérica? Excepciones específicas son casi siempre mejor: documentan el contrato de la función. `pytest.raises(Exception)` es vago y enmascara bugs — si mañana la función lanza TypeError en vez de ValueError, el test sigue pasando pero el comportamiento real cambió. Excepción: al testear que un wrapper genérico propaga cualquier excepción de su wrapped.",
-    "pregunta_transferencia": "Tu función `procesar_pedido(pedido)` debe lanzar `PedidoInvalidoError` cuando el pedido está vacío. Escribes `with pytest.raises(PedidoInvalidoError): procesar_pedido({})`. Pasa. Un día alguien cambia el tipo de excepción a `ValueError` y el test sigue pasando porque `PedidoInvalidoError` hereda de `ValueError` (o al revés). ¿Qué pasó exactamente, y cómo rediseñas el test para que el cambio de tipo rompa el test?",
+    "pregunta_transferencia": "Tu función `procesar pedido` está diseñada para lanzar `PedidoInvalidoError` cuando el pedido está vacío, y escribes un test con `with pytest.raises(PedidInvalidoError): procesar pedido({})` que pasa correctamente. Con el tiempo, alguien modifica el código y cambia el tipo de excepción a `ValueError`, pero si `PedidoInvalidoError` hereda de `ValueError`, el test sigue pasando porque `pytest.raises` considera válidas las subclases. Esto significa que el test no detectó el cambio, lo que podría llevar a que la función lance una excepción incorrecta sin que el test lo note. Para rediseñar el test y que el cambio de tipo lo rompa, podrías usar el parámetro `match` en `pytest.raises` para verificar el mensaje de la excepción, o bien, después de capturar la excepción, assertar que el tipo sea exactamente `PedidoInvalidoError` usando `exc_info.type`, evitando que subclases pasen desapercibidas.",
     "quiz": {
       "pregunta": "¿Qué hace `pytest.raises(ValueError)` si el código dentro NO lanza ninguna excepción?",
       "opciones": [
@@ -163,17 +342,92 @@
       "setup_code": "# helper correr_tests() inyectado por la app\ndef dividir(a, b):\n    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):\n        raise ValueError('ambos argumentos deben ser numericos')\n    if b == 0:\n        raise ZeroDivisionError('el divisor no puede ser cero')\n    return a / b",
       "codigo_inicial": "# Escribe 3 tests:\n# 1. test_dividir_por_cero_lanza_zero_division: verifica que dividir(10, 0) lance ZeroDivisionError\n# 2. test_dividir_con_texto_lanza_value_error: verifica que dividir('a', 2) lance ValueError\n#    y que el mensaje contenga 'numericos'\n# 3. test_dividir_normal_retorna_cociente: verifica que dividir(10, 2) == 5.0\n#\n# PISTA: usa pytest.raises() como context manager. Para el mensaje: match='regex'\n",
       "tests_code": "# Verificación estructural",
-      "asserts_pytest": ["3 passed", "0 failed"],
-      "asserts_forbidden": ["try:", "except "],
+      "asserts_pytest": [
+        "3 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "try:",
+        "except "
+      ],
       "solucion": "import pytest\n\ndef test_dividir_por_cero_lanza_zero_division():\n    with pytest.raises(ZeroDivisionError):\n        dividir(10, 0)\n\ndef test_dividir_con_texto_lanza_value_error():\n    with pytest.raises(ValueError, match='numericos'):\n        dividir('a', 2)\n\ndef test_dividir_normal_retorna_cociente():\n    resultado = dividir(10, 2)\n    assert resultado == 5.0"
     },
     "audio_script": "Testear que una función lanza una excepción es tan importante como testear que retorna el valor correcto. Una función que debe lanzar y no lo hace es un bug silencioso, y el error más común al intentar testear esto es usar try except con pass dentro del except. Ese test siempre pasa, incluso si la función no lanza nada, porque no hay ningún assert que verifique el comportamiento. La forma correcta es pytest punto raises como context manager: with pytest punto raises tipo de excepcion dos puntos, y dentro el código que debe lanzar. Si la excepción no se lanza, pytest falla el test con el mensaje failed did not raise. Si se lanza una excepción de tipo distinto, también falla. Para verificar el mensaje de la excepción, agrega el parámetro match con una regex que deba coincidir con el texto. Para inspeccionar atributos específicos de la excepción, usa la sintaxis as exc info y luego exc info punto value te da la instancia real. Lo mismo aplica para warnings con pytest punto warns. Y un patrón que debes evitar siempre: el try except con pass dentro del except y pytest punto fail en el else. Es más largo, menos legible, y propenso a errores. Con pytest punto raises haces lo mismo en dos líneas.",
     "video_prompt": "Video de 80 segundos. ESCENA 1 (anti-patrón): un test con try/except/pass y un 'else: pytest.fail()'. El desarrollador comenta 'si no lanza, fail'. Pero cuando la función NO lanza, el except no se ejecuta, el else sí... y el test falla tarde con un mensaje confuso. ESCENA 2 (pytest.raises): el mismo test en 2 líneas con `with pytest.raises(ValueError, match='rango'):`. La animación muestra pytest interceptando el lanzamiento de la excepción, verificando el tipo Y el mensaje con regex, y marcando el test como PASSED en verde. ESCENA 3 (caso de no-lanzamiento): si el código dentro no lanza, pytest muestra 'Failed: DID NOT RAISE' en rojo — el test falla automáticamente, que es el comportamiento deseado. ESCENA 4 (inspección): `as exc_info` permite acceder a exc_info.value.codigo para verificar atributos internos de la excepción. Overlay: 'pytest.raises = verifica que SÍ lanza. Sin try/except.'",
     "trazabilidad": {
-      "libros_fuente": ["pytest docs - pytest.raises", "Python Testing with pytest (Brian Okken)", "Effective Python Item 25"],
-      "conceptos_clave": ["pytest", "raises", "warns", "excepciones", "match", "exc-info"]
+      "libros_fuente": [
+        "pytest docs - pytest.raises",
+        "Python Testing with pytest (Brian Okken)",
+        "Effective Python Item 25"
+      ],
+      "conceptos_clave": [
+        "pytest",
+        "raises",
+        "warns",
+        "excepciones",
+        "match",
+        "exc-info"
+      ]
     },
-    "tags_rag": ["python", "pytest", "raises", "excepciones", "testing", "warns"]
+    "tags_rag": [
+      "python",
+      "pytest",
+      "raises",
+      "excepciones",
+      "testing",
+      "warns"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la función principal de `pytest.raises` en comparación con un bloque try-except?",
+        "opciones": [
+          "A) Falla el test si no se lanza la excepción",
+          "B) Permite capturar múltiples excepciones",
+          "C) Es más fácil de escribir",
+          "D) No requiere importación"
+        ],
+        "correcta": "A",
+        "explicacion": "La opción correcta es A porque `pytest.raises` está diseñado para fallar el test si la excepción esperada no se lanza, a diferencia de un try-except que puede pasar sin verificar esto. Las opciones B, C y D son incorrectas: B no es una diferencia clave, C es subjetiva, y D es falso ya que ambos requieren importación.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En el código proporcionado, si la función `dividir` lanza `ZeroDivisionError`, ¿qué pasa con el test?",
+        "opciones": [
+          "A) El test falla",
+          "B) El test pasa",
+          "C) Se imprime un mensaje de error",
+          "D) El except no se ejecuta"
+        ],
+        "correcta": "B",
+        "explicacion": "La opción correcta es B porque, en el código, el bloque try-except captura la excepción y ejecuta `pass`, lo que permite que el test continúe y pase sin problemas. A es incorrecta porque el test no falla al lanzarse la excepción; C es incorrecta porque no se imprime nada; D es falsa porque el except sí se ejecuta.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué error principal comete el test en el código roto?",
+        "opciones": [
+          "A) No usa el tipo correcto de excepción",
+          "B) No tiene un bloque finally",
+          "C) No verifica que se lanzó la excepción",
+          "D) La función no está definida"
+        ],
+        "correcta": "C",
+        "explicacion": "La opción correcta es C porque el test carece de un assert que confirme que la excepción se lanzó, lo que hace que pase incluso si no hay error. A es incorrecta porque el tipo es correcto; B es irrelevante; D es falso asumiendo que la función está definida.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cómo se puede mejorar el test para que sea más robusto contra cambios en el tipo de excepción?",
+        "opciones": [
+          "A) Añadiendo un assert después del try-except",
+          "B) Usando `pytest.raises` en su lugar",
+          "C) Verificando el mensaje de la excepción con `match`",
+          "D) Todas las anteriores"
+        ],
+        "correcta": "D",
+        "explicacion": "La opción correcta es D porque todas las medidas mejoran el test: A añade verificación, B usa una herramienta adecuada, y C asegura el mensaje, haciendo el test más estricto.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.1-005",
@@ -207,17 +461,44 @@
       "setup_code": "# helper correr_tests() inyectado por la app\nimport smtp_client_mock as smtp_client  # módulo ficticio ya disponible\n\ndef enviar_email(destinatario, asunto):\n    mensaje = f'Para: {destinatario}\\nAsunto: {asunto}'\n    smtp_client.send(destinatario, mensaje)\n    return True",
       "codigo_inicial": "# Escribe UN test que:\n# 1. Use patch('smtp_client.send', autospec=True) para mockear\n# 2. Llame enviar_email('ana@mail.com', 'Hola')\n# 3. Verifique que smtp_client.send se llamó exactamente una vez\n#    con los argumentos esperados\n#\n# PISTA:\n# from unittest.mock import patch\n# with patch('smtp_client.send', autospec=True) as mock_send:\n#     resultado = enviar_email('ana@mail.com', 'Hola')\n#     mock_send.assert_called_once_with(...)\n",
       "tests_code": "# Verificación estructural",
-      "asserts_pytest": ["1 passed", "0 failed"],
-      "asserts_forbidden": ["smtp_client.send(", "real_smtp"],
+      "asserts_pytest": [
+        "1 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "smtp_client.send(",
+        "real_smtp"
+      ],
       "solucion": "from unittest.mock import patch\n\ndef test_enviar_email_llama_smtp_con_argumentos_correctos():\n    with patch('smtp_client.send', autospec=True) as mock_send:\n        resultado = enviar_email('ana@mail.com', 'Hola')\n        \n        mock_send.assert_called_once_with(\n            'ana@mail.com',\n            'Para: ana@mail.com\\nAsunto: Hola'\n        )\n        assert resultado is True"
     },
     "audio_script": "Los mocks son la herramienta que te permite testear una unidad en aislamiento, sin que dependa de internet, bases de datos reales, el reloj del sistema o cualquier otro recurso externo. El concepto central es reemplazar una dependencia con un objeto controlado que graba las llamadas que recibe y retorna lo que tú configures. unittest punto mock punto patch reemplaza un objeto durante un scope, y MagicMock graba cada llamada. La sintaxis básica es with patch punto ruta del objeto as mock algo dos puntos, y dentro del with puedes configurar qué retorna y después verificar qué llamadas recibió. Dos herramientas de configuración. return value para el valor fijo que siempre retorna. side effect para una secuencia de valores, una excepción o una función que decide dinámicamente qué retornar. Y cuatro formas de verificar llamadas: assert called once with verifica que se llamó exactamente una vez con esos argumentos, assert any call verifica que al menos una llamada coincidió, call count te dice cuántas veces se llamó, y call args list te da todas las llamadas. La regla de oro que separa tests útiles de tests que se mienten a sí mismos: mockea DEPENDENCIAS, nunca tu propio código. Si mockeas la función bajo test, estás testeando el mock. Y usa autospec igual true siempre que puedas: sin autospec el mock acepta cualquier llamada, incluso argumentos que la función real no acepta, y eso oculta bugs de integración que solo aparecen en producción.",
     "video_prompt": "Video de 100 segundos. ESCENA 1 (sin mock): una función 'enviar_email' intenta conectarse a un servidor SMTP real. El test tarda 2 segundos, depende de la red, y si el servidor cae el test falla aunque el código esté bien. ESCENA 2 (con mock): patch reemplaza smtp_client.send por un 'grabador' que registra la llamada en una libreta. La función 'cree' que envió el email, pero solo habló con el grabador. Después del with, el test inspecciona la libreta y verifica: assert_called_once_with('ana@mail.com', 'mensaje...'). ESCENA 3 (side_effect): el mock devuelve [200, 200, 500] en tres llamadas consecutivas, permitiendo testear reintentos. ESCENA 4 (autospec): lado a lado, sin autospec el mock acepta 'smtp.send(x, y, z_inventado)' sin quejarse; con autospec=True, la misma llamada lanza TypeError porque la función real solo acepta 2 argumentos. Overlay: 'Mockea dependencias. autospec=True. Verifica llamadas.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - unittest.mock", "pytest docs - monkeypatch", "Python Testing with pytest Cap 9 (mocking)", "Effective Python Item 25"],
-      "conceptos_clave": ["mock", "patch", "magicmock", "autospec", "side-effect", "assert-called", "unit-testing"]
+      "libros_fuente": [
+        "Python docs - unittest.mock",
+        "pytest docs - monkeypatch",
+        "Python Testing with pytest Cap 9 (mocking)",
+        "Effective Python Item 25"
+      ],
+      "conceptos_clave": [
+        "mock",
+        "patch",
+        "magicmock",
+        "autospec",
+        "side-effect",
+        "assert-called",
+        "unit-testing"
+      ]
     },
-    "tags_rag": ["python", "mock", "patch", "unittest-mock", "pytest", "testing", "aislamiento"]
+    "tags_rag": [
+      "python",
+      "mock",
+      "patch",
+      "unittest-mock",
+      "pytest",
+      "testing",
+      "aislamiento"
+    ]
   },
   {
     "id": "M3.1-006",
@@ -251,17 +532,44 @@
       "setup_code": "# helper correr_tests() inyectado por la app\nimport json, os\nfrom pathlib import Path\n\ndef guardar_config(ruta, config_dict):\n    Path(ruta).write_text(json.dumps(config_dict), encoding='utf-8')\n\ndef ruta_config_por_defecto():\n    return os.environ.get('CONFIG_PATH', '/etc/app/config.json')",
       "codigo_inicial": "# Escribe 2 tests:\n#\n# 1. test_guardar_config_escribe_json_valido(tmp_path):\n#    - Usa tmp_path para crear una ruta temporal\n#    - Llama guardar_config con un dict\n#    - Lee el archivo y verifica que el JSON es válido y tiene los datos correctos\n#\n# 2. test_ruta_config_por_defecto_usa_entorno(monkeypatch):\n#    - Usa monkeypatch.setenv('CONFIG_PATH', '/custom/config.json')\n#    - Llama ruta_config_por_defecto()\n#    - Verifica que retorna la ruta custom\n#\n# PISTA: tmp_path es un pathlib.Path. Usa str(tmp_path / 'archivo.json')\n#        para pasarle una ruta en string a la función.\n",
       "tests_code": "# Verificación estructural",
-      "asserts_pytest": ["2 passed", "0 failed"],
-      "asserts_forbidden": ["/etc/", "/tmp/", "open('config"],
+      "asserts_pytest": [
+        "2 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "/etc/",
+        "/tmp/",
+        "open('config"
+      ],
       "solucion": "import json\n\ndef test_guardar_config_escribe_json_valido(tmp_path):\n    ruta = tmp_path / 'mi_config.json'\n    config = {'debug': True, 'puerto': 8080, 'host': 'localhost'}\n    guardar_config(str(ruta), config)\n    \n    # Verificar que el archivo existe y el JSON es válido\n    assert ruta.exists()\n    contenido = json.loads(ruta.read_text(encoding='utf-8'))\n    assert contenido == config\n\ndef test_ruta_config_por_defecto_usa_entorno(monkeypatch):\n    monkeypatch.setenv('CONFIG_PATH', '/custom/config.json')\n    assert ruta_config_por_defecto() == '/custom/config.json'"
     },
     "audio_script": "Testear código que toca el sistema de archivos, variables de entorno o el directorio actual requiere aislamiento total, o los tests se contaminan entre sí y fallan según el orden de ejecución. Pytest provee fixtures built-in para esto. tmp path es un directorio temporal único por test — cada test recibe su propio directorio virgen, y pytest lo elimina automáticamente al final, tanto si el test pasó como si falló. Es un path lib punto path, así que puedes hacer barra archivo punto json para componer rutas, read text para leer, write text para escribir. monkeypatch es la herramienta para modificar el entorno temporalmente: monkeypatch punto set env cambia una variable de entorno, monkeypatch punto del env la elimina, monkeypatch punto setattr reemplaza un atributo de un módulo, y monkeypatch punto ch dir cambia el directorio actual. Todo se restaura automáticamente al final del test. La combinación tmp path más monkeypatch es particularmente poderosa: creas un directorio temporal con tu config de prueba, seteas una variable de entorno apuntando a él, y tu código lee esa variable y usa tu config temporal. La regla de oro: cada test crea su propio mundo temporal y lo destruye al terminar. Escribir en el directorio actual o usar rutas absolutas como barra tmp es el anti patrón clásico que hace que los tests fallen en CI pero no en tu máquina.",
     "video_prompt": "Video de 85 segundos. ESCENA 1 (sin aislamiento): un test escribe 'notas.json' en el directorio del proyecto. El archivo queda ahí, contamina el git status, y el siguiente test lo ve con datos sucios. ESCENA 2 (con tmp_path): pytest crea una burbuja aislada para cada test. El test escribe en '/tmp/pytest-xxx/test_0/notas.json'. Al terminar (éxito o fallo), la burbuja se evapora completamente. ESCENA 3 (monkeypatch): el entorno de variables (un panel de switches) se modifica temporalmente: setenv cambia API_KEY='test', chdir cambia el directorio. Al final del test, todo vuelve al estado original. ESCENA 4 (combinación): tmp_path crea un directorio con settings.json, monkeypatch setea APP_CONFIG_DIR apuntando a ese directorio, la función bajo test lee la variable y encuentra el archivo temporal. Overlay: 'Cada test, su propio mundo. Todo se limpia solo.'",
     "trazabilidad": {
-      "libros_fuente": ["pytest docs - tmp_path, monkeypatch", "Python Testing with pytest Cap 7 (fixtures built-in)", "Effective Python Item 25"],
-      "conceptos_clave": ["pytest", "tmp-path", "monkeypatch", "filesystem", "entorno", "aislamiento", "fixtures-built-in"]
+      "libros_fuente": [
+        "pytest docs - tmp_path, monkeypatch",
+        "Python Testing with pytest Cap 7 (fixtures built-in)",
+        "Effective Python Item 25"
+      ],
+      "conceptos_clave": [
+        "pytest",
+        "tmp-path",
+        "monkeypatch",
+        "filesystem",
+        "entorno",
+        "aislamiento",
+        "fixtures-built-in"
+      ]
     },
-    "tags_rag": ["python", "pytest", "tmp-path", "monkeypatch", "filesystem", "testing", "aislamiento"]
+    "tags_rag": [
+      "python",
+      "pytest",
+      "tmp-path",
+      "monkeypatch",
+      "filesystem",
+      "testing",
+      "aislamiento"
+    ]
   },
   {
     "id": "M3.1-007",
@@ -295,17 +603,44 @@
       "setup_code": "# helper correr_tests() inyectado por la app\ndef validar_edad(edad):\n    if not isinstance(edad, int):\n        raise TypeError('edad debe ser int')\n    if edad < 0:\n        raise ValueError('edad no puede ser negativa')\n    if edad > 150:\n        raise ValueError('edad no puede superar 150')\n    return True",
       "codigo_inicial": "# La suite IA-generada tiene estos 3 tests decorativos:\n#\n# def test_1():\n#     validar_edad(25)\n#     # sin assert: siempre pasa\n#\n# def test_validar():\n#     r = validar_edad(25)\n#     if r != True:\n#         print('error')\n#     # print no es assertion\n#\n# def test_validar_negativo():\n#     try:\n#         validar_edad(-5)\n#     except ValueError:\n#         pass\n#     # try/except sin pytest.raises: si NO lanza, el test pasa igual\n#\n#\n# REESCRIBE la suite con al menos 5 tests reales que:\n# 1. Verifiquen el caso feliz (edad válida)\n# 2. Verifiquen que edad < 0 lanza ValueError\n# 3. Verifiquen que edad > 150 lanza ValueError\n# 4. Verifiquen que edad no-int lanza TypeError\n# 5. Usen parametrización con ids legibles para los casos felices\n#\n# Debes tener al menos 5 tests y TODOS con asserts reales.\n",
       "tests_code": "# Verificación estructural",
-      "asserts_pytest": ["5 passed", "0 failed"],
-      "asserts_forbidden": ["print(", "def test_1", "def test_2", "try:", "except:"],
+      "asserts_pytest": [
+        "5 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "print(",
+        "def test_1",
+        "def test_2",
+        "try:",
+        "except:"
+      ],
       "solucion": "import pytest\n\n@pytest.mark.parametrize('edad', [\n    pytest.param(0, id='cero'),\n    pytest.param(25, id='adulto_joven'),\n    pytest.param(150, id='limite_superior'),\n])\ndef test_validar_edad_casos_validos_retornan_true(edad):\n    assert validar_edad(edad) is True\n\ndef test_validar_edad_negativa_lanza_value_error():\n    with pytest.raises(ValueError):\n        validar_edad(-1)\n\ndef test_validar_edad_mayor_a_150_lanza_value_error():\n    with pytest.raises(ValueError):\n        validar_edad(151)"
     },
     "audio_script": "Este chunk es la auditoría de suites de tests, equivalente a los chunks de auditoría de bases de datos y scrapers que ya hicimos. La inteligencia artificial genera suites que parecen completas pero tienen defectos estructurales que las vuelven inútiles. El defecto más común y peligroso: tests sin asserts. Un test que solo llama la función y no verifica nada con assert pasa SIEMPRE, incluso si la función está completamente rota. Es un test decorativo que te da una falsa sensación de seguridad. El segundo defecto: asserts sobre implementación en vez de comportamiento. Si tu test verifica que un módulo tiene un atributo privado llamado underscore add, estás testeando detalles internos, no el contrato de la función. Cuando refactorizas, el test rompe aunque la función siga funcionando. Tercero: fixtures con scope session o module sobre datos mutables. Los tests se contaminan entre sí según el orden de ejecución, y fallan intermitentemente. La herramienta para detectarlo es pytest dash random dash order. Cuarto: nombres genéricos como test uno, test sumar. Cuando el test falla en CI, no sabes qué estaba probando. Quinto: ausencia de casos de borde. Solo casos normales, sin probar None, strings vacíos, ceros, negativos. La checklist de ocho puntos que te doy es tu escáner de sesenta segundos para cualquier suite que recibas, venga de una IA, de un colega o de ti mismo hace seis meses.",
     "video_prompt": "Video de 110 segundos, estilo 'autopsia de una suite enferma'. Una suite de 10 tests aparece en pantalla, todos con sello verde 'PASSED'. Un inspector recorre cada test marcando sellos rojos numerados: (1) test sin assert → 'decorativo'; (2) print en vez de assert → 'no verifica'; (3) test sobre _atributo_privado → 'prueba implementación'; (4) 5 asserts en un solo test → 'debe partirse'; (5) fixture session con datos mutables → 'contaminación'; (6) nombres test_1, test_2 → 'no documenta'. REWIND y reconstrucción: cada sello rojo se reemplaza por verde con el patrón correcto (pytest.raises, parametrize con ids, scope=function, nombre descriptivo). Escena final: el inspector introduce un bug obvio en la función bajo test y la suite reescrita LO DETECTA en rojo, mientras la suite original sigue mostrando '10 passed' en verde. Overlay: '8 puntos. 60 segundos. Distingue tests reales de decorativos.'",
     "trazabilidad": {
-      "libros_fuente": ["M2.2-009 y M2.3-008 (misma metodología aplicada a tests)", "Python Testing with pytest Cap 11 (anti-patterns)", "pytest docs - Best Practices"],
-      "conceptos_clave": ["auditoria", "tests-decorativos", "codigo-ia", "cobertura", "pytest", "calidad-de-tests"]
+      "libros_fuente": [
+        "M2.2-009 y M2.3-008 (misma metodología aplicada a tests)",
+        "Python Testing with pytest Cap 11 (anti-patterns)",
+        "pytest docs - Best Practices"
+      ],
+      "conceptos_clave": [
+        "auditoria",
+        "tests-decorativos",
+        "codigo-ia",
+        "cobertura",
+        "pytest",
+        "calidad-de-tests"
+      ]
     },
-    "tags_rag": ["python", "pytest", "auditoria", "codigo-ia", "tests-decorativos", "calidad"]
+    "tags_rag": [
+      "python",
+      "pytest",
+      "auditoria",
+      "codigo-ia",
+      "tests-decorativos",
+      "calidad"
+    ]
   },
   {
     "id": "M3.1-008",
@@ -339,17 +674,41 @@
       "setup_code": "# helper correr_tests() inyectado por la app\nimport csv\nimport io\n\ndef parsear_csv_linea(linea):\n    # Implementación ingenua con bug:\n    return linea.split(',')\n\ndef parsear_csv_linea_correcta(linea):\n    # Implementación correcta usando csv.reader:\n    reader = csv.reader(io.StringIO(linea))\n    return next(reader)",
       "codigo_inicial": "# PASO 1: Formula una hipótesis del bug.\n# El bug es: parsear_csv_linea usa split(',') en vez de un parser CSV real,\n# así que las comas dentro de campos con comillas se tratan como separadores.\n#\n# PASO 2: Escribe UN test que VERIFIQUE esta hipótesis (debe FALLAR).\n# El test debe llamar parsear_csv_linea con una línea que tenga\n# comas dentro de comillas, ej: 'a,\"b,c\",d'\n# y verificar que el resultado es ['a', 'b,c', 'd'].\n#\n# El test DEBE FALLAR con la implementación actual (demuestra el bug).\n#\n# PASO 3: Arregla la función parsear_csv_linea usando csv.reader\n# (ya disponible en el setup_code) para que el test pase.\n#\n# PISTA: csv.reader recibe un iterable de líneas. Para una sola línea:\n#   import csv, io\n#   reader = csv.reader(io.StringIO(linea))\n#   return next(reader)\n#\n# Después de arreglar, el test debe PASAR.\n",
       "tests_code": "# Verificación estructural",
-      "asserts_pytest": ["1 passed", "0 failed"],
-      "asserts_forbidden": ["breakpoint()", "import pdb"],
+      "asserts_pytest": [
+        "1 passed",
+        "0 failed"
+      ],
+      "asserts_forbidden": [
+        "breakpoint()",
+        "import pdb"
+      ],
       "solucion": "import csv\nimport io\n\ndef test_parsear_csv_con_comillas_retorna_campos_correctos():\n    # Este test verifica la hipótesis: split(',') rompe campos con comillas\n    linea = 'a,\"b,c\",d'\n    resultado = parsear_csv_linea(linea)\n    assert resultado == ['a', 'b,c', 'd']\n\n# Función corregida:\ndef parsear_csv_linea(linea):\n    reader = csv.reader(io.StringIO(linea))\n    return next(reader)"
     },
     "audio_script": "Debugging no es un arte, es una disciplina con método. El método del científico aplicado a bugs tiene cuatro pasos. Primero reproducir: el fallo debe ocurrir SIEMPRE con el mismo input, o no puedes debuggearlo consistentemente. La herramienta aquí es escribir un test que falle reproduciblemente. Segundo aislar: reducir el input al mínimo caso que falla. Si falla con mil líneas, busca las dos líneas específicas que causan el problema por bisección. Tercero hipótesis: formular una explicación comprobable. No algo está mal, sino la función falla cuando el input tiene espacios finales porque strip no se llama antes del split. Cuarto verificar: usar el debugger para confirmar o refutar la hipótesis. breakpoint de Python tres punto siete en adelante es la herramienta central: detiene el programa en la línea que elijas y abre pdb, un REPL interactivo donde puedes inspeccionar variables con p, ejecutar código arbitrario con signo de exclamación, navegar la pila con u y d, y ejecutar paso a paso con n y s. El comando pytest menos pdb abre pdb automáticamente cuando un test falla, en el punto exacto del fallo, sin que tengas que poner breakpoints manualmente. Y la regla que separa debugging profesional de adivinación: nunca pongas prints aleatorios sin una hipótesis previa. La hipótesis guía qué inspeccionar, el debugger te da la respuesta.",
     "video_prompt": "Video de 100 segundos. ESCENA 1 (adivinación): desarrollador poniendo 15 prints dispersos por el código. El output es un río de texto ilegible. El desarrollador adivina 'probablemente es x' y cambia código al azar. El bug persiste. ESCENA 2 (método científico): cuatro paneles verticales apareciendo. (1) Reproducir: un test que falla consistentemente en rojo. (2) Aislar: bisección visual que reduce 1000 líneas a 2 líneas problemáticas. (3) Hipótesis: un post-it amarillo que dice 'el bug es X porque Y'. (4) Verificar: breakpoint() insertado en el punto exacto, pdb abriéndose como una terminal, comandos 'p variable' revelando el estado real, la hipótesis confirmada. ESCENA 3 (pytest --pdb): un test falla y pytest automáticamente abre pdb en el punto del fallo, mostrando el stack trace y las variables locales. Overlay: 'Reproducir. Aislar. Hipótesis. Verificar.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - pdb", "Debugging: The 9 Indispensable Tools for Finding Even the Most Elusive Software and Hardware Bugs (David J. Agans)", "Python Testing with pytest Cap 12 (debugging)"],
-      "conceptos_clave": ["debugging", "breakpoint", "pdb", "metodo-cientifico", "pytest-pdb", "reproducibilidad"]
+      "libros_fuente": [
+        "Python docs - pdb",
+        "Debugging: The 9 Indispensable Tools for Finding Even the Most Elusive Software and Hardware Bugs (David J. Agans)",
+        "Python Testing with pytest Cap 12 (debugging)"
+      ],
+      "conceptos_clave": [
+        "debugging",
+        "breakpoint",
+        "pdb",
+        "metodo-cientifico",
+        "pytest-pdb",
+        "reproducibilidad"
+      ]
     },
-    "tags_rag": ["python", "debugging", "breakpoint", "pdb", "metodo-cientifico", "pytest"]
+    "tags_rag": [
+      "python",
+      "debugging",
+      "breakpoint",
+      "pdb",
+      "metodo-cientifico",
+      "pytest"
+    ]
   },
   {
     "id": "M3.1-009",
@@ -383,17 +742,40 @@
       "setup_code": "# helper correr_tests() inyectado por la app\nimport logging\n\nlogger = logging.getLogger(__name__)\n\ndef dividir(a, b):\n    logger.info('dividiendo %s entre %s', a, b)\n    if b == 0:\n        logger.error('división por cero: %s/%s', a, b, exc_info=True)\n        raise ZeroDivisionError('divisor no puede ser cero')\n    return a / b",
       "codigo_inicial": "# Escribe 2 tests usando la fixture caplog:\n#\n# 1. test_dividir_normal_emite_log_info(caplog):\n#    - Llama dividir(10, 2) dentro de caplog.at_level(logging.INFO)\n#    - Verifica que el texto 'dividiendo 10 entre 2' aparece en caplog.text\n#\n# 2. test_dividir_por_cero_emite_log_error_con_traceback(caplog):\n#    - Llama dividir(10, 0) dentro de caplog.at_level(logging.ERROR),\n#      envuelto en pytest.raises(ZeroDivisionError)\n#    - Verifica que hay al menos un record de nivel ERROR\n#    - Verifica que el record tiene exc_info (traceback adjunto)\n#\n# PISTA: para acceder a los records usa caplog.records, y para cada record:\n#   r.levelno == logging.ERROR\n#   r.exc_info is not None\n",
       "tests_code": "# Verificación estructural",
-      "asserts_pytest": ["2 passed", "0 failed"],
+      "asserts_pytest": [
+        "2 passed",
+        "0 failed"
+      ],
       "asserts_forbidden": [],
       "solucion": "import pytest\nimport logging\n\ndef test_dividir_normal_emite_log_info(caplog):\n    with caplog.at_level(logging.INFO):\n        resultado = dividir(10, 2)\n    \n    assert resultado == 5.0\n    assert 'dividiendo 10 entre 2' in caplog.text\n\ndef test_dividir_por_cero_emite_log_error_con_traceback(caplog):\n    with caplog.at_level(logging.ERROR):\n        with pytest.raises(ZeroDivisionError):\n            dividir(10, 0)\n    \n    errors = [r for r in caplog.records if r.levelno == logging.ERROR]\n    assert len(errors) >= 1\n    assert 'división por cero' in errors[0].message\n    assert errors[0].exc_info is not None, 'el log debe incluir exc_info=True (traceback)'"
     },
     "audio_script": "El logging es la forma en que tu código habla sobre lo que está haciendo, y la fixture cap log de pytest te permite verificar esos logs en los tests. Esto convierte los logs en una superficie más de testing: no solo verificas qué retorna tu función, sino también qué dice sobre lo que hizo. Configurar logging en tu aplicación tiene tres piezas. El nivel mínimo a mostrar, entre debug info warning error y critical. El formato del mensaje, que típicamente incluye timestamp, nivel, nombre del módulo y el mensaje. Y los handlers, que dirigen los logs a consola, a archivo o a servicios externos. Dentro de cada módulo usas get logger con el nombre del módulo, que permite filtrar logs por módulo después. Dos reglas de oro. Primera: nunca uses f strings en logs, usa porciento formatting. El f string se evalúa SIEMPRE, aunque el nivel sea debug y el log se descarte. Con porciento formatting, el logger recibe el formato y los argumentos por separado y solo los combina si el nivel lo permite. Esto importa cuando convertir el argumento a string es caro. Segunda: cuando captures una excepción con except, incluye exc info igual true en el log para que se adjunte el traceback completo. Sin eso pierdes la pila de llamadas y el debugging en producción se vuelve una pesadilla. En los tests, la fixture cap log captura todos los logs emitidos durante el test. Puedes verificar que un mensaje específico aparece en cap log punto text, o inspeccionar cap log punto records para verificar niveles y atributos específicos. Con cap log punto at level puedes bajar el umbral para capturar logs debug que normalmente no se mostrarían.",
     "video_prompt": "Video de 90 segundos. ESCENA 1 (logging en producción): una aplicación emite logs con timestamp/nivel/módulo/mensaje. Los logs fluyen hacia una consola y hacia un archivo. Un operador busca 'ERROR' en el log y encuentra el fallo con traceback. ESCENA 2 (logging en tests): un test llama la función dentro de `with caplog.at_level(INFO):`. Los logs emitidos se capturan en caplog como una lista de records. El test verifica: 'assert \"procesando\" in caplog.text' y 'assert any(r.levelno == ERROR for r in caplog.records)'. ESCENA 3 (f-string vs % formatting): lado a lado, el f-string evalúa la interpolación SIEMPRE (reloj tic-tac lento), mientras que % formatting solo evalúa si el nivel lo permite (reloj rápido). ESCENA 4 (exc_info=True): un log con exc_info=True muestra el traceback completo al lado del mensaje; sin exc_info=True solo muestra el mensaje y el desarrollador se queda sin pista del origen. Overlay: 'caplog = logs como superficie de test. % formatting. exc_info=True en except.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - logging", "pytest docs - caplog", "Python Testing with pytest Cap 11 (logging)", "The Twelve-Factor App (logs as event streams)"],
-      "conceptos_clave": ["logging", "caplog", "pytest", "niveles", "exc-info", "estructurado", "observabilidad"]
+      "libros_fuente": [
+        "Python docs - logging",
+        "pytest docs - caplog",
+        "Python Testing with pytest Cap 11 (logging)",
+        "The Twelve-Factor App (logs as event streams)"
+      ],
+      "conceptos_clave": [
+        "logging",
+        "caplog",
+        "pytest",
+        "niveles",
+        "exc-info",
+        "estructurado",
+        "observabilidad"
+      ]
     },
-    "tags_rag": ["python", "logging", "caplog", "pytest", "observabilidad", "testing"]
+    "tags_rag": [
+      "python",
+      "logging",
+      "caplog",
+      "pytest",
+      "observabilidad",
+      "testing"
+    ]
   },
   {
     "id": "M3.1-010",
@@ -427,16 +809,40 @@
       "setup_code": "# helper correr_tests() inyectado por la app\n# Implementación mínima del orquestador para los tests:\nimport subprocess\nimport time\n\ndef orquestar(pasos, dry_run=False, on_fail='abort', timeout=300):\n    reporte = {'pasos': [], 'exitosos': 0, 'fallidos': 0, 'saltados': 0,\n               'dry_run': dry_run, 'abortado': False,\n               'resultado': 'dry_run' if dry_run else 'ok', 'seg_total': 0.0}\n    t0 = time.perf_counter()\n    for nombre, cmd, *resto in pasos:\n        critico = resto[0] if len(resto) > 0 else True\n        paso_timeout = resto[1] if len(resto) > 1 else timeout\n        if not isinstance(cmd, (list, tuple)):\n            raise TypeError(f'{nombre}: cmd debe ser lista')\n        if dry_run:\n            reporte['pasos'].append({'nombre': nombre, 'cmd': list(cmd),\n                                     'estado': 'dry_run', 'rc': None,\n                                     'stdout': '', 'stderr': '', 'seg': 0.0})\n            reporte['saltados'] += 1\n            continue\n        try:\n            cp = subprocess.run(list(cmd), capture_output=True, text=True, timeout=paso_timeout)\n            estado = 'ok' if cp.returncode == 0 else 'error'\n            rc, out, err = cp.returncode, cp.stdout, cp.stderr\n            seg = 0.0\n        except subprocess.TimeoutExpired:\n            estado, rc, out, err, seg = 'timeout', None, '', f'excedió {paso_timeout}s', paso_timeout\n        except FileNotFoundError:\n            estado, rc, out, err, seg = 'binario_ausente', 127, '', f'binario ausente: {cmd[0]}', 0.0\n        reporte['pasos'].append({'nombre': nombre, 'cmd': list(cmd), 'estado': estado,\n                                 'rc': rc, 'stdout': out, 'stderr': err, 'seg': seg})\n        if estado == 'ok':\n            reporte['exitosos'] += 1\n        else:\n            reporte['fallidos'] += 1\n            if critico and on_fail == 'abort':\n                reporte['abortado'] = True\n                reporte['resultado'] = 'ABORTADO'\n                break\n    if not dry_run and not reporte['abortado']:\n        reporte['resultado'] = 'con_fallos' if reporte['fallidos'] else 'ok'\n    reporte['seg_total'] = round(time.perf_counter() - t0, 3)\n    return reporte",
       "codigo_inicial": "# Escribe al menos 5 tests para orquestar() que cubran:\n#\n# 1. test_dry_run_no_ejecuta_subprocess:\n#    - Verifica que con dry_run=True, subprocess.run NO se llama\n#    - Hint: usa patch('subprocess.run') y .assert_not_called()\n#\n# 2. test_ejecucion_normal_todos_exitosos:\n#    - Mockea subprocess.run para retornar rc=0\n#    - Verifica que todos los pasos aparecen como exitosos\n#\n# 3. test_abort_en_paso_critico_fallido:\n#    - El primer paso retorna rc=0, el segundo rc=1\n#    - Verifica que abortado=True y que NO se ejecutó el tercer paso\n#\n# 4. test_comando_como_string_lanza_type_error:\n#    - Pasa un string en vez de lista como comando\n#    - Verifica con pytest.raises(TypeError)\n#\n# 5. test_timeout_manejado:\n#    - subprocess.run lanza subprocess.TimeoutExpired\n#    - Verifica que el paso queda como estado='timeout' y fallidos=1\n#\n# PISTA: usa @pytest.fixture para definir pasos_base reutilizable.\n#        Usa from unittest.mock import patch, MagicMock.\n",
       "tests_code": "# Verificación estructural",
-      "asserts_pytest": ["5 passed", "0 failed"],
+      "asserts_pytest": [
+        "5 passed",
+        "0 failed"
+      ],
       "asserts_forbidden": [],
       "solucion": "import pytest\nfrom unittest.mock import patch, MagicMock\nimport subprocess\n\n@pytest.fixture\ndef pasos_base():\n    return [\n        ('scrape',   ['python3', 'scrape.py'],   True),\n        ('limpiar',  ['python3', 'limpiar.py'],  True),\n        ('cargar',   ['python3', 'cargar.py'],   True),\n    ]\n\n@pytest.fixture\ndef subprocess_mock():\n    with patch('subprocess.run', autospec=True) as mock:\n        yield mock\n\ndef test_dry_run_no_ejecuta_subprocess(pasos_base, subprocess_mock):\n    reporte = orquestar(pasos_base, dry_run=True)\n    subprocess_mock.assert_not_called()\n    assert reporte['dry_run'] is True\n    assert reporte['saltados'] == 3\n\ndef test_ejecucion_normal_todos_exitosos(pasos_base, subprocess_mock):\n    subprocess_mock.return_value = MagicMock(returncode=0, stdout='ok', stderr='')\n    reporte = orquestar(pasos_base)\n    assert reporte['exitosos'] == 3\n    assert reporte['fallidos'] == 0\n    assert reporte['resultado'] == 'ok'\n\ndef test_abort_en_paso_critico_fallido(pasos_base, subprocess_mock):\n    subprocess_mock.side_effect = [\n        MagicMock(returncode=0, stdout='', stderr=''),\n        MagicMock(returncode=1, stdout='', stderr='ERROR'),\n    ]\n    reporte = orquestar(pasos_base)\n    assert reporte['abortado'] is True\n    assert reporte['exitosos'] == 1\n    assert reporte['fallidos'] == 1\n    assert subprocess_mock.call_count == 2\n\ndef test_comando_como_string_lanza_type_error():\n    with pytest.raises(TypeError):\n        orquestar([('paso', 'ls -la')])\n\ndef test_timeout_manejado(pasos_base, subprocess_mock):\n    subprocess_mock.side_effect = subprocess.TimeoutExpired(cmd=['x'], timeout=1)\n    reporte = orquestar(pasos_base, timeout=1)\n    assert reporte['pasos'][0]['estado'] == 'timeout'\n    assert reporte['fallidos'] == 1"
     },
     "audio_script": "Este es el proyecto integrador del módulo, y cierra el ciclo completo del curso hasta aquí. Vamos a construir una suite de tests completa para el orquestador que creaste en el módulo dos punto cuatro. El orquestador es la pieza que une todo tu sistema, la que convierte scripts sueltos en un pipeline real, y por eso merece una suite robusta. La suite tiene catorce tests pequeños, uno por cada comportamiento importante del orquestador. Primero tests de dry run, que verifican que el orquestador puede auditar el plan sin ejecutar nada — esto es lo que te permite correr los tests en tu PWA sin red ni subprocess real. Segundo tests de ejecución normal, que verifican que los pasos se ejecutan en orden y que el reporte refleja correctamente el éxito. Tercero tests de fail fast, el contrato más importante del orquestador: cuando un paso crítico falla, los pasos siguientes NO deben ejecutarse porque trabajarían sobre datos corruptos. Cuarto tests de modo continue, donde el orquestador ejecuta todo y reporta al final. Quinto tests de validación de entrada, que verifican que un comando como string en vez de lista se rechaza con type error — previene command injection en tiempo de planificación. Sexto tests de timeout y binario ausente, los dos modos de fallo que el orquestador maneja sin colgar. Séptimo tests del reporte, que verifican que todos los campos están presentes. Y octavo tests de logs, que verifican que el orquestador emite los eventos importantes. La arquitectura usa tres fixtures compartidas: pasos base para el pipeline estándar, pasos con no crítico para tests de pasos opcionales, y subprocess mock para aislar todas las llamadas al sistema operativo. Con esto la suite completa corre en menos de un segundo, porque todo está mockeado, y te da la confianza para modificar el orquestador sin miedo a romper el pipeline.",
     "video_prompt": "Video de 130 segundos, el cierre del módulo 3.1. ESCENA 1 'el orquestador como corazón del sistema': el diagrama del pipeline scrape→clean→load→validate→publish con el orquestador en el centro coordinando todo. Una red de tests se despliega alrededor como una red de seguridad. ESCENA 2 '14 tests pequeños': cada test aparece como una tarjeta con nombre descriptivo (test_dry_run_no_ejecuta, test_abort_en_paso_critico_fallido, etc.) y un ícono verde de check. Los tests se agrupan visualmente por categoría (dry-run, ejecución, fail-fast, validación, timeouts, logs). ESCENA 3 'fixtures compartidas': tres cajas etiquetadas (pasos_base, pasos_con_no_critico, subprocess_mock) que se inyectan en múltiples tests — mostrando cómo se elimina la duplicación. ESCENA 4 'ejecución de la suite': pytest ejecuta los 14 tests en secuencia rápida, cada uno mostrando PASSED en verde. Tiempo total: 0.8s. ESCENA 5 'falla controlada': se introduce un bug (el orquestador continúa después de fallo crítico), un test falla en rojo con el mensaje exacto 'subprocess_mock.call_count == 3, expected 2', y el desarrollador arregla el bug en 30 segundos. Overlay final: '14 tests. 0.8 segundos. Confianza para modificar.'",
     "trazabilidad": {
-      "libros_fuente": ["M2.4-010 (orquestador bajo test)", "Python Testing with pytest (Brian Okken)", "pytest docs - Best Practices", "integra M3.1-001 a M3.1-009"],
-      "conceptos_clave": ["microproyecto", "suite-completa", "orquestador", "pytest", "fixtures", "mocks", "integrador"]
+      "libros_fuente": [
+        "M2.4-010 (orquestador bajo test)",
+        "Python Testing with pytest (Brian Okken)",
+        "pytest docs - Best Practices",
+        "integra M3.1-001 a M3.1-009"
+      ],
+      "conceptos_clave": [
+        "microproyecto",
+        "suite-completa",
+        "orquestador",
+        "pytest",
+        "fixtures",
+        "mocks",
+        "integrador"
+      ]
     },
-    "tags_rag": ["python", "pytest", "microproyecto", "orquestador", "suite", "testing", "integrador"]
+    "tags_rag": [
+      "python",
+      "pytest",
+      "microproyecto",
+      "orquestador",
+      "suite",
+      "testing",
+      "integrador"
+    ]
   }
 ]
