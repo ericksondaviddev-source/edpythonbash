@@ -218,13 +218,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Pipeline scraper → limpieza → SQLite → JSON que alimenta tu PWA",
-    "modelo_mental": "BeautifulSoup convierte HTML en un árbol de objetos navegables. Dos APIs hacen lo mismo con filosofías distintas: `select()/select_one()` usan **selectores CSS** (los que ya sabes de F0.1: `.clase`, `#id`, `tag`, `[attr=valor]`, `padre > hijo`, `a b`) y `find_all()/find()` usan **atributos de Python**. La regla práctica: selectores CSS son más compactos y reutilizables (los puedes copiar de DevTools con clic derecho → Copy selector); find_all es mejor cuando filtras por funciones o regex. Y la regla de oro anti-crash: `select_one()` retorna `None` si no hay coincidencia — **verifica antes de acceder a `.text`**.",
+    "modelo_mental": "**BeautifulSoup como un mapa del árbol** – Imagina que el HTML es un plano de un edificio y BeautifulSoup construye un modelo mental de cada habitación, pasillo y puerta. Dos APIs hacen que recorras ese modelo: `select()` / `select_one()` usan **selectores CSS** (los mismos que copias de DevTools: `.clase`, `#id`, `tag`, `[attr=valor]`, `padre > hijo`, `a b`). Piensan en el árbol como un mapa topográfico, donde un selector te lleva directo a un elemento. `find_all()` / `find()` usan **atributos de Python** – piensan en el árbol como una colección de nodos que puedes filtrar manualmente con `if nodo.name == 'div'` y bucles.\n\n**Por qué importa** – Los selectores CSS son compactos, reutilizables y resistentes a cambios menores de estructura. Puedes copiar un selector de DevTools con un clic derecho y usarlo inmediatamente. `find_all` brilla cuando necesitas filtrar por contenido dinámico (por ejemplo, texto que coincide con regex) o cuando la lógica de filtrado es compleja. Equilibrar ambos enfoques mantiene el código legible y adaptable.\n\n**Errores que previene** – `select_one()` retorna `None` si no hay coincidencia; acceder a `.text` en `None` lanza `AttributeError`. Usar un guard (`if elem:`) evita crashes. `find_all(recursive=False)` asume una jerarquía exacta; si la página cambia la anidación, la función devuelve silenciosamente una lista vacía, llevando a un fallo silencioso. Los selectores CSS basados en clases/atributos sobreviven a cambios de etiquetas. Finalmente, acceder a `.text` sin verificar la existencia de un subelemento (`card.h3`) crashea si el HTML falta ese elemento. Comprobar la presencia o usar `select_one` con un selector semántico elimina muchas fuentes comunes de errores.",
     "codigo_roto": "from bs4 import BeautifulSoup\n\ndef extraer_productos(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    catalogo = soup.find('div', class_='catalogo')\n    productos = []\n    for card in catalogo.find_all('div', recursive=False):\n        productos.append({\n            'titulo': card.h3.text,\n            'precio': card.find('span', class_='precio').text,\n        })\n    return productos",
-    "diagnostico": "Verificado en sandbox: retorna `[]` **en silencio** sobre el HTML real (los productos son `<article>`, no `<div>` hijos directos). Ese es el peor tipo de fallo: cero excepciones, cero resultados, y tú concluyes que 'el sitio no tiene productos'. Tres defectos estructurales: (1) dependes de la etiqueta exacta (`div`) y de la jerarquía exacta (`recursive=False`); (2) `catalogo` puede ser None → AttributeError; (3) `card.h3.text` crashea si un producto no tiene h3. Los selectores CSS sobre clases/atributos semánticos sobreviven a cambios de etiqueta.",
+    "diagnostico": "1. **Dependencia de etiqueta y jerarquía exactas** – El código busca `catalogo.find_all('div', recursive=False)`. Si el HTML usa `<article>` en lugar de `<div>` o los productos están anidados más profundo, `find_all` devuelve una lista vacía. No se lanza excepción, por lo que la función retorna `[]` silenciosamente, dando la falsa impresión de que no hay productos.\n\n2. **`catalogo` puede ser `None`** – `soup.find('div', class_='catalogo')` puede no encontrar el contenedor, retornando `None`. Luego `catalogo.find_all` lanza `AttributeError: 'NoneType' object has no attribute 'find_all'`. Este error es obvio en tiempo de ejecución pero puede ser difícil de rastrear si el selector de contenedor es frágil.\n\n3. **Acceder a `.text` en un elemento potencialmente ausente** – `card.h3.text` asume que cada tarjeta tiene un `<h3>`. Si un producto usa `<h2>` o no tiene encabezado, `card.h3` es `None` y `.text` lanza `AttributeError: 'NoneType' object has no attribute 'text'. Este error es especialmente insidioso porque puede ocurrir solo en algunos elementos, causando fallos intermitentes.\n\n**Patrón general** – Estos errores siguen un patrón común: suponer detalles estructurales del HTML en lugar de depender de identificadores semánticos (clases, atributos `data-`). Usar selectores robustos (`select`/`select_one`) y comprobar la existencia antes de acceder a propiedades previene el fallo silencioso, los errores de atributo y los crashes en tiempo de ejecución.",
     "codigo_corregido": "from bs4 import BeautifulSoup\n\ndef extraer_productos(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    productos = []\n    for card in soup.select('article.producto'):      # por clase, no por etiqueta\n        titulo = card.select_one('.titulo')\n        precio = card.select_one('.precio')\n        productos.append({\n            'id': card.get('data-id'),\n            'titulo': titulo.get_text(strip=True) if titulo else None,\n            'precio': precio.get_text(strip=True) if precio else None,\n        })\n    return productos",
     "codigo_optimizado": "from bs4 import BeautifulSoup\n\n# ===== SELECTORES CSS QUE CUBREN EL 95% DEL SCRAPING =====\n# soup.select('h2')                 → todos los h2 (lista)\n# soup.select_one('h2')             → el primero o None\n# soup.select('.precio')            → por clase\n# soup.select('#main')              → por id\n# soup.select('article.producto')   → etiqueta + clase\n# soup.select('[data-id]')          → tiene el atributo\n# soup.select('[data-id=\"py-1\"]')   → atributo con valor exacto\n# soup.select('[class*=\"product\"]') → clase que CONTIENE 'product' (resistente a variantes)\n# soup.select('div > p')            → hijo directo\n# soup.select('div p')              → descendiente (cualquier profundidad)\n# soup.select('h2, h3')             → cualquiera de los dos\n# soup.select('li:nth-of-type(2)')  → posición\n# soup.select('a[href^=\"https\"]')   → atributo que empieza con (^=), contiene (*=), termina ($=)\n\n# ===== NAVEGACIÓN DEL ÁRBOL (cuando el selector no alcanza) =====\n# el.parent            → sube un nivel\n# el.parents           → todos los ancestros (generador)\n# el.children          → hijos directos (generador)\n# el.find_next_sibling('div') / find_previous_sibling()\n# el.find_parent('article')   ← MUY útil: 'sube hasta el contenedor que me interesa'\n# el.contents[0]       → lista de hijos\n\n# ===== EXTRACCIÓN DE VALORES =====\n# el.get_text()             → texto concatenado (incluye hijos)\n# el.get_text(' ', strip=True)  → separador + quita espacios: el MEJOR default\n# el['href']                → atributo (KeyError si falta)\n# el.get('href')            → atributo (None si falta) ← prefiere este\n# el.attrs                  → dict de todos los atributos\n# soup.title.string         → atajo clásico\n\n# ===== EL PATRÓN DEFENSIVO (úsalo SIEMPRE) =====\ndef extraer(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    filas = []\n    for card in soup.select('article.producto'):\n        t = card.select_one('.titulo')\n        p = card.select_one('.precio')\n        link = card.select_one('a[href]')\n        filas.append({\n            'id': card.get('data-id'),\n            'titulo': t.get_text(' ', strip=True) if t else None,\n            'precio': p.get_text(strip=True) if p else None,\n            'url': link['href'] if link else None,\n        })\n    return filas\n\n# ===== CUÁNDO find_all GANA SOBRE select =====\nimport re\n# Por función (lógica arbitraria):\nsoup.find_all(lambda t: t.name == 'span' and t.get('class') and 'price' in ' '.join(t['class']))\n# Por regex en atributo:\nsoup.find_all(href=re.compile(r'/libros/\\d+'))\n# Por texto:\nsoup.find_all(string=re.compile(r'Agotado'))\n\n# ===== TRUCOS DE DIAGNÓSTICO =====\n# print(soup.prettify()[:2000])      → ver cómo BeautifulSoup entendió el HTML\n# len(soup.select('article'))        → ¿mi selector encuentra algo?\n# soup.select_one('article').attrs   → ¿qué atributos tiene realmente?\n# En el navegador: DevTools → clic derecho en el elemento → Copy → Copy selector\n#   (te da la ruta absoluta: simplifícala a clases/atributos semánticos)",
     "disenso_experto": "¿selectores CSS (select) o XPath? BeautifulSoup no soporta XPath; si lo necesitas, usas lxml directamente. CSS cubre el 90% de los casos y es lo que ya dominas de frontend. XPath gana cuando necesitas navegar hacia ARRIBA (`../` — en CSS solo existe parcialmente con :has()) o hacer selección por texto (`//*[contains(text(),'x')]`). Regla: CSS por defecto; lxml+XPath cuando necesites ejes ascendentes o filtros por contenido.",
-    "pregunta_transferencia": "En DevTools copias el selector `#app > div:nth-child(2) > main > div > section > div:nth-child(3) > article > div.card-body > h3` y funciona hoy. Mañana el sitio inserta un div contenedor nuevo y tu scraper devuelve []. ¿Qué hace frágil a ese selector exactamente, y cómo lo reescribes usando anclas semánticas para que sobreviva a cambios de estructura?",
+    "pregunta_transferencia": "Imagina que estás depurando un scraper para una SPA que actualiza su estructura periódicamente. Copias un selector de DevTools como `#app > div:nth-child(2) > main > div > section > div:nth-child(3) > article > div.card-body > h3` porque selecciona exactamente el título que necesitas hoy. Mañana el equipo de frontend inserta un nuevo `<div>` contenedor alrededor del artículo, rompiendo el selector y tu scraper devuelve una lista vacía. ¿Qué hace frágil a ese selector exactamente, y cómo lo reescribirías usando anclas semánticos (por ejemplo, clases o atributos `data-`) para que sobreviva a cambios en el nivel superior de la estructura de la página?",
     "quiz": {
       "pregunta": "¿Qué retorna `soup.select_one('.precio')` si ningún elemento tiene esa clase?",
       "opciones": [
@@ -323,6 +323,57 @@
       "selectores-css",
       "html",
       "parsing"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Por qué se recomienda generalmente usar selectores CSS (`select`/`select_one`) sobre `find_all`/`find` para extraer elementos en BeautifulSoup?",
+        "opciones": [
+          "Porque son inherentemente más rápidos que los métodos de Python.",
+          "Porque los selectores se pueden copiar directamente de las herramientas para desarrolladores, haciendo que el código sea más legible y reutilizable.",
+          "Porque siempre devuelven una lista, evitando errores de `None`.",
+          "Porque solo funcionan con selectores de ID, garantizando unicidad."
+        ],
+        "correcta": "B",
+        "explicacion": "Los selectores CSS son el mismo lenguaje usado por los paneles de desarrollador, por lo que puedes copiarlos con un clic derecho → Copy selector. Esto hace que el código sea autocdocumentado y menos propenso a cambios estructurales porque se enfoca en clases o atributos en lugar de en la jerarquía exacta de etiquetas. Las otras opciones son inexactas: la velocidad varía, `select_one` puede retornar `None`, y los selectores CSS admiten muchas formas además de solo IDs.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el siguiente HTML y código, ¿qué imprime `print(resultado)`?\n\nhtml\n<div class=\"items\">\n  <span class=\"name\">Alice</span>\n  <span class=\"age\">30</span>\n</div>\n<div class=\"items\">\n  <span class=\"name\">Bob</span>\n</div>\n\n\npython\nfrom bs4 import BeautifulSoup\nhtml = \"\"\"...html...\"\"\"\nsoup = BeautifulSoup(html, 'html.parser')\nnombres = [span.text for span in soup.select('.items .name')]\nprint(nombres)\n",
+        "opciones": [
+          "['Alice', 'Bob']",
+          "['Alice']",
+          "['Bob']",
+          "Error en tiempo de ejecución"
+        ],
+        "correcta": "A",
+        "explicacion": "El selector `.items .name` encuentra todos los `<span class=\"name\">` dentro de cualquier elemento con clase `items`. Hay dos de ellos, con texto 'Alice' y 'Bob', por lo que la lista de comprensión produce esa lista. Las otras opciones omiten uno de los elementos o asumen un error, que no ocurre porque el selector es válido.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Cuál es la principal causa del fallo en el codigo_roto cuando el contenedor `#catalogo` no está presente en el HTML?",
+        "opciones": [
+          "El parser encuentra un árbol vacío, causando un bucle infinito.",
+          "`catalogo` se convierte en `None`, y llamar `catalogo.find_all` lanza `AttributeError`.",
+          "La función usa `select` en lugar de `find_all`, que no puede manejar contenedores faltantes.",
+          "El script intenta parsear HTML malformado, causando un error de sintaxis."
+        ],
+        "correcta": "B",
+        "explicacion": "`soup.find` retorna `None` si no encuentra un elemento coincidente. El código subsiguiente asume que `catalogo` es un objeto BeautifulSoup y llama a `find_all` en él, lo que provoca un `AttributeError`. Este es un error clásico de acceso nulo que se puede prevenir con una comprobación como `if catalogo:`.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Si un producto podría no tener un `<span class=\"precio\">`, cuál es la forma más segura de extraer el precio sin causar un error?",
+        "opciones": [
+          "Usar `card.select_one('.precio').text` directamente.",
+          "Usar `card.find('span', class_='precio').get('text', '')`.",
+          "Comprobar la existencia primero: `precio = card.find('span', class_='precio'); precio.text if precio else 'N/A'`",
+          "Reemplazar `find` con `select` y luego indexar `card[0]`."
+        ],
+        "correcta": "C",
+        "explicacion": "Comprobar la existencia antes de acceder a `.text` evita `AttributeError` cuando el elemento está ausente. Proporcionar un valor por defecto (como 'N/A') mantiene la integridad de los datos. Las otras opciones aún pueden causar errores (`.text` en `None`) o no son métodos válidos de BeautifulSoup.",
+        "tipo": "debugging"
+      }
     ]
   },
   {
