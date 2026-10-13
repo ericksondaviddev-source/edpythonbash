@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Card, Icon } from '../atoms'
 import BlockEditor from '../organisms/BlockEditor'
 import TerminalPanel from './TerminalPanel'
+import BashSim from '../../services/bashSim'
 import { useProgressStore } from '../../store/useProgressStore'
 
 interface SimulatorPanelProps {
@@ -54,7 +55,6 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
         const result = await runner.run(code)
         setOutput(result)
       } else if (simulator.engine === 'bash_sim') {
-        const { default: BashSim } = await import('../../services/bashSim')
         const sim = new BashSim()
         const result = sim.run(code)
         setOutput(result.stdout + (result.stderr ? `\n${result.stderr}` : ''))

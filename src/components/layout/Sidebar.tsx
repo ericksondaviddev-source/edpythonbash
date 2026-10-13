@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import type { Module, Lesson } from '../../types'
+import type { Module, Lesson, LessonSummary } from '../../types'
 import { useTranslation } from 'react-i18next'
 import { useProgressStore } from '../../store/useProgressStore'
 import { Icon } from '../atoms'
 
 interface SidebarProps {
-  modules: Module[]
-  onLessonSelect: (lesson: Lesson) => void
+  modules: Module<any>[]
+  onLessonSelect: (lesson: Lesson | LessonSummary) => void
   currentLessonId?: string
 }
 

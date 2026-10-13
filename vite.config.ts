@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  define: {
+    __BUILD_ID__: JSON.stringify(Date.now().toString(36))
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -59,9 +62,21 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react')) return 'vendor'
-            if (id.includes('i18next')) return 'i18n'
-            if (id.includes('monaco')) return 'editor'
+            if (id.includes('monaco-editor') || id.includes('@monaco-editor')) return 'editor'
+            if (id.includes('reactflow')) return 'flow'
+            if (id.includes('react-markdown') || id.includes('remark-')) return 'markdown'
+            if (id.includes('@dnd-kit')) return 'dnd'
+            if (id.includes('prismjs')) return 'syntax'
+            if (id.includes('howler')) return 'audio'
+            if (id.includes('i18next') || id.includes('react-i18next')) return 'i18n'
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-router') ||
+              id.includes('/zustand/')
+            ) {
+              return 'vendor'
+            }
           }
         }
       }

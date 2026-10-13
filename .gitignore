@@ -2,13 +2,16 @@ node_modules
 dist
 *.local
 .env
+*.tmp
 
 scripts/.api-key.tmp
 scripts/enrich-log.txt
-
-dev5174.log
 scripts/.debug-last-batch.txt
 scripts/.enrich-all.lock
 .superpowers/
+
+*.log
+*.err
+test-results/
 
 .vercel

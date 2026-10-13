@@ -1,3 +1,5 @@
+import type { TraceStep, TraceResult } from '../types/trace'
+
 const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
 const PYODIDE_SCRIPT = `${PYODIDE_URL}pyodide.js`
 
@@ -10,6 +12,103 @@ function getLoadPyodide(): LoadPyodideFn | undefined {
 
 let scriptPromise: Promise<void> | null = null
 let scriptEl: HTMLScriptElement | null = null
+
+/**
+ * Prefacio del tracer: define __snap__, __STEPS, __OUT, __safe_repr y
+ * sobreescribe print() para acumular en __OUT. Se ejecuta en globals.
+ */
+const TRACE_PREAMBLE = `
+import ast, json
+__STEPS = []
+__OUT = []
+def __safe_repr(v):
+    try:
+        return repr(v)
+    except Exception:
+        return '<unrepresentable>'
+def __snap__(lineno, variables, out):
+    _filtered = {}
+    for _k, _v in variables.items():
+        _base = __BASELINE.get(_k)
+        if _base is None or _base != _v:
+            _filtered[_k] = _v
+    __STEPS.append(json.dumps({'lineno': lineno, 'variables': _filtered, 'output': list(out)}))
+__orig_print = print
+def print(*args, **kwargs):
+    __OUT.append(' '.join(str(a) for a in args))
+    __orig_print(*args, **kwargs)
+`
+
+/**
+ * Transformer AST: inserta __snap__(st.lineno, ...) después de cada
+ * sentencia del módulo, y al final del cuerpo de for/while/if/def
+ * (así los bucles generan un snapshot por iteración).
+ */
+const TRACE_TRANSFORMER = `
+class _Tracer(ast.NodeTransformer):
+    def _snap(self, lineno):
+        return ast.parse("__snap__(" + str(lineno) + ", dict((k, __safe_repr(v)) for k, v in list(locals().items()) if not k.startswith('_')), __OUT)").body[0]
+    def _instrument(self, body):
+        _new = []
+        for _st in body:
+            _new.append(_st)
+            _new.append(self._snap(_st.lineno))
+        return _new
+    def visit_Module(self, node):
+        self.generic_visit(node)
+        node.body = self._instrument(node.body)
+        return node
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
+        node.body = self._instrument(node.body)
+        return node
+    def visit_For(self, node):
+        self.generic_visit(node)
+        node.body = self._instrument(node.body)
+        return node
+    def visit_While(self, node):
+        self.generic_visit(node)
+        node.body = self._instrument(node.body)
+        return node
+    def visit_If(self, node):
+        self.generic_visit(node)
+        node.body = self._instrument(node.body)
+        if node.orelse:
+            node.orelse = self._instrument(node.orelse)
+        return node
+`
+
+const TRACE_TRANSFORM = `
+try:
+    _tree = ast.parse(_user_code)
+    _tree = _Tracer().visit(_tree)
+    ast.fix_missing_locations(_tree)
+    _transformed = compile(_tree, '<trace>', 'exec')
+    _parse_error = ''
+except SyntaxError as _se:
+    _parse_error = 'SyntaxError: ' + str(_se)
+`
+
+const TRACE_EXEC = `
+__BASELINE = {k: __safe_repr(v) for k, v in globals().items()}
+if not _parse_error:
+    try:
+        exec(_transformed)
+    except Exception as _e:
+        _ln = -1
+        try:
+            _ln = _e.__traceback__.tb_lineno
+        except Exception:
+            pass
+        __STEPS.append(json.dumps({'lineno': _ln, 'error': type(_e).__name__ + ': ' + str(_e), 'variables': {}, 'output': list(__OUT)}))
+_result = json.dumps({'parse_error': _parse_error, 'steps': __STEPS})
+`
+
+/** Claves temporales que el tracer deja en globals y limpia al terminar. */
+const TRACE_CLEANUP_KEYS = [
+  '_user_code', '__STEPS', '__OUT', '__BASELINE', '_transformed', '_tree',
+  '_Tracer', '_parse_error', '_result', '__orig_print', '__safe_repr', '__snap__'
+]
 
 /** Inyecta pyodide.js del CDN si aún no está cargado (primera ejecución). */
 function ensurePyodideScript(): Promise<void> {
@@ -253,6 +352,47 @@ except Exception as _e:
       await micropip.install(packageName)
     } catch (error: any) {
       throw new Error(`No se pudo instalar ${packageName}: ${error.message}`)
+    }
+  }
+
+  /**
+   * Ejecuta `code` línea por línea y devuelve un snapshot por paso con
+   * las variables visibles (filtradas por diff contra una línea base) y
+   * la salida acumulada. Usa instrumentación AST (sys.settrace no emite
+   * eventos en Pyodide 0.24). Los internos del tracer quedan ocultos
+   * gracias al filtro __BASELINE.
+   */
+  async trace(code: string): Promise<TraceStep[]> {
+    if (!this.pyodide) await this.init()
+    const pyodide = this.pyodide
+
+    try {
+      await pyodide.runPythonAsync(TRACE_PREAMBLE)
+      pyodide.globals.set('_user_code', code)
+      await pyodide.runPythonAsync(TRACE_TRANSFORMER + TRACE_TRANSFORM)
+      await pyodide.runPythonAsync(TRACE_EXEC)
+
+      const raw = pyodide.globals.get('_result')
+      const resultJson = typeof raw === 'string' ? raw : String((raw as any)?.toJs?.() ?? '')
+      const result = JSON.parse(resultJson) as TraceResult
+
+      if (result.parse_error) {
+        return [{ lineno: -1, variables: {}, output: [], error: result.parse_error }]
+      }
+      return result.steps.map(s => JSON.parse(s) as TraceStep)
+    } finally {
+      try {
+        await pyodide.runPythonAsync('print = __orig_print')
+      } catch {
+        /* __orig_print aún no definido: ignorar */
+      }
+      for (const key of TRACE_CLEANUP_KEYS) {
+        try {
+          pyodide.globals.delete(key)
+        } catch {
+          /* no existe: ignorar */
+        }
+      }
     }
   }
 }

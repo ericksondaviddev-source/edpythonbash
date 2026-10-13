@@ -62,11 +62,11 @@ describe('Dashboard bento', () => {
     expect(onSelect).toHaveBeenCalledWith(LESSONS[0])
   })
 
-  it('el toggle cambia a la vista de mapa mental', () => {
+  it('el toggle cambia a la vista de mapa mental', async () => {
     render(<Dashboard modules={MODULES} lessons={LESSONS} onLessonSelect={() => {}} />)
     // El toggle es el primer botón "mapa mental" en orden DOM (el segundo abre el preview)
     fireEvent.click(screen.getAllByRole('button', { name: /mapa mental/i })[0])
-    expect(screen.getByTestId('mock-mindmap')).toBeTruthy()
+    expect(await screen.findByTestId('mock-mindmap')).toBeTruthy()
   })
 
   it('muestra los 3 videos de instruccion y abrir uno muestra el reproductor', () => {

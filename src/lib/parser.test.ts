@@ -172,3 +172,50 @@ describe('orden de secuencia', () => {
     expect(modules.map(m => m.id)).toEqual(['Módulo 3.2', '3.5 - Rendimiento y Optimización'])
   })
 })
+
+const flowchartLesson = (id: string, extra: Record<string, unknown> = {}) => ({
+  id,
+  modulo: 'Diagramas de Flujo',
+  competencia: 'Diseñar algoritmos',
+  nivel: 'principiante',
+  fase: 0,
+  microproyecto: '',
+  modelo_mental: 'Un diagrama de flujo es un mapa del algoritmo.',
+  quiz: { pregunta: 'p', opciones: ['a', 'b'], correcta: 'A', explicacion: 'e' },
+  flowchart_mode: 'view',
+  flowchart_objetivo: 'Observa el flujo',
+  audio_script: 'a',
+  video_prompt: 'v',
+  trazabilidad: { libros_fuente: [], conceptos_clave: [] },
+  tags_rag: [],
+  ...extra
+})
+
+describe('lecciones de diagramas de flujo', () => {
+  it('acepta lecciones flowchart sin bloque de código', () => {
+    const lessons = parseLessonsFromJSON({ 'f0.json': [flowchartLesson('F0.0-001')] })
+    expect(lessons).toHaveLength(1)
+    expect(lessons[0].codigo_roto).toBeUndefined()
+  })
+
+  it('acepta modo build sin flowchart_data (empezaría en blanco)', () => {
+    const lessons = parseLessonsFromJSON({
+      'f0.json': [flowchartLesson('F0.0-002', { flowchart_mode: 'build', flowchart_data: undefined })]
+    })
+    expect(lessons).toHaveLength(1)
+  })
+
+  it('rechaza una lección flowchart sin quiz', () => {
+    const lessons = parseLessonsFromJSON({
+      'f0.json': [flowchartLesson('F0.0-003', { quiz: undefined })]
+    })
+    expect(lessons).toHaveLength(0)
+  })
+
+  it('sigue rechazando una lección normal sin código optimizado', () => {
+    const lessons = parseLessonsFromJSON({
+      'normal.json': [{ ...flowchartLesson('X-001', { flowchart_mode: undefined }), codigo_roto: 'x' }]
+    })
+    expect(lessons).toHaveLength(0)
+  })
+})

@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import type { Simulator } from '../../types'
 import { Button } from '../atoms'
 import { getBashSession, resetBashSession } from '../../services/sessionStore'
-import { getPyodideRunner } from '../../services/pyodide'
 
 interface HistoryEntry {
   kind: 'cmd' | 'out' | 'err' | 'sys'
@@ -56,6 +55,7 @@ export default function TerminalPanel({ lessonId, engine, setupCode, externalCod
 
   const ensurePyNs = async (): Promise<unknown> => {
     if (!pyNs.current.ready) {
+      const { getPyodideRunner } = await import('../../services/pyodide')
       const runner = getPyodideRunner()
       const ns = await runner.createNamespace()
       if (setupCode?.trim()) await runner.runInNamespace(setupCode, ns)
@@ -101,6 +101,7 @@ export default function TerminalPanel({ lessonId, engine, setupCode, externalCod
   }
 
   const runPythonCode = async (code: string) => {
+    const { getPyodideRunner } = await import('../../services/pyodide')
     const runner = getPyodideRunner()
     const ns = await ensurePyNs()
     push({ kind: 'cmd', text: code.split('\n')[0] + (code.includes('\n') ? ' …' : ''), prompt: '>>>' })

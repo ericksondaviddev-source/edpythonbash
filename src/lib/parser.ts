@@ -17,22 +17,41 @@ export function parseLessonsFromJSON(files: Record<string, any[]>): Lesson[] {
   return lessons
 }
 
+/** Una lección es de diagramas de flujo si declara modo o trae datos de diagrama. */
+export function isFlowchartLesson(item: { flowchart_mode?: string; flowchart_data?: unknown } | null | undefined): boolean {
+  if (!item) return false
+  return item.flowchart_mode === 'view' || item.flowchart_mode === 'build' || Boolean(item.flowchart_data)
+}
+
+function hasValidQuiz(item: any): boolean {
+  return Boolean(
+    item.quiz &&
+      typeof item.quiz.pregunta === 'string' &&
+      Array.isArray(item.quiz.opciones) &&
+      typeof item.quiz.correcta === 'string' &&
+      typeof item.quiz.explicacion === 'string'
+  )
+}
+
 function isValidLesson(item: any): boolean {
-  return (
-    item &&
+  if (!item) return false
+
+  const base =
     typeof item.id === 'string' &&
     typeof item.modulo === 'string' &&
     typeof item.competencia === 'string' &&
-    typeof item.modelo_mental === 'string' &&
+    typeof item.modelo_mental === 'string'
+  if (!base) return false
+
+  // Las lecciones de flowchart no exigen bloque de código (enseñan con diagramas).
+  if (isFlowchartLesson(item)) return hasValidQuiz(item)
+
+  return (
     typeof item.codigo_roto === 'string' &&
     typeof item.diagnostico === 'string' &&
     typeof item.codigo_corregido === 'string' &&
     typeof item.codigo_optimizado === 'string' &&
-    item.quiz &&
-    typeof item.quiz.pregunta === 'string' &&
-    Array.isArray(item.quiz.opciones) &&
-    typeof item.quiz.correcta === 'string' &&
-    typeof item.quiz.explicacion === 'string'
+    hasValidQuiz(item)
   )
 }
 

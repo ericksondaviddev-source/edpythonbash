@@ -1,19 +1,20 @@
-import { useState } from 'react'
-import type { Module, Lesson } from '../types'
+import { useState, lazy, Suspense } from 'react'
+import type { Module, Lesson, LessonSummary } from '../types'
 import { useTranslation } from 'react-i18next'
 import { useProgressStore } from '../store/useProgressStore'
 import { useLanguageStore } from '../store/useLanguageStore'
 import { Button } from '../components/atoms'
 import ProgressBar from '../components/progress/ProgressBar'
-import MindMap from '../components/organisms/MindMap'
 import HeroCard from '../components/dashboard/HeroCard'
 import ApiKeyCard from '../components/dashboard/ApiKeyCard'
 import VideosCard from '../components/dashboard/VideosCard'
 
+const MindMap = lazy(() => import('../components/organisms/MindMap'))
+
 interface DashboardProps {
-  modules: Module[]
-  lessons: Lesson[]
-  onLessonSelect: (lesson: Lesson) => void
+  modules: Module<any>[]
+  lessons: (Lesson | LessonSummary)[]
+  onLessonSelect: (lesson: Lesson | LessonSummary) => void
   initialView?: 'mindmap' | 'dashboard'
   currentLessonId?: string
   onOpenSettings?: () => void
@@ -54,14 +55,22 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
       </div>
 
       {view === 'mindmap' ? (
-        <MindMap
-          modules={modules}
-          currentLessonId={currentLessonId}
-          onLessonSelect={(lessonId) => {
-            const lesson = lessons.find(l => l.id === lessonId)
-            if (lesson) onLessonSelect(lesson)
-          }}
-        />
+        <Suspense
+          fallback={
+            <div className="h-96 flex items-center justify-center text-[var(--text-secondary)]">
+              {t('common.loading')}
+            </div>
+          }
+        >
+          <MindMap
+            modules={modules}
+            currentLessonId={currentLessonId}
+            onLessonSelect={(lessonId) => {
+              const lesson = lessons.find(l => l.id === lessonId)
+              if (lesson) onLessonSelect(lesson)
+            }}
+          />
+        </Suspense>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

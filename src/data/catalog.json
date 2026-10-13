@@ -1,0 +1,2950 @@
+[
+  {
+    "id": "F0.0-001",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Reconocer los cuatro símbolos y las flechas de un diagrama de flujo",
+    "tags_rag": [
+      "flowchart",
+      "algoritmo",
+      "visual",
+      "símbolos",
+      "proceso",
+      "decisión"
+    ],
+    "flowchart_mode": "view",
+    "file": "F0.0.json"
+  },
+  {
+    "id": "F0.0-002",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Construir un flujo secuencial de principio a fin",
+    "tags_rag": [
+      "flowchart",
+      "secuencia",
+      "editor",
+      "tutorial",
+      "básicos"
+    ],
+    "flowchart_mode": "build",
+    "file": "F0.0.json"
+  },
+  {
+    "id": "F0.0-003",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Añadir una decisión con dos ramas etiquetadas Sí y No",
+    "tags_rag": [
+      "flowchart",
+      "decisión",
+      "bifurcación",
+      "si-sino",
+      "construir"
+    ],
+    "flowchart_mode": "build",
+    "file": "F0.0.json"
+  },
+  {
+    "id": "F0.0-004",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Representar un bucle con una flecha que vuelve hacia atrás",
+    "tags_rag": [
+      "flowchart",
+      "bucle",
+      "while",
+      "repetición",
+      "iteración",
+      "construir"
+    ],
+    "flowchart_mode": "build",
+    "file": "F0.0.json"
+  },
+  {
+    "id": "F0.0-005",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Recorrer un diagrama ajeno y predecir su salida",
+    "tags_rag": [
+      "flowchart",
+      "traza",
+      "bucle",
+      "acumulador",
+      "lectura",
+      "predict"
+    ],
+    "flowchart_mode": "view",
+    "file": "F0.0.json"
+  },
+  {
+    "id": "F0.0-006",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Traducir un diagrama a pseudocódigo y a Python",
+    "tags_rag": [
+      "flowchart",
+      "pseudocódigo",
+      "python",
+      "if",
+      "else",
+      "traducción"
+    ],
+    "flowchart_mode": "view",
+    "file": "F0.0.json"
+  },
+  {
+    "id": "F0.0-007",
+    "modulo": "F0.0 - Diagramas de Flujo",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Diseñar desde cero un algoritmo completo con secuencia y decisión",
+    "tags_rag": [
+      "flowchart",
+      "diseño",
+      "algoritmo",
+      "capstone",
+      "decisión",
+      "construir"
+    ],
+    "flowchart_mode": "build",
+    "file": "F0.0.json"
+  },
+  {
+    "id": "F0.2-001",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Estructura semántica",
+    "tags_rag": [
+      "html",
+      "semantica",
+      "estructura",
+      "accesibilidad",
+      "seo",
+      "divitis"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.2-002",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Flexbox vs Grid — cuándo cada uno",
+    "tags_rag": [
+      "css",
+      "flexbox",
+      "grid",
+      "layout",
+      "responsive",
+      "maquetacion"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.2-003",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Mobile-first con media queries",
+    "tags_rag": [
+      "css",
+      "responsive",
+      "mobile-first",
+      "media-queries",
+      "breakpoints",
+      "rwd"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.2-004",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Variables CSS y temas",
+    "tags_rag": [
+      "css",
+      "variables",
+      "custom-properties",
+      "design-tokens",
+      "dark-mode",
+      "temas"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.2-005",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Accesibilidad básica (ARIA mínimo)",
+    "tags_rag": [
+      "html",
+      "accesibilidad",
+      "a11y",
+      "aria",
+      "semantica",
+      "keyboard"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.2-006",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Formularios con validación HTML5",
+    "tags_rag": [
+      "html",
+      "formularios",
+      "validacion",
+      "html5",
+      "input-types",
+      "ux"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.2-007",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: divitis crónico",
+    "tags_rag": [
+      "html",
+      "divitis",
+      "codigo-ia",
+      "auditoria",
+      "code-review",
+      "semantica"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.2-008",
+    "modulo": "F0.2 - HTML/CSS Esencial",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: !important y specificity wars",
+    "tags_rag": [
+      "css",
+      "especificidad",
+      "cascada",
+      "important",
+      "arquitectura-css",
+      "deuda-tecnica"
+    ],
+    "file": "F0.2.json"
+  },
+  {
+    "id": "F0.3-001",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Scope, Hoisting y let/const vs var",
+    "tags_rag": [
+      "javascript",
+      "scope",
+      "let",
+      "const",
+      "var",
+      "closures"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-002",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Arrow Functions y el contexto 'this'",
+    "tags_rag": [
+      "javascript",
+      "arrow-functions",
+      "this",
+      "eventos",
+      "dom"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-003",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "DOM Selection y Cacheo de Nodos",
+    "tags_rag": [
+      "javascript",
+      "dom",
+      "performance",
+      "scroll",
+      "raf",
+      "pwa"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-004",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Event Delegation (Delegación de Eventos)",
+    "tags_rag": [
+      "javascript",
+      "eventos",
+      "delegacion",
+      "closest",
+      "dom"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-005",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Asincronía: Promises y async/await",
+    "tags_rag": [
+      "javascript",
+      "asincronia",
+      "async-await",
+      "promesas",
+      "fetch"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-006",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Array Methods: map, filter, reduce",
+    "tags_rag": [
+      "javascript",
+      "arrays",
+      "map",
+      "filter",
+      "reduce",
+      "funcional"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-007",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Destructuring y Spread Operator",
+    "tags_rag": [
+      "javascript",
+      "spread",
+      "destructuring",
+      "inmutabilidad",
+      "objetos"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-008",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "LocalStorage y Persistencia de Datos",
+    "tags_rag": [
+      "javascript",
+      "localstorage",
+      "json",
+      "persistencia",
+      "pwa"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-009",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: Validación de Formularios Asíncrona",
+    "tags_rag": [
+      "javascript",
+      "formularios",
+      "submit",
+      "preventDefault",
+      "async"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-010",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: Fugas de Memoria (Memory Leaks) en Listeners",
+    "tags_rag": [
+      "javascript",
+      "memoria",
+      "memory-leak",
+      "event-listener",
+      "performance"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.4-001",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Arquitectura PWA: los 3 pilares",
+    "tags_rag": [
+      "pwa",
+      "service-worker",
+      "manifest",
+      "https",
+      "instalabilidad",
+      "arquitectura"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "F0.4-002",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "webmanifest.json: instalabilidad real",
+    "tags_rag": [
+      "pwa",
+      "manifest",
+      "instalabilidad",
+      "iconos",
+      "display",
+      "standalone"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "F0.4-003",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Service Worker: registro, scope y ciclo de vida",
+    "tags_rag": [
+      "pwa",
+      "service-worker",
+      "scope",
+      "install",
+      "activate",
+      "precache"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "F0.4-004",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Cache API y estrategias de cacheo",
+    "tags_rag": [
+      "pwa",
+      "cache",
+      "offline",
+      "estrategias",
+      "service-worker",
+      "cache-api"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "F0.4-005",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Fetch event y experiencia offline real",
+    "tags_rag": [
+      "pwa",
+      "offline",
+      "fetch-event",
+      "service-worker",
+      "navegacion"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "F0.4-006",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Actualizaciones del Service Worker y control de versiones",
+    "tags_rag": [
+      "pwa",
+      "service-worker",
+      "actualizaciones",
+      "skipWaiting",
+      "versionado",
+      "deploy"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "F0.4-007",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Deploy gratuito con HTTPS y servidor local de desarrollo",
+    "tags_rag": [
+      "pwa",
+      "deploy",
+      "https",
+      "localhost",
+      "netlify",
+      "github-pages"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "F0.4-008",
+    "modulo": "F0.4 - PWA + Deploy",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: Service Worker zombie que cachea TODO",
+    "tags_rag": [
+      "pwa",
+      "service-worker",
+      "codigo-ia",
+      "auditoria",
+      "bugs",
+      "cache",
+      "offline"
+    ],
+    "file": "F0.4.json"
+  },
+  {
+    "id": "M1.1-001",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Sintaxis básica y tipos de datos fundamentales",
+    "tags_rag": [
+      "python",
+      "fundamentos",
+      "tipos",
+      "conversion",
+      "validacion",
+      "principiante"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.1-002",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Control de flujo: if/elif/else y pattern matching",
+    "tags_rag": [
+      "python",
+      "control-flujo",
+      "if",
+      "match",
+      "pattern-matching",
+      "python310"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.1-003",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Bucles: for, while, enumerate, zip, y el else en bucles",
+    "tags_rag": [
+      "python",
+      "bucles",
+      "for",
+      "enumerate",
+      "zip",
+      "iteracion"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.1-004",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Funciones: parámetros, defaults, *args, **kwargs y type hints",
+    "tags_rag": [
+      "python",
+      "funciones",
+      "parametros",
+      "defaults",
+      "args",
+      "kwargs",
+      "type-hints"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.1-005",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Scope (LEGB) y mutabilidad: referencias vs valores",
+    "tags_rag": [
+      "python",
+      "scope",
+      "legb",
+      "closures",
+      "mutabilidad",
+      "global",
+      "nonlocal"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.1-006",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Excepciones: try/except/else/finally y excepciones custom",
+    "tags_rag": [
+      "python",
+      "excepciones",
+      "try-except",
+      "finally",
+      "errores",
+      "context-managers"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.1-007",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: bugs sutiles (is vs ==, floats, mutables)",
+    "tags_rag": [
+      "python",
+      "bugs-sutiles",
+      "is-vs-equals",
+      "floats",
+      "mutabilidad",
+      "code-review",
+      "ia"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.1-008",
+    "modulo": "1.1 - Fundamentos Sólidos (Python)",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: anti-patrones de estilo y performance",
+    "tags_rag": [
+      "python",
+      "anti-patrones",
+      "comprehensions",
+      "built-ins",
+      "performance",
+      "code-review"
+    ],
+    "file": "Módulo 1.1.json"
+  },
+  {
+    "id": "M1.2-001",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Listas: semántica, costos y métodos esenciales",
+    "tags_rag": [
+      "python",
+      "listas",
+      "deque",
+      "slicing",
+      "append",
+      "extend",
+      "performance"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-002",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Tuplas, inmutabilidad y NamedTuple",
+    "tags_rag": [
+      "python",
+      "tuplas",
+      "namedtuple",
+      "unpacking",
+      "inmutabilidad",
+      "hashable"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-003",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Diccionarios: get, setdefault, items y merge",
+    "tags_rag": [
+      "python",
+      "diccionarios",
+      "dict",
+      "get",
+      "setdefault",
+      "items",
+      "counter"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-004",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Sets: membership O(1), deduplicación y álgebra de colecciones",
+    "tags_rag": [
+      "python",
+      "sets",
+      "frozenset",
+      "membership",
+      "deduplicacion",
+      "performance",
+      "o1"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-005",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "collections: Counter, defaultdict y deque",
+    "tags_rag": [
+      "python",
+      "collections",
+      "counter",
+      "defaultdict",
+      "deque",
+      "stdlib"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-006",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Comprehensions profundas: cuándo ganan y cuándo pierden",
+    "tags_rag": [
+      "python",
+      "comprehensions",
+      "generators",
+      "lazy",
+      "memoria",
+      "estilo"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-007",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Copiado y aliasing: = vs copy() vs deepcopy()",
+    "tags_rag": [
+      "python",
+      "copias",
+      "deepcopy",
+      "shallow-copy",
+      "aliasing",
+      "inmutabilidad"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-008",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Elección de estructura: framework de decisión con complejidad",
+    "tags_rag": [
+      "python",
+      "estructuras-de-datos",
+      "big-o",
+      "dict",
+      "set",
+      "decision",
+      "performance"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-009",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: mutación durante la iteración",
+    "tags_rag": [
+      "python",
+      "iteracion",
+      "mutacion",
+      "remove",
+      "runtimeerror",
+      "codigo-ia",
+      "auditoria"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.2-010",
+    "modulo": "1.2 - Estructuras de Datos",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: complejidad cuadrática silenciosa",
+    "tags_rag": [
+      "python",
+      "performance",
+      "big-o",
+      "cuadratico",
+      "sets",
+      "codigo-ia",
+      "auditoria",
+      "profiling"
+    ],
+    "file": "Módulo 1.2.json"
+  },
+  {
+    "id": "M1.3-001",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Context managers (with) y modos de apertura",
+    "tags_rag": [
+      "python",
+      "archivos",
+      "with",
+      "context-manager",
+      "modos",
+      "io"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-002",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Encoding UTF-8 y el mito del texto plano",
+    "tags_rag": [
+      "python",
+      "encoding",
+      "utf-8",
+      "unicode",
+      "archivos",
+      "portabilidad"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-003",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "pathlib: rutas como objetos, no como strings",
+    "tags_rag": [
+      "python",
+      "pathlib",
+      "rutas",
+      "archivos",
+      "multiplataforma",
+      "filesystem"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-004",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "JSON: serialización, tipos perdidos y legibilidad",
+    "tags_rag": [
+      "python",
+      "json",
+      "serializacion",
+      "datetime",
+      "persistencia",
+      "archivos"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-005",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "CSV con el módulo csv: no hagas split por comas",
+    "tags_rag": [
+      "python",
+      "csv",
+      "quoting",
+      "dictreader",
+      "archivos",
+      "datos"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-006",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Archivos grandes: streaming línea a línea vs readlines()",
+    "tags_rag": [
+      "python",
+      "streaming",
+      "generators",
+      "memoria",
+      "logs",
+      "archivos-grandes"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-007",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Escritura atómica: temp + os.replace",
+    "tags_rag": [
+      "python",
+      "atomicidad",
+      "os-replace",
+      "tempfile",
+      "persistencia",
+      "datos-seguros"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-008",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Errores de archivo: EAFP vs LBYL y la taxonomía OSError",
+    "tags_rag": [
+      "python",
+      "excepciones",
+      "eafp",
+      "archivos",
+      "errores",
+      "oserror"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-009",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: auditoría completa de un pipeline de logs",
+    "tags_rag": [
+      "python",
+      "codigo-ia",
+      "auditoria",
+      "logs",
+      "archivos",
+      "code-review"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.3-010",
+    "modulo": "1.3 - Archivos y I/O",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: clase de persistencia completa (NoteStore)",
+    "tags_rag": [
+      "python",
+      "persistencia",
+      "json",
+      "note-store",
+      "codigo-ia",
+      "auditoria",
+      "microproyecto"
+    ],
+    "file": "Módulo 1.3.json"
+  },
+  {
+    "id": "M1.4-001",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "f-strings avanzados: alineación, precisión y formato",
+    "tags_rag": [
+      "python",
+      "f-strings",
+      "formato",
+      "strings",
+      "reportes"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-002",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Métodos de string y sus trampas (.title(), .strip(), split)",
+    "tags_rag": [
+      "python",
+      "strings",
+      "title",
+      "capwords",
+      "split",
+      "unicode",
+      "limpieza"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-003",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Regex básico: match vs search vs findall vs finditer",
+    "tags_rag": [
+      "python",
+      "regex",
+      "match",
+      "search",
+      "findall",
+      "finditer",
+      "patrones"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-004",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Grupos nombrados y parsing estructurado",
+    "tags_rag": [
+      "python",
+      "regex",
+      "grupos-nombrados",
+      "groupdict",
+      "parsing",
+      "logs"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-005",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Limpieza y normalización de datos textuales",
+    "tags_rag": [
+      "python",
+      "limpieza",
+      "normalizacion",
+      "unicode",
+      "regex",
+      "datos"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-006",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "re.sub con función de reemplazo y sustituciones dinámicas",
+    "tags_rag": [
+      "python",
+      "regex",
+      "re-sub",
+      "enmascarado",
+      "anonimizacion",
+      "datos-sensibles"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-007",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: catastrophic backtracking (ReDoS)",
+    "tags_rag": [
+      "python",
+      "regex",
+      "redos",
+      "seguridad",
+      "backtracking",
+      "performance",
+      "codigo-ia"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-008",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: regex ingenuos (email) y parsear HTML con regex",
+    "tags_rag": [
+      "python",
+      "regex",
+      "email",
+      "html",
+      "html-parser",
+      "validacion",
+      "codigo-ia"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-009",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "Puente Python ↔ Bash: grep, sed, awk y el mismo lenguaje regex",
+    "tags_rag": [
+      "bash",
+      "grep",
+      "sed",
+      "awk",
+      "regex",
+      "pipelines",
+      "linux",
+      "python"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M1.4-010",
+    "modulo": "1.4 - Texto y Regex",
+    "fase": 1,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: extractor de datos HTML → JSON limpio",
+    "tags_rag": [
+      "python",
+      "microproyecto",
+      "scraper",
+      "regex",
+      "json",
+      "extraccion",
+      "integrador"
+    ],
+    "file": "Módulo 1.4.json"
+  },
+  {
+    "id": "M2.1-001",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Fundamentos FastAPI: app, rutas y path parameters",
+    "tags_rag": [
+      "fastapi",
+      "api",
+      "rutas",
+      "path-parameters",
+      "type-hints",
+      "validacion"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-002",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Query parameters: filtros, paginación y valores por defecto",
+    "tags_rag": [
+      "fastapi",
+      "query-parameters",
+      "filtros",
+      "paginacion",
+      "api",
+      "get"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-003",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Pydantic: validación de request body con modelos",
+    "tags_rag": [
+      "fastapi",
+      "pydantic",
+      "validacion",
+      "request-body",
+      "api",
+      "post"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-004",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Códigos HTTP correctos: 200, 201, 404, 409, 422",
+    "tags_rag": [
+      "fastapi",
+      "codigos-http",
+      "httpexception",
+      "201",
+      "404",
+      "409",
+      "api"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-005",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "CORS: permitir que tu PWA consuma la API desde otro origen",
+    "tags_rag": [
+      "fastapi",
+      "cors",
+      "middleware",
+      "cross-origin",
+      "seguridad",
+      "pwa"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-006",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Dependencias: inyección de lógica compartida (DB, auth, etc.)",
+    "tags_rag": [
+      "fastapi",
+      "dependencias",
+      "depends",
+      "autenticacion",
+      "db",
+      "inyeccion"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-007",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: CORS mal configurado y errores silenciosos",
+    "tags_rag": [
+      "fastapi",
+      "codigo-ia",
+      "cors",
+      "errores",
+      "auditoria",
+      "httpexception",
+      "pydantic"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-008",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Documentación Swagger automática y testing con TestClient",
+    "tags_rag": [
+      "fastapi",
+      "swagger",
+      "documentacion",
+      "testclient",
+      "testing",
+      "api"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-009",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: API completa de notas con CRUD completo",
+    "tags_rag": [
+      "fastapi",
+      "microproyecto",
+      "crud",
+      "rest",
+      "api",
+      "integrador"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.1-010",
+    "modulo": "2.1 - FastAPI + APIs REST",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Deploy local con Uvicorn y estructura de proyecto profesional",
+    "tags_rag": [
+      "fastapi",
+      "uvicorn",
+      "estructura",
+      "routers",
+      "deploy",
+      "modular"
+    ],
+    "file": "Módulo 2.1.json"
+  },
+  {
+    "id": "M2.2-001",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "SQLite desde Python: conexión, with, commit y cierre",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "sql",
+      "commit",
+      "transacciones",
+      "conexion",
+      "persistencia"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-002",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Queries parametrizadas: la única defensa real contra SQL injection",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "sql-injection",
+      "seguridad",
+      "parametrizacion",
+      "owasp"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-003",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Diseño de esquemas: tipos, claves y la trampa del PRAGMA foreign_keys",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "esquema",
+      "foreign-keys",
+      "pragma",
+      "constraints",
+      "integridad"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-004",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "JOINs y el problema N+1",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "join",
+      "n+1",
+      "sql",
+      "performance",
+      "queries"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-005",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Índices: cómo decidirlos y verificarlos con EXPLAIN QUERY PLAN",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "indices",
+      "performance",
+      "explain",
+      "b-tree",
+      "big-o"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-006",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Transacciones: atomicidad, rollback y el commit prematuro",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "transacciones",
+      "atomicidad",
+      "rollback",
+      "commit",
+      "acid"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-007",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "SQLAlchemy 2.0: de SQL crudo a ORM (y la inyección que sobrevive al ORM)",
+    "tags_rag": [
+      "python",
+      "sqlalchemy",
+      "orm",
+      "session",
+      "fastapi",
+      "sqlite",
+      "sql"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-008",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Migraciones: evolución de esquema idempotente y sin pérdida de datos",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "migraciones",
+      "esquema",
+      "idempotencia",
+      "user-version"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-009",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: auditoría completa de una capa de base de datos",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "auditoria",
+      "codigo-ia",
+      "sql-injection",
+      "checklist",
+      "capa-datos"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.2-010",
+    "modulo": "2.2 - SQL + SQLite",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: NotasDB — migrar la persistencia de JSON a SQLite",
+    "tags_rag": [
+      "python",
+      "sqlite",
+      "microproyecto",
+      "notasdb",
+      "fastapi",
+      "persistencia",
+      "integrador"
+    ],
+    "file": "Módulo 2.2.json"
+  },
+  {
+    "id": "M2.3-001",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Anatomía de una petición HTTP: status, headers, encoding, reintentos",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "requests",
+      "http",
+      "headers",
+      "timeout",
+      "backoff"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-002",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "BeautifulSoup: selectores CSS vs find_all y navegación del árbol",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "beautifulsoup",
+      "selectores-css",
+      "html",
+      "parsing"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-003",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Extracción tolerante: datos sucios, campos ausentes y limpieza en el borde",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "limpieza",
+      "datos-sucios",
+      "tolerancia",
+      "calidad-datos"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-004",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Sesiones, cookies y autenticación: requests.Session",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "session",
+      "cookies",
+      "autenticacion",
+      "requests",
+      "csrf"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-005",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Ética, robots.txt, rate limiting y cacheo: scraping que no te bloquea",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "robots-txt",
+      "rate-limiting",
+      "etica",
+      "cache",
+      "responsable"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-006",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Paginación, crawl y deduplicación: dos conjuntos distintos",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "paginacion",
+      "crawl",
+      "dedup",
+      "urljoin",
+      "bfs"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-007",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "APIs ocultas: encontrar el JSON detrás del HTML (la habilidad de mayor palanca)",
+    "tags_rag": [
+      "python",
+      "api",
+      "json",
+      "scraping",
+      "xhr",
+      "devtools",
+      "datos"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-008",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: selectores frágiles y el fallo silencioso",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "selectores",
+      "codigo-ia",
+      "fallo-silencioso",
+      "alarmas",
+      "auditoria"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-009",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: parsear HTML con regex (el límite teórico)",
+    "tags_rag": [
+      "python",
+      "regex",
+      "html",
+      "beautifulsoup",
+      "parser",
+      "codigo-ia",
+      "limites"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.3-010",
+    "modulo": "2.3 - Web Scraping Avanzado",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: pipeline completo scraper → limpieza → SQLite → JSON para tu PWA",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "pipeline",
+      "sqlite",
+      "json",
+      "microproyecto",
+      "calidad-datos",
+      "integrador"
+    ],
+    "file": "Módulo 2.3.json"
+  },
+  {
+    "id": "M2.4-001",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "subprocess.run: args como lista, captura y flags esenciales",
+    "tags_rag": [
+      "python",
+      "subprocess",
+      "procesos",
+      "sistema",
+      "timeout",
+      "returncode"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-002",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Command injection: shell=True, shlex y el separador '--'",
+    "tags_rag": [
+      "python",
+      "subprocess",
+      "command-injection",
+      "shell-true",
+      "shlex",
+      "seguridad",
+      "owasp"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-003",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Exit codes, stderr y abortar pipelines: el fallo silencioso",
+    "tags_rag": [
+      "python",
+      "subprocess",
+      "exit-codes",
+      "stderr",
+      "pipelines",
+      "fail-fast",
+      "timeout"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-004",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Variables de entorno y secretos: fail-fast, enmascarado y detección",
+    "tags_rag": [
+      "python",
+      "secretos",
+      "variables-entorno",
+      "seguridad",
+      "dotenv",
+      "configuracion",
+      "fail-fast"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-005",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "CLI profesional con argparse: subcomandos, tipos y validación",
+    "tags_rag": [
+      "python",
+      "argparse",
+      "cli",
+      "subcomandos",
+      "linea-comandos",
+      "herramientas"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-006",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Bash: procesos en background, jobs, wait, señales y trap",
+    "tags_rag": [
+      "bash",
+      "procesos",
+      "background",
+      "wait",
+      "señales",
+      "trap",
+      "linux"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-007",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Bash: quoting, expansión y `set -euo pipefail` (los 4 bugs mortales)",
+    "tags_rag": [
+      "bash",
+      "quoting",
+      "set-euo-pipefail",
+      "word-splitting",
+      "globbing",
+      "seguridad",
+      "linux"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-008",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: auditoría de un script Bash de deployment",
+    "tags_rag": [
+      "bash",
+      "auditoria",
+      "codigo-ia",
+      "deployment",
+      "checklist",
+      "seguridad",
+      "linux"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-009",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: auditoría de una capa de ejecución de procesos",
+    "tags_rag": [
+      "python",
+      "subprocess",
+      "auditoria",
+      "codigo-ia",
+      "seguridad",
+      "checklist",
+      "capa-ejecucion"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M2.4-010",
+    "modulo": "2.4 - Procesos y Sistema",
+    "fase": 2,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: orquestador del pipeline con dry-run y reporte",
+    "tags_rag": [
+      "python",
+      "microproyecto",
+      "orquestador",
+      "pipeline",
+      "subprocess",
+      "automatizacion",
+      "integrador"
+    ],
+    "file": "Módulo 2.4.json"
+  },
+  {
+    "id": "M3.1-001",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Anatomía de un test: test_, assert inteligente y nombres legibles",
+    "tags_rag": [
+      "python",
+      "pytest",
+      "testing",
+      "assert",
+      "aaa",
+      "nombres"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-002",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Fixtures: setup/teardown sin duplicar y sin acoplar tests",
+    "tags_rag": [
+      "python",
+      "pytest",
+      "fixtures",
+      "yield",
+      "scope",
+      "testing"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-003",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Parametrización: una función de test, decenas de casos",
+    "tags_rag": [
+      "python",
+      "pytest",
+      "parametrize",
+      "testing",
+      "ids",
+      "xfail"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-004",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Testing de excepciones y warnings con pytest.raises",
+    "tags_rag": [
+      "python",
+      "pytest",
+      "raises",
+      "excepciones",
+      "testing",
+      "warns"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-005",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Mocks: aislar la unidad bajo test de sus dependencias",
+    "tags_rag": [
+      "python",
+      "mock",
+      "patch",
+      "unittest-mock",
+      "pytest",
+      "testing",
+      "aislamiento"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-006",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Testing de E/S: tmp_path, monkeypatch y filesystem aislado",
+    "tags_rag": [
+      "python",
+      "pytest",
+      "tmp-path",
+      "monkeypatch",
+      "filesystem",
+      "testing",
+      "aislamiento"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-007",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: suite sin assertions y con tests frágiles",
+    "tags_rag": [
+      "python",
+      "pytest",
+      "auditoria",
+      "codigo-ia",
+      "tests-decorativos",
+      "calidad"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-008",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Debugging sistemático: breakpoint(), pdb y el método del científico",
+    "tags_rag": [
+      "python",
+      "debugging",
+      "breakpoint",
+      "pdb",
+      "metodo-cientifico",
+      "pytest"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-009",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Logging estructurado y caplog: tests sobre lo que tu código dice",
+    "tags_rag": [
+      "python",
+      "logging",
+      "caplog",
+      "pytest",
+      "observabilidad",
+      "testing"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.1-010",
+    "modulo": "3.1 - Testing y Debugging",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: suite completa para el orquestador de M2.4-010",
+    "tags_rag": [
+      "python",
+      "pytest",
+      "microproyecto",
+      "orquestador",
+      "suite",
+      "testing",
+      "integrador"
+    ],
+    "file": "Módulo 3.1.json"
+  },
+  {
+    "id": "M3.2-001",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Threading básico: Thread, join, y el GIL",
+    "tags_rag": [
+      "python",
+      "threading",
+      "concurrencia",
+      "gil",
+      "io-bound",
+      "join"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-002",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Race conditions y Lock: sincronización de threads",
+    "tags_rag": [
+      "python",
+      "threading",
+      "lock",
+      "race-condition",
+      "deadlock",
+      "semaphore",
+      "concurrencia"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-003",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Multiprocessing: CPU-bound sin GIL",
+    "tags_rag": [
+      "python",
+      "multiprocessing",
+      "processpoolexecutor",
+      "cpu-bound",
+      "concurrencia",
+      "paralelismo"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-004",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Asyncio básico: async/await y el event loop",
+    "tags_rag": [
+      "python",
+      "asyncio",
+      "async-await",
+      "event-loop",
+      "concurrencia",
+      "cooperativo"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-005",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "concurrent.futures: ThreadPoolExecutor y ProcessPoolExecutor",
+    "tags_rag": [
+      "python",
+      "concurrent-futures",
+      "threadpoolexecutor",
+      "processpoolexecutor",
+      "concurrencia",
+      "pool"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-006",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Rate limiting concurrente: Semaphore y token bucket",
+    "tags_rag": [
+      "python",
+      "rate-limiting",
+      "semaphore",
+      "token-bucket",
+      "concurrencia",
+      "throttling"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-007",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Cuándo usar cada modelo: threading vs multiprocessing vs asyncio",
+    "tags_rag": [
+      "python",
+      "concurrencia",
+      "io-bound",
+      "cpu-bound",
+      "threading",
+      "multiprocessing",
+      "asyncio",
+      "decisión"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-008",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: auditoría de concurrencia (race conditions, deadlocks)",
+    "tags_rag": [
+      "python",
+      "auditoría",
+      "concurrencia",
+      "race-condition",
+      "deadlock",
+      "código-ia"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-009",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Scraping concurrente: descargar 1000 páginas en 20 segundos",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "concurrencia",
+      "threadpoolexecutor",
+      "rate-limiting",
+      "microproyecto"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.2-010",
+    "modulo": "3.2 - Concurrencia",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: scraper concurrente completo con rate limiting y retry",
+    "tags_rag": [
+      "python",
+      "scraping",
+      "concurrencia",
+      "microproyecto",
+      "threadpoolexecutor",
+      "rate-limiting",
+      "integrador"
+    ],
+    "file": "Módulo 3.2.json"
+  },
+  {
+    "id": "M3.3-001",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Anatomía de pyproject.toml (PEP 621): el único archivo que necesitas",
+    "tags_rag": [
+      "python",
+      "empaquetado",
+      "pyproject",
+      "pep-621",
+      "build-system",
+      "distribucion"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.3-002",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "src-layout vs flat-layout: el error que rompe builds",
+    "tags_rag": [
+      "python",
+      "empaquetado",
+      "src-layout",
+      "flat-layout",
+      "package-discovery",
+      "estructura"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.3-003",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Versionado semver y single source of truth",
+    "tags_rag": [
+      "python",
+      "versionado",
+      "semver",
+      "dynamic-version",
+      "empaquetado",
+      "changelog"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.3-004",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Entry points: console_scripts y plugins descubribles",
+    "tags_rag": [
+      "python",
+      "entry-points",
+      "console-scripts",
+      "plugins",
+      "cli",
+      "empaquetado"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.3-005",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Build, install editable y ambientes aislados: el flujo real",
+    "tags_rag": [
+      "python",
+      "empaquetado",
+      "build",
+      "editable-install",
+      "wheel",
+      "venv",
+      "twine"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.3-006",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Dependencias: rangos, extras, conflictos y lockfiles",
+    "tags_rag": [
+      "python",
+      "dependencias",
+      "extras",
+      "lockfile",
+      "pep-440",
+      "empaquetado",
+      "conflictos"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.3-007",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: auditoría de empaquetado (los 7 defectos)",
+    "tags_rag": [
+      "python",
+      "empaquetado",
+      "auditoria",
+      "codigo-ia",
+      "checklist",
+      "pyproject",
+      "prueba-de-fuego"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.3-008",
+    "modulo": "3.3 - Empaquetado y Distribución",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: empaquetar tu toolkit completo como paquete instalable",
+    "tags_rag": [
+      "python",
+      "microproyecto",
+      "empaquetado",
+      "cli",
+      "pyproject",
+      "distribucion",
+      "integrador"
+    ],
+    "file": "Módulo 3.3.json"
+  },
+  {
+    "id": "M3.4-003",
+    "modulo": "3.4 - Rendimiento y Optimización",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Generadores vs listas: memoria eficiente con yield",
+    "tags_rag": [
+      "python",
+      "generadores",
+      "yield",
+      "memoria",
+      "lazy-evaluation",
+      "performance"
+    ],
+    "file": "Módulo 3.4.json"
+  },
+  {
+    "id": "M3.4-004",
+    "modulo": "3.4 - Rendimiento y Optimización",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Complejidad algorítmica: detectar O(n²) por inspección",
+    "tags_rag": [
+      "python",
+      "complejidad",
+      "algoritmos",
+      "O(n²)",
+      "performance",
+      "optimizacion"
+    ],
+    "file": "Módulo 3.4.json"
+  },
+  {
+    "id": "M3.4-005",
+    "modulo": "3.4 - Rendimiento y Optimización",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "NumPy y Pandas: cuándo usarlos (y cuándo no)",
+    "tags_rag": [
+      "python",
+      "numpy",
+      "pandas",
+      "performance",
+      "data-science",
+      "arrays"
+    ],
+    "file": "Módulo 3.4.json"
+  },
+  {
+    "id": "M3.4-006",
+    "modulo": "3.4 - Rendimiento y Optimización",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Optimización de I/O: asyncio vs threads para scraping",
+    "tags_rag": [
+      "python",
+      "io-bound",
+      "threading",
+      "asyncio",
+      "concurrencia",
+      "performance",
+      "scraping"
+    ],
+    "file": "3.4 - Rendimiento y Optimización.json"
+  },
+  {
+    "id": "M3.4-007",
+    "modulo": "3.4 - Rendimiento y Optimización",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "Código IA roto: auditoría de performance (los 7 defectos)",
+    "tags_rag": [
+      "python",
+      "auditoria",
+      "performance",
+      "codigo-ia",
+      "checklist",
+      "optimizacion"
+    ],
+    "file": "3.4 - Rendimiento y Optimización.json"
+  },
+  {
+    "id": "M3.4-008",
+    "modulo": "3.4 - Rendimiento y Optimización",
+    "fase": 3,
+    "nivel": "principiante",
+    "competencia": "MICROPROYECTO: optimizar el pipeline completo (100s → 20s)",
+    "tags_rag": [
+      "python",
+      "microproyecto",
+      "optimizacion",
+      "profiling",
+      "pipeline",
+      "performance",
+      "integrador"
+    ],
+    "file": "3.4 - Rendimiento y Optimización.json"
+  },
+  {
+    "id": "M3.5-001",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Inyección SQL: parameterized queries y ORM seguro",
+    "tags_rag": [
+      "python",
+      "seguridad",
+      "sql-injection",
+      "parameterized-queries",
+      "hashing",
+      "owasp"
+    ],
+    "file": "Módulo 3.5.json"
+  },
+  {
+    "id": "M3.5-002",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "XSS (Cross-Site Scripting): escape de HTML y CSP",
+    "tags_rag": [
+      "python",
+      "seguridad",
+      "xss",
+      "escape",
+      "csp",
+      "owasp"
+    ],
+    "file": "M3.5-002.json"
+  },
+  {
+    "id": "M3.5-003",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "CSRF (Cross-Site Request Forgery): tokens y SameSite cookies",
+    "tags_rag": [
+      "python",
+      "seguridad",
+      "csrf",
+      "tokens",
+      "samesite",
+      "owasp"
+    ],
+    "file": "M3.5-002.json"
+  },
+  {
+    "id": "M3.5-004",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "HTTPS/TLS: verificación de certificados y prevención de MITM",
+    "tags_rag": [
+      "python",
+      "seguridad",
+      "https",
+      "tls",
+      "certificados",
+      "mitm",
+      "verify"
+    ],
+    "file": "M3.5-004.json"
+  },
+  {
+    "id": "M3.5-005",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Secrets management: variables de entorno, vaults, y nunca en código",
+    "tags_rag": [
+      "python",
+      "seguridad",
+      "secrets",
+      "variables-entorno",
+      "vaults",
+      "git"
+    ],
+    "file": "M3.5-004.json"
+  },
+  {
+    "id": "M3.5-006",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Rate limiting y protección contra DoS/brute-force",
+    "tags_rag": [
+      "python",
+      "seguridad",
+      "rate-limiting",
+      "dos",
+      "brute-force",
+      "flask-limiter"
+    ],
+    "file": "M3.5-004.json"
+  },
+  {
+    "id": "M3.5-007",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Código IA roto: auditoría de seguridad (los 7 defectos)",
+    "tags_rag": [
+      "python",
+      "seguridad",
+      "auditoria",
+      "codigo-ia",
+      "vulnerabilidades",
+      "bandit"
+    ],
+    "file": "M3.5-004.json"
+  },
+  {
+    "id": "M3.5-008",
+    "modulo": "3.5 - Seguridad",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "MICROPROYECTO: API REST segura completa",
+    "tags_rag": [
+      "python",
+      "microproyecto",
+      "api-segura",
+      "jwt",
+      "bcrypt",
+      "seguridad",
+      "integrador"
+    ],
+    "file": "M3.5-004.json"
+  },
+  {
+    "id": "M3.6-002",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "OCP (Open/Closed Principle): abierto a extensión, cerrado a modificación",
+    "tags_rag": [
+      "python",
+      "solid",
+      "ocp",
+      "refactoring",
+      "patrones",
+      "arquitectura"
+    ],
+    "file": "M3.6-002.json"
+  },
+  {
+    "id": "M3.6-003",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "LSP (Liskov Substitution Principle): subclases sustituibles por su base",
+    "tags_rag": [
+      "python",
+      "solid",
+      "lsp",
+      "refactoring",
+      "patrones",
+      "arquitectura"
+    ],
+    "file": "M3.6-003.json"
+  },
+  {
+    "id": "M3.6-004",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "ISP (Interface Segregation Principle): clientes no dependen de lo que no usan",
+    "tags_rag": [
+      "python",
+      "solid",
+      "isp",
+      "refactoring",
+      "patrones",
+      "arquitectura"
+    ],
+    "file": "M3.6-004.json"
+  },
+  {
+    "id": "M3.6-005",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "DIP (Dependency Inversion Principle): depender de abstracciones, no de concreciones",
+    "tags_rag": [
+      "python",
+      "solid",
+      "dip",
+      "dependency-injection",
+      "refactoring",
+      "patrones",
+      "arquitectura"
+    ],
+    "file": "M3.6-005.json"
+  },
+  {
+    "id": "M3.6-006",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Decorator Pattern: agregar comportamiento sin modificar la clase",
+    "tags_rag": [
+      "python",
+      "decorator",
+      "pattern",
+      "refactoring",
+      "functools"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-007",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Factory Pattern: creación de objetos desacoplada del uso",
+    "tags_rag": [
+      "python",
+      "factory",
+      "pattern",
+      "refactoring",
+      "creational"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-008",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Strategy Pattern: algoritmos intercambiables en runtime",
+    "tags_rag": [
+      "python",
+      "strategy",
+      "pattern",
+      "refactoring",
+      "behavioral"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-009",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Code smells: detectar los 8 olores más comunes",
+    "tags_rag": [
+      "python",
+      "code-smells",
+      "refactoring",
+      "clean-code",
+      "mantenibilidad"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-010",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Refactoring catalog: las 12 técnicas esenciales",
+    "tags_rag": [
+      "python",
+      "refactoring",
+      "clean-code",
+      "fowler",
+      "techniques"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-011",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Refactoring con tests: Red-Green-Refactor aplicado a legacy code",
+    "tags_rag": [
+      "python",
+      "legacy-code",
+      "testing",
+      "refactoring",
+      "characterization-tests"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-012",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Refactoring a patrones: cuándo y cómo introducir un patrón",
+    "tags_rag": [
+      "python",
+      "refactoring",
+      "patterns",
+      "kerievsky",
+      "strategy",
+      "factory"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-013",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Anti-patrones de diseño: los 6 errores más comunes",
+    "tags_rag": [
+      "python",
+      "anti-patterns",
+      "design",
+      "refactoring",
+      "code-quality"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-014",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Código IA roto: auditoría de arquitectura y diseño",
+    "tags_rag": [
+      "python",
+      "arquitectura",
+      "auditoria",
+      "clean-architecture",
+      "capas",
+      "codigo-ia"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.6-015",
+    "modulo": "3.6 - Patrones y Refactoring",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "MICROPROYECTO: refactoring completo de codebase legacy",
+    "tags_rag": [
+      "python",
+      "microproyecto",
+      "refactoring",
+      "solid",
+      "patterns",
+      "arquitectura",
+      "integrador"
+    ],
+    "file": "M3.6-006.json"
+  },
+  {
+    "id": "M3.7-001",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Bash scripting fundamentals: variables, condicionales, bucles",
+    "tags_rag": [
+      "bash",
+      "scripting",
+      "automatizacion",
+      "unix",
+      "linux"
+    ],
+    "file": "M3.7 BASHi.json"
+  },
+  {
+    "id": "M3.7-002",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Pipes, redirects y filters: el poder de la composición Unix",
+    "tags_rag": [
+      "bash",
+      "pipes",
+      "redirects",
+      "unix",
+      "filters",
+      "grep",
+      "sed",
+      "awk"
+    ],
+    "file": "M3.7 BASHi.json"
+  },
+  {
+    "id": "M3.7-003",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "sed, awk y grep avanzado: procesamiento de texto",
+    "tags_rag": [
+      "bash",
+      "grep",
+      "sed",
+      "awk",
+      "text-processing",
+      "unix-tools"
+    ],
+    "file": "M3.7 BASHi.json"
+  },
+  {
+    "id": "M3.7-004",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Cron: jobs programados y scheduling",
+    "tags_rag": [
+      "bash",
+      "cron",
+      "scheduling",
+      "automatizacion",
+      "unix",
+      "linux"
+    ],
+    "file": "M3.7-004.json"
+  },
+  {
+    "id": "M3.7-005",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "systemd services y timers: servicios modernos en Linux",
+    "tags_rag": [
+      "linux",
+      "systemd",
+      "service",
+      "timer",
+      "automatizacion",
+      "devops"
+    ],
+    "file": "M3.7-004.json"
+  },
+  {
+    "id": "M3.7-006",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "subprocess en Python: integración Python + Bash",
+    "tags_rag": [
+      "python",
+      "subprocess",
+      "bash",
+      "automatizacion",
+      "seguridad"
+    ],
+    "file": "M3.7-004.json"
+  },
+  {
+    "id": "M3.7-007",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Código IA roto: auditoría de scripts Bash",
+    "tags_rag": [
+      "bash",
+      "auditoria",
+      "shellcheck",
+      "seguridad",
+      "codigo-ia",
+      "automatizacion"
+    ],
+    "file": "M3.7-004.json"
+  },
+  {
+    "id": "M3.7-008",
+    "modulo": "3.7 - Bash y Automatización",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "MICROPROYECTO: pipeline de deployment automatizado",
+    "tags_rag": [
+      "bash",
+      "deployment",
+      "pipeline",
+      "ci-cd",
+      "automatizacion",
+      "devops",
+      "integrador"
+    ],
+    "file": "M3.7-004.json"
+  },
+  {
+    "id": "M3.8-001",
+    "modulo": "3.8 - IA Transversal para Programación",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Prompting avanzado para código: zero-shot, few-shot, chain-of-thought",
+    "tags_rag": [
+      "ia",
+      "prompting",
+      "prompt-engineering",
+      "code-generation",
+      "cot"
+    ],
+    "file": "M3.8 Transversal IA.json"
+  },
+  {
+    "id": "M3.8-002",
+    "modulo": "3.8 - IA Transversal para Programación",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Code review asistido por IA: automatización de revisión",
+    "tags_rag": [
+      "ia",
+      "code-review",
+      "static-analysis",
+      "ci-cd",
+      "seguridad",
+      "calidad"
+    ],
+    "file": "M3.8 Transversal IA.json"
+  },
+  {
+    "id": "M3.8-005",
+    "modulo": "3.8 - IA Transversal para Programación",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "Auditoría de código IA: 10 defectos sistemáticos",
+    "tags_rag": [
+      "ia",
+      "auditoria",
+      "code-review",
+      "defectos",
+      "seguridad",
+      "robustness"
+    ],
+    "file": "M3.8-005.json"
+  },
+  {
+    "id": "M3.8-006",
+    "modulo": "3.8 - IA Transversal para Programación",
+    "fase": 3,
+    "nivel": "intermedio",
+    "competencia": "IA para testing: generación automática de tests",
+    "tags_rag": [
+      "ia",
+      "testing",
+      "pytest",
+      "hypothesis",
+      "test-generation",
+      "coverage"
+    ],
+    "file": "M3.8-005.json"
+  },
+  {
+    "id": "M3.8-007",
+    "modulo": "3.8 - IA Transversal para Programación",
+    "fase": 3,
+    "nivel": "avanzado",
+    "competencia": "IA para refactoring: transformación con preservación de comportamiento",
+    "tags_rag": [
+      "ia",
+      "refactoring",
+      "characterization-tests",
+      "extract-method",
+      "legacy-code"
+    ],
+    "file": "M3.8-005.json"
+  },
+  {
+    "id": "M3.8-008",
+    "modulo": "3.8 - IA Transversal para Programación",
+    "fase": 3,
+    "nivel": "avanzado",
+    "competencia": "MICROPROYECTO: Pipeline completo de IA para desarrollo",
+    "tags_rag": [
+      "ia",
+      "microproyecto",
+      "pipeline",
+      "code-generation",
+      "test-generation",
+      "code-review",
+      "integrador"
+    ],
+    "file": "M3.8-005.json"
+  }
+]

@@ -1362,13 +1362,13 @@
     "nivel": "principiante",
     "fase": 2,
     "microproyecto": "Pipeline scraper → limpieza → SQLite → JSON que alimenta tu PWA",
-    "modelo_mental": "Ya lo viste en M1.4-008 con un caso pequeño; aquí lo enfrentas con HTML real de scraping. HTML permite **anidamiento recursivo arbitrario** (`<div><div><div>...`), y los lenguajes regulares no pueden contar profundidad — es un teorema, no una limitación de tu regex. Consecuencias prácticas verificadas en sandbox: (1) `(.*?)` captura **tags internos** (`Curso <em>Avanzado</em> de Python`), (2) el regex muere si el sitio usa comillas simples (`class='t'`), (3) sin `re.DOTALL` devuelve `[]` en silencio sobre HTML multilínea — el caso más común porque el HTML real SIEMPRE es multilínea. BeautifulSoup no tiene ninguno de estos problemas porque no es regex: es un parser de árbol.",
+    "modelo_mental": "**Los lenguajes regulares no pueden contar la profundidad de los tags anidados**, un límite teórico conocido como el teorema de la no-clausura de Parikh. HTML permite un anidamiento recursivo arbitrario (`<div><div><div>...</div></div></div>`), y un regex no puede garantizar que un `.*?` coincida solo con el closing tag correspondiente a su opening tag. Por eso, usar regex para parsear HTML es un **antipatrón**: captura tags internos, falla con comillas simples y se rompe silenciosamente en HTML multilínea porque `.` no cruza `\\n` sin `re.DOTALL`. BeautifulSoup evita todos estos problemas porque construye un árbol de etiquetas real, no depende de coincidencias basadas en texto plano.\n\nEl problema surge porque los regex operan en una **cadena plana**, no en una estructura jerárquica. Cuando un tag contiene otro tag (por ejemplo, `<h2 class=\"titulo\">Curso <em>Avanzado</em> de Python</h2>`), el patrón `<h2 class=\"titulo\">(.*?)</h2>` coincide con todo el contenido interno, incluyendo el markup `<em>...</em>`. Esto contamina el dato extraído con HTML en bruto, lo cual es casi siempre indeseado.\n\nComprender esta limitación te protege de errores sutiles que parecen funcionar en ejemplos simples pero se rompen en HTML real. Al adoptar un parser de árbol, obtienes un modelo mental robusto: tratas el documento como un DOM, no como texto, asegurando corrección frente a anidamiento, diferentes estilos de cita y saltos de línea arbitrarios.",
     "codigo_roto": "import re\n\ndef extraer_titulos(html):\n    return re.findall(r'<h2 class=\"titulo\">(.*?)</h2>', html)\n\ndef extraer_precios(html):\n    return re.findall(r'<span class=\"precio\">\\$(.*?)</span>', html)",
-    "diagnostico": "Tres fallos verificados. (1) Tags internos: sobre `<h2 class=\"titulo\">Curso <em>Avanzado</em> de Python</h2>` retorna `'Curso <em>Avanzado</em> de Python'` — markup crudo dentro de tu dato. (2) Multilínea: el HTML real tiene saltos de línea entre la apertura y el cierre; `.` no cruza `\\n` sin `re.DOTALL`, así que retorna `[]` **en silencio** sobre cualquier página real. (3) Comillas simples: `<h2 class='titulo'>` (HTML válido, y así lo escribe mucha gente y muchos frameworks) no coincide con tu `\"`. Cada uno por separado justifica no usar regex con HTML; los tres juntos aparecen en el primer sitio real que toques.",
+    "diagnostico": "1. **Tags internos capturados** – El regex `<h2 class=\"titulo\">(.*?)</h2>` devuelve `'Curso <em>Avanzado</em> de Python'`. El `.*?` coincide con cualquier cosa entre los tags externos, incluyendo otros tags, dejando markup sin procesar en el dato. Esto pasa porque los regex no entienden la estructura jerárquica del HTML.\n\n2. **HTML multilínea causa fallo silencioso** – El HTML real casi siempre tiene saltos de línea entre la apertura y el cierre de tags (`<h2 class=\"titulo\">\\n  Título\\n</h2>`). Sin `re.DOTALL`, el punto `.` no coincide con `\\n`, así que `.*?` nunca puede cruzar la línea, retornando `[]` en silencio. El programa parece funcionar pero extrae nada.\n\n3. **Incompatibilidad de comillas** – HTML permite tanto comillas dobles (`class=\"titulo\"`) como simples (`class='titulo'`). El regex hard‑codifica `\"`, así que cualquier página que use comillas simples no coincide, otra vez retornando `[]` silenciosamente. Estos tres errores aparecen juntos en muchos sitios reales, lo que demuestra por qué los regex son inherentemente no confiables para parsear HTML.",
     "codigo_corregido": "from bs4 import BeautifulSoup\n\ndef extraer(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    titulos = [h.get_text(' ', strip=True) for h in soup.select('h2.titulo')]\n    precios = [p.get_text(strip=True) for p in soup.select('span.precio')]\n    return titulos, precios",
     "codigo_optimizado": "from bs4 import BeautifulSoup\nimport re\n\n# ===== REGLA =====\n# HTML/XML  → parser (BeautifulSoup, html.parser). NUNCA regex.\n# Texto plano con estructura regular (logs, CSV, config) → regex (M1.4).\n\n# ===== EXTRACCIÓN CORRECTA =====\ndef extraer(html):\n    soup = BeautifulSoup(html, 'html.parser')\n    filas = []\n    for card in soup.select('div.card, article.card, li.card'):   # tolerante a etiqueta\n        t = card.select_one('h2.titulo, h3.titulo, .titulo')\n        p = card.select_one('span.precio, .precio, .price')\n        if t is None:\n            continue\n        filas.append({\n            'titulo': t.get_text(' ', strip=True),   # quita tags internos y colapsa espacios\n            'precio': p.get_text(strip=True) if p else None,\n            'url': card.select_one('a[href]').get('href') if card.select_one('a[href]') else None,\n        })\n    return filas\n\n# ===== LOS 3 FALLOS DEL REGEX, DEMOSTRADOS =====\nHTML_REAL = '''\n<h2 class=\"titulo\">\n  Curso <em>Avanzado</em> de Python\n</h2>\n<div class=\"card\"><h2 class='titulo'>Con comillas simples</h2></div>\n'''\n\n# Fallo 1 — tags internos capturados como si fueran texto:\nre.findall(r'<h2 class=\"titulo\">(.*?)</h2>', HTML_REAL)\n#   → ['\\n  Curso <em>Avanzado</em> de Python\\n']   ← markup crudo + newlines\n# Con bs4: 'Curso Avanzado de Python'\n\n# Fallo 2 — comillas simples: 0 coincidencias\nlen(re.findall(r\"<h2 class='titulo'>(.*?)</h2>\", '<h2 class=\"titulo\">X</h2>'))   # 0\n\n# Fallo 3 — sin re.DOTALL sobre multilínea: [] en silencio\nre.findall(r'<h2 class=\"titulo\">(.*?)</h2>', '<h2 class=\"titulo\">\\nX\\n</h2>')   # []\n# Requiere re.DOTALL, y entonces (.*?) se vuelve codicioso entre bloques lejanos…\n\n# ===== EL CASO IMPOSIBLE: anidamiento =====\n# Ningún regex puede extraer correctamente el contenido de:\n#   <div><div><div>X</div></div></div>\n# porque requiere CONTAR profundidad, y los lenguajes regulares no pueden.\n# Los parsers sí: construyen un árbol.\n\n# ===== CUÁNDO REGEX SÍ ES CORRECTO EN UN PIPELINE DE SCRAPING =====\n# 1. Limpiar el TEXTO ya extraído por el parser:\n#    re.sub(r'\\s+', ' ', titulo)                      (M1.4-005)\n#    re.search(r'[\\d.,]+', precio_txt)                (M1.4-006)\n# 2. Extraer JSON embebido en <script> (M2.3-007):\n#    re.search(r'window\\.__INITIAL_STATE__\\s*=\\s*({.*?});', html, re.DOTALL)\n#    → y luego json.loads(), NO más regex\n# 3. Filtrar URLs por patrón:  re.match(r'/libros/\\d+$', href)\n# En los tres casos el regex opera sobre TEXTO o sobre un fragmento delimitado,\n# nunca sobre la estructura del documento.",
     "disenso_experto": "¿BeautifulSoup o lxml directamente? BeautifulSoup es la capa amigable y usa lxml por debajo si está disponible (más rápido y más tolerante con HTML malformado). En Pyodide/Colab sin lxml, usa `'html.parser'` (stdlib, siempre presente) — es suficientemente rápido y no añade dependencias. Para procesamiento masivo (millones de documentos) lxml directo o selectolax ganan 5-10x. Para tu PWA y para aprender: BeautifulSoup + html.parser, siempre.",
-    "pregunta_transferencia": "Encuentras en un repositorio open-source: `re.findall(r'<td class=\"precio\">(.*?)</td>', html)` funcionando en producción desde hace 2 años sobre el mismo sitio. ¿Es correcto el código? ¿Bajo qué condición exacta deja de funcionar y por qué 'funciona desde hace 2 años' no es evidencia de que sea correcto?",
+    "pregunta_transferencia": "Encuentras un regex `re.findall(r'<td class=\"precio\">(.*?)</td>', html)` que ha estado funcionando en producción durante dos años en un sitio web. Aunque extrae precios correctamente hoy, ¿es seguro asumir que nunca fallará? ¿Bajo qué condición exacta dejaría de funcionar, y por qué el hecho de que 'funcione desde hace 2 años' no prueba su corrección? La respuesta debe explicar el fallo potencial (por ejemplo, un tag interno con `<b>` dentro, un salto de línea en el HTML, o un cambio a comillas simples) y por qué la evidencia empírica no reemplaza el razonamiento teórico sobre el límite de los lenguajes regulares.",
     "quiz": {
       "pregunta": "¿Por qué NINGÚN regex puede parsear HTML correctamente, sin importar qué tan complejo sea?",
       "opciones": [
@@ -1477,6 +1477,45 @@
       "parser",
       "codigo-ia",
       "limites"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Por qué los lenguajes regulares como los regex no son adecuados para parsear HTML de forma general",
+        "opciones": [
+          "Son rápidos y eficientes para cualquier texto.",
+          "HTML es un lenguaje no regular que permite un anidamiento arbitrario.",
+          "Pueden manejar fácilmente tags HTML anidados.",
+          "Pueden parsear HTML malformado sin problemas."
+        ],
+        "correcta": "B",
+        "explicacion": "HTML es un lenguaje libre de contexto con un anidamiento recursivo arbitrario, lo que lo hace no regular. Los regex no pueden contar la profundidad de los tags anidados, por lo que nunca pueden garantizar coincidencias correctas en todos los casos posibles. Las otras opciones describen propiedades incorrectas o inexistentes de los regex.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Qué sucede cuando el HTML tiene un salto de línea entre la apertura y el cierre del tag que está siendo extraído",
+        "opciones": [
+          "El patrón captura el contenido correctamente.",
+          "El patrón falla silenciosamente y retorna una lista vacía.",
+          "Se lanza una excepción de expresión regular.",
+          "El patrón captura solo la primera línea del contenido."
+        ],
+        "correcta": "C",
+        "explicacion": "Sin `re.DOTALL`, el punto `.` no coincide con `\\n`. Así que `.*?` nunca puede cruzar el salto de línea, lo que hace que `findall` no encuentre ninguna coincidencia. En Python, esto retorna simplemente `[]` (no se lanza una excepción), pero la pregunta apunta al fallo silencioso. La opción C es la única que refleja el resultado real: el patrón falla silenciosamente y retorna una lista vacía.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Cuál es la causa del fallo cuando el HTML usa comillas simples en el atributo `class`",
+        "opciones": [
+          "Falta el modificador `re.DOTALL`.",
+          "El patrón usa comillas dobles, no comillas simples.",
+          "El regex necesita escapar el `&`.",
+          "`findall` está siendo llamado incorrectamente."
+        ],
+        "correcta": "B",
+        "explicacion": "El patrón regex hard‑codifica `\"titulo\"`. HTML permite tanto `\"` como `'` para atributos. Si el tag usa `class='titulo'`, el regex nunca coincide, retornando un resultado vacío. La otra opciones describen problemas no relacionados.",
+        "tipo": "debugging"
+      }
     ]
   },
   {

@@ -1,16 +1,19 @@
-import { useState, useMemo } from 'react'
-import type { Lesson, Quiz } from '../../types'
+import { lazy, Suspense, useState, useMemo } from 'react'
+import type { Lesson, LessonSummary, Quiz } from '../../types'
 import { useTranslation } from 'react-i18next'
 import CodeBlock from './CodeBlock'
 import QuizEngine from '../quiz/QuizEngine'
 import SimulatorPanel from '../simulator/SimulatorPanel'
 import AudioPlayer from '../audio/AudioPlayer'
 import TutorTab from '../video/TutorTab'
+import VisualTab from './VisualTab'
 import { buildTutorSteps } from '../../lib/tutorScript'
+import { isFlowchartLesson } from '../../lib/parser'
 import { useProgressStore } from '../../store/useProgressStore'
 import { useLanguageStore } from '../../store/useLanguageStore'
 import Markdown from '../molecules/Markdown'
 
+const FlowchartStudio = lazy(() => import('../visual/flowchart/FlowchartStudio'))
 
 interface LessonViewProps {
   lesson: Lesson
@@ -18,8 +21,8 @@ interface LessonViewProps {
   onComplete: () => void
   onNavigate: (lessonId: string) => void
   position: { index: number; total: number }
-  prevLesson: Lesson | null
-  nextLesson: Lesson | null
+  prevLesson: Lesson | LessonSummary | null
+  nextLesson: Lesson | LessonSummary | null
 }
 
 export default function LessonView({
@@ -34,8 +37,11 @@ export default function LessonView({
   const { t } = useTranslation()
   const { completedLessons, quizBest, recordQuizScore } = useProgressStore()
   const { lang } = useLanguageStore()
-  const [activeTab, setActiveTab] = useState<'content' | 'tutor' | 'quiz' | 'simulator'>('content')
+  const [activeTab, setActiveTab] = useState<
+    'content' | 'diagram' | 'tutor' | 'visual' | 'quiz' | 'simulator'
+  >('content')
   const [showAudio, setShowAudio] = useState(false)
+  const isFlowchart = isFlowchartLesson(lesson)
   const tutorSteps = useMemo(
     () =>
       lesson.tutor_steps ??
@@ -45,7 +51,7 @@ export default function LessonView({
   const isCompleted = completedLessons.includes(lesson.id)
   const best = quizBest[lesson.id]
   const lessonLanguage: 'python' | 'bash' | 'html' =
-    lesson.id.startsWith('M3.7') ? 'bash' : lesson.id.startsWith('F0.1') ? 'html' : 'python'
+    lesson.id.startsWith('M3.7') ? 'bash' : lesson.id.startsWith('F0.2') || lesson.id.startsWith('F0.3') ? 'html' : 'python'
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -83,6 +89,18 @@ export default function LessonView({
         >
           {t('lesson.title')}
         </button>
+        {isFlowchart && (
+          <button
+            onClick={() => setActiveTab('diagram')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'diagram'
+                ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+            }`}
+          >
+            {t('flowchart.tab')}
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('tutor')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
@@ -93,6 +111,18 @@ export default function LessonView({
         >
           {t('tutor.title')}
         </button>
+        {!isFlowchart && (
+          <button
+            onClick={() => setActiveTab('visual')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'visual'
+                ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+            }`}
+          >
+            {t('visual.title')}
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('quiz')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
@@ -146,44 +176,64 @@ export default function LessonView({
             )}
           </div>
 
-          <CodeBlock
-            code={lesson.codigo_roto}
-            language={lessonLanguage}
-            title={t('lesson.brokenCode')}
-          />
+          {isFlowchart ? (
+            <section className="p-6 rounded-xl glass shadow-lg">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+                {t('flowchart.objetivo')}
+              </h2>
+              <p className="text-[var(--text-secondary)]">
+                {lesson.flowchart_objetivo ?? t('flowchart.sin_diagrama')}
+              </p>
+              <p className="mt-3 text-sm text-[var(--text-secondary)]">
+                {t('flowchart.goToDiagramHint')}
+              </p>
+            </section>
+          ) : (
+            <>
+              <CodeBlock
+                code={lesson.codigo_roto}
+                language={lessonLanguage}
+                title={t('lesson.brokenCode')}
+              />
 
-          <section className="p-6 rounded-xl glass shadow-lg">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              {t('lesson.diagnosis')}
-            </h2>
-            <Markdown content={lesson.diagnostico} />
-          </section>
+              <section className="p-6 rounded-xl glass shadow-lg">
+                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+                  {t('lesson.diagnosis')}
+                </h2>
+                <Markdown content={lesson.diagnostico} />
+              </section>
 
-          <CodeBlock
-            code={lesson.codigo_corregido}
-            language={lessonLanguage}
-            title={t('lesson.fixedCode')}
-          />
+              <CodeBlock
+                code={lesson.codigo_corregido}
+                language={lessonLanguage}
+                title={t('lesson.fixedCode')}
+              />
 
-          <CodeBlock
-            code={lesson.codigo_optimizado}
-            language={lessonLanguage}
-            title={t('lesson.optimizedCode')}
-          />
+              <CodeBlock
+                code={lesson.codigo_optimizado}
+                language={lessonLanguage}
+                title={t('lesson.optimizedCode')}
+              />
+            </>
+          )}
 
-          <section className="p-6 rounded-xl glass shadow-lg">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              {t('lesson.expertDebate')}
-            </h2>
-            <Markdown content={lesson.disenso_experto} />
-          </section>
+          {lesson.disenso_experto && (
+            <section className="p-6 rounded-xl glass shadow-lg">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+                {t('lesson.expertDebate')}
+              </h2>
+              <Markdown content={lesson.disenso_experto} />
+            </section>
+          )}
 
-          <section className="p-6 rounded-xl glass shadow-lg">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              {t('lesson.transferQuestion')}
-            </h2>
-            <Markdown content={lesson.pregunta_transferencia} />
-          </section>
+          {lesson.pregunta_transferencia && (
+            <section className="p-6 rounded-xl glass shadow-lg">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+                {t('lesson.transferQuestion')}
+              </h2>
+              <Markdown content={lesson.pregunta_transferencia} />
+            </section>
+          )}
 
           {lesson.colab && lesson.colab.celdas?.length > 0 && (
             <section className="p-6 rounded-xl glass shadow-lg">
@@ -245,6 +295,18 @@ export default function LessonView({
 
       {activeTab === 'tutor' && (
         <TutorTab steps={tutorSteps} title={lesson.competencia} fileBase={lesson.id} lang={lang} />
+      )}
+
+      {activeTab === 'visual' && <VisualTab lesson={lesson} />}
+
+      {activeTab === 'diagram' && isFlowchart && (
+        <Suspense
+          fallback={
+            <div className="p-10 text-center text-[var(--text-secondary)]">{t('common.loading')}</div>
+          }
+        >
+          <FlowchartStudio lesson={lesson} emptyLabel={t('flowchart.sin_diagrama')} />
+        </Suspense>
       )}
 
       {activeTab === 'quiz' && (

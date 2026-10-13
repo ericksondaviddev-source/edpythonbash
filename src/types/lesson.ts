@@ -38,12 +38,47 @@ export interface Simulator {
   solucion: string
 }
 
-/** Un paso del tutor: fragmento de código que se teclea + narración que lo explica. */
-export interface TutorStep {
-  code: string
-  narration: string
+export interface AssertException {
+  caso: string
+  esperada: string
 }
 
+export interface TutorStep {
+  /** Código que se escribe carácter a carácter (formato legacy). */
+  code: string
+  /** Texto narrado al alumno (voz o subtítulos). */
+  narration: string
+  /** Línea o rango de líneas del código corregido que se destaca (formato nuevo). */
+  code_lines?: { start: number; end: number }
+  /** Variables esperadas en memoria tras ejecutar este paso. */
+  expected_vars?: Record<string, string>
+}
+
+/** Datos de un diagrama de flujo. */
+export interface FlowchartData {
+  nodes: FlowchartNode[]
+  edges: FlowchartEdge[]
+}
+
+export type FlowchartNodeType = 'start' | 'process' | 'decision' | 'end'
+
+export interface FlowchartNode {
+  id: string
+  type: FlowchartNodeType
+  position: { x: number; y: number }
+  data: { label: string; description?: string }
+}
+
+export interface FlowchartEdge {
+  id: string
+  source: string
+  target: string
+  label?: string
+  sourceHandle?: string
+  targetHandle?: string
+}
+
+/** Campo opcional: diagrama de flujo asociado a la lección. */
 export interface Lesson {
   id: string
   modulo: string
@@ -64,17 +99,33 @@ export interface Lesson {
   _enriched?: boolean
   simulador?: Simulator
   colab?: Colab
+  flowchart_data?: FlowchartData
+  flowchart_objetivo?: string
+  flowchart_mode?: 'view' | 'build'
+  flowchart_starter?: FlowchartData
+  flowchart_rules?: string[]
   audio_script: string
   video_prompt: string
   trazabilidad: Trazabilidad
   tags_rag: string[]
 }
 
-export interface Module {
+export interface LessonSummary {
+  id: string
+  modulo: string
+  fase: number
+  nivel: 'principiante' | 'intermedio' | 'avanzado'
+  competencia: string
+  tags_rag: string[]
+  flowchart_mode?: 'view' | 'build'
+  file?: string
+}
+
+export interface Module<T = Lesson> {
   id: string
   nombre: string
   fase: number
-  lecciones: Lesson[]
+  lecciones: T[]
 }
 
 export interface Trazabilidad {

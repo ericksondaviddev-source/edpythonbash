@@ -1,25 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, lazy, Suspense } from 'react'
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from './store/useThemeStore'
 import { useLanguageStore } from './store/useLanguageStore'
 import { useProgressStore } from './store/useProgressStore'
-import { parseLessonsFromJSON, groupLessonsByModule, flattenOrderedLessons } from './lib/parser'
-import type { Lesson } from './types'
+import { getLessonCatalog, getModulesFromCatalog, fetchLessonById } from './services/lessonService'
+import type { Lesson, LessonSummary } from './types'
 import Header from './components/layout/Header'
 import Sidebar from './components/layout/Sidebar'
 import Footer from './components/layout/Footer'
-import Dashboard from './pages/Dashboard'
-import LessonView from './components/lesson/LessonView'
-import AIPanel from './components/organisms/AIPanel'
-import APIKeySettings from './components/layout/APIKeySettings'
 import { Button, Icon } from './components/atoms'
 
-const lessonFiles = import.meta.glob('./data/modulos/*.json', { eager: true, import: 'default' })
-const validFiles: Record<string, any> = {}
-for (const [path, content] of Object.entries(lessonFiles)) {
-  if (path.includes('profiling_sim') || path.includes('EXTENSI')) continue
-  validFiles[path] = content
+// Code-splitting por vistas y modales pesados
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const LessonView = lazy(() => import('./components/lesson/LessonView'))
+const AIPanel = lazy(() => import('./components/organisms/AIPanel'))
+const APIKeySettings = lazy(() => import('./components/layout/APIKeySettings'))
+
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
 }
 
 function AppShell() {
@@ -32,14 +35,18 @@ function AppShell() {
   const { lang } = useLanguageStore()
   const { t } = useTranslation()
   const { completeLesson, touchVisit } = useProgressStore()
-  const [lessons] = useState<Lesson[]>(() => parseLessonsFromJSON(validFiles))
+
+  // Carga ligera del catálogo (~48 KB) para Dashboard y Sidebar
+  const modules = useMemo(() => getModulesFromCatalog(), [])
+  const catalogLessons = useMemo(() => getLessonCatalog(), [])
+
+  // Carga asíncrona bajo demanda de la lección activa
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null)
+  const [isLoadingLesson, setIsLoadingLesson] = useState(false)
+
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAPIKeyModalOpen, setIsAPIKeyModalOpen] = useState(false)
-
-  const modules = useMemo(() => groupLessonsByModule(lessons), [lessons])
-  const orderedLessons = useMemo(() => flattenOrderedLessons(modules), [modules])
-  const currentLesson = lessonId ? lessons.find(l => l.id === lessonId) ?? null : null
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -51,13 +58,42 @@ function AppShell() {
 
   useEffect(() => {
     touchVisit()
-  }, [])
+  }, [touchVisit])
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [location.pathname])
 
-  const handleLessonSelect = (lesson: Lesson) => {
+  // Carga de lección bajo demanda al cambiar de ruta
+  useEffect(() => {
+    if (!lessonId) return
+
+    let active = true
+    setIsLoadingLesson(true)
+
+    fetchLessonById(lessonId)
+      .then((loaded) => {
+        if (active) {
+          setCurrentLesson(loaded)
+          setIsLoadingLesson(false)
+        }
+      })
+      .catch((err) => {
+        console.error(`Error loading lesson ${lessonId}:`, err)
+        if (active) {
+          setCurrentLesson(null)
+          setIsLoadingLesson(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [lessonId])
+
+  const activeLesson = lessonId && currentLesson?.id === lessonId ? currentLesson : null
+
+  const handleLessonSelect = (lesson: Lesson | LessonSummary) => {
     navigate(`/leccion/${lesson.id}`)
     setIsSidebarOpen(false)
   }
@@ -65,26 +101,33 @@ function AppShell() {
   const handleBack = () => navigate('/')
 
   const handleCompleteLesson = () => {
-    if (currentLesson) {
-      completeLesson(currentLesson.id)
+    if (activeLesson) {
+      completeLesson(activeLesson.id)
     }
   }
 
-  const currentIndex = orderedLessons.findIndex(l => l.id === currentLesson?.id)
+  const currentIndex = lessonId ? catalogLessons.findIndex((l) => l.id === lessonId) : -1
+  const prevLesson = currentIndex > 0 ? catalogLessons[currentIndex - 1] : null
+  const nextLesson =
+    currentIndex >= 0 && currentIndex < catalogLessons.length - 1
+      ? catalogLessons[currentIndex + 1]
+      : null
 
   const moduloId = location.pathname.startsWith('/modulo/')
     ? decodeURIComponent(location.pathname.split('/')[2])
     : null
-  const currentModule = currentLesson
-    ? modules.find(m => m.lecciones.some(l => l.id === currentLesson.id)) ?? null
+  const currentSummary = lessonId ? catalogLessons.find((l) => l.id === lessonId) : null
+  const currentModule = activeLesson
+    ? modules.find((m) => m.lecciones.some((l) => l.id === activeLesson.id)) ?? null
     : null
-  const trailModule = currentModule ?? (moduloId ? modules.find(m => m.id === moduloId) ?? null : null)
+  const trailModule =
+    currentModule ?? (moduloId ? modules.find((m) => m.id === moduloId) ?? null : null)
   const trail: { label: string; to?: string }[] = [{ label: t('nav.home'), to: '/' }]
   if (trailModule) {
     trail.push({ label: trailModule.nombre, to: `/modulo/${encodeURIComponent(trailModule.id)}` })
   }
-  if (currentLesson) {
-    trail.push({ label: currentLesson.competencia })
+  if (currentSummary) {
+    trail.push({ label: currentSummary.competencia })
   }
 
   return (
@@ -116,7 +159,7 @@ function AppShell() {
             <Sidebar
               modules={modules}
               onLessonSelect={handleLessonSelect}
-              currentLessonId={currentLesson?.id}
+              currentLessonId={lessonId ?? undefined}
             />
           </div>
         </div>
@@ -127,81 +170,81 @@ function AppShell() {
           <Sidebar
             modules={modules}
             onLessonSelect={handleLessonSelect}
-            currentLessonId={currentLesson?.id}
+            currentLessonId={lessonId ?? undefined}
           />
         </div>
         <main className="flex-1 p-4 md:p-6">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <Dashboard
-                  modules={modules}
-                  lessons={lessons}
-                  onLessonSelect={handleLessonSelect}
-                  currentLessonId={currentLesson?.id}
-                  onOpenSettings={() => setIsAPIKeyModalOpen(true)}
-                />
-              }
-            />
-            <Route
-              path="/modulo/:moduloId"
-              element={
-                <Dashboard
-                  modules={modules}
-                  lessons={lessons}
-                  onLessonSelect={handleLessonSelect}
-                  currentLessonId={currentLesson?.id}
-                  onOpenSettings={() => setIsAPIKeyModalOpen(true)}
-                />
-              }
-            />
-            <Route
-              path="/leccion/:lessonId"
-              element={
-                currentLesson ? (
-                  <LessonView
-                    key={lessonId}
-                    lesson={currentLesson}
-                    onBack={handleBack}
-                    onComplete={handleCompleteLesson}
-                    onNavigate={(id) => navigate(`/leccion/${id}`)}
-                    position={{ index: currentIndex, total: orderedLessons.length }}
-                    prevLesson={currentIndex > 0 ? orderedLessons[currentIndex - 1] : null}
-                    nextLesson={
-                      currentIndex >= 0 && currentIndex < orderedLessons.length - 1
-                        ? orderedLessons[currentIndex + 1]
-                        : null
-                    }
-                  />
-                ) : (
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route
+                path="/"
+                element={
                   <Dashboard
                     modules={modules}
-                    lessons={lessons}
+                    lessons={catalogLessons}
                     onLessonSelect={handleLessonSelect}
+                    currentLessonId={lessonId ?? undefined}
                     onOpenSettings={() => setIsAPIKeyModalOpen(true)}
                   />
-                )
-              }
-            />
-            <Route
-              path="*"
-              element={
-                <Dashboard
-                  modules={modules}
-                  lessons={lessons}
-                  onLessonSelect={handleLessonSelect}
-                  currentLessonId={currentLesson?.id}
-                />
-              }
-            />
-          </Routes>
+                }
+              />
+              <Route
+                path="/modulo/:moduloId"
+                element={
+                  <Dashboard
+                    modules={modules}
+                    lessons={catalogLessons}
+                    onLessonSelect={handleLessonSelect}
+                    currentLessonId={lessonId ?? undefined}
+                    onOpenSettings={() => setIsAPIKeyModalOpen(true)}
+                  />
+                }
+              />
+              <Route
+                path="/leccion/:lessonId"
+                element={
+                  isLoadingLesson ? (
+                    <PageFallback />
+                  ) : activeLesson ? (
+                    <LessonView
+                      key={lessonId}
+                      lesson={activeLesson}
+                      onBack={handleBack}
+                      onComplete={handleCompleteLesson}
+                      onNavigate={(id) => navigate(`/leccion/${id}`)}
+                      position={{ index: currentIndex, total: catalogLessons.length }}
+                      prevLesson={prevLesson}
+                      nextLesson={nextLesson}
+                    />
+                  ) : (
+                    <Dashboard
+                      modules={modules}
+                      lessons={catalogLessons}
+                      onLessonSelect={handleLessonSelect}
+                      onOpenSettings={() => setIsAPIKeyModalOpen(true)}
+                    />
+                  )
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <Dashboard
+                    modules={modules}
+                    lessons={catalogLessons}
+                    onLessonSelect={handleLessonSelect}
+                    currentLessonId={lessonId ?? undefined}
+                  />
+                }
+              />
+            </Routes>
+          </Suspense>
         </main>
       </div>
 
       <Footer />
 
-      {currentLesson && (
+      {activeLesson && (
         <Button
           onClick={() => setIsAIPanelOpen(true)}
           className="fixed bottom-20 right-6 z-40"
@@ -211,16 +254,24 @@ function AppShell() {
         </Button>
       )}
 
-      <AIPanel
-        lesson={currentLesson}
-        isOpen={isAIPanelOpen}
-        onClose={() => setIsAIPanelOpen(false)}
-      />
+      <Suspense fallback={null}>
+        {isAIPanelOpen && activeLesson && (
+          <AIPanel
+            lesson={activeLesson}
+            isOpen={isAIPanelOpen}
+            onClose={() => setIsAIPanelOpen(false)}
+          />
+        )}
+      </Suspense>
 
-      <APIKeySettings
-        isOpen={isAPIKeyModalOpen}
-        onClose={() => setIsAPIKeyModalOpen(false)}
-      />
+      <Suspense fallback={null}>
+        {isAPIKeyModalOpen && (
+          <APIKeySettings
+            isOpen={isAPIKeyModalOpen}
+            onClose={() => setIsAPIKeyModalOpen(false)}
+          />
+        )}
+      </Suspense>
     </div>
   )
 }
