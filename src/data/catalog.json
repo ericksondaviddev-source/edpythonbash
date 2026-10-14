@@ -398,6 +398,84 @@
     "file": "F0.3.json"
   },
   {
+    "id": "F0.3-011",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Arrays y Objetos: map, filter y find sobre colecciones",
+    "tags_rag": [
+      "javascript",
+      "arrays",
+      "objetos",
+      "filter",
+      "map",
+      "find"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-012",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "principiante",
+    "competencia": "Clases: constructor, métodos y el contexto this",
+    "tags_rag": [
+      "javascript",
+      "clases",
+      "constructor",
+      "this",
+      "poo"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-013",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "intermedio",
+    "competencia": "Módulos y scope: de IIFE al patrón namespace",
+    "tags_rag": [
+      "javascript",
+      "modulos",
+      "iife",
+      "scope",
+      "namespace",
+      "esm"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-014",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "intermedio",
+    "competencia": "fetch, Promesas y async/await sobre APIs",
+    "tags_rag": [
+      "javascript",
+      "fetch",
+      "async",
+      "await",
+      "promesas",
+      "http"
+    ],
+    "file": "F0.3.json"
+  },
+  {
+    "id": "F0.3-015",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "fase": 0,
+    "nivel": "intermedio",
+    "competencia": "Patrones de eventos: delegación vs listener por elemento",
+    "tags_rag": [
+      "javascript",
+      "eventos",
+      "delegation",
+      "dom",
+      "closest"
+    ],
+    "file": "F0.3.json"
+  },
+  {
     "id": "F0.4-001",
     "modulo": "F0.4 - PWA + Deploy",
     "fase": 0,
