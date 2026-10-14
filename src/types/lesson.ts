@@ -37,6 +37,8 @@ export interface Simulator {
   asserts_forbidden?: string[]
   asserts_performance?: string[]
   solucion: string
+  /** IDs de bloques que el alumno debe colocar en el editor de bloques para superar el reto. */
+  bloques_requeridos?: string[]
 }
 
 export interface AssertException {

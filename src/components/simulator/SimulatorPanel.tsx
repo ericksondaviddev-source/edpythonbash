@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Simulator } from '../../types'
 import { useTranslation } from 'react-i18next'
 import { Button, Card, Icon } from '../atoms'
@@ -27,9 +27,12 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
   const [isRunning, setIsRunning] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [showBlockEditor, setShowBlockEditor] = useState(false)
+  const [placedIds, setPlacedIds] = useState<string[]>([])
   const [verifyResults, setVerifyResults] = useState<VerifyResult[] | null>(null)
   const [challengePassed, setChallengePassed] = useState(false)
   const [failedVerifies, setFailedVerifies] = useState(0)
+  const [verifyPassed, setVerifyPassed] = useState(false)
+  const codeBeforeBlocks = useRef<string | null>(null)
 
   const hasTests = Boolean(
     simulator.test_code ||
@@ -40,6 +43,24 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
   )
   const isRunnable =
     simulator.engine === 'pyodide' || simulator.engine === 'bash_sim' || simulator.engine === 'js'
+
+  const openBlockEditor = () => {
+    if (showBlockEditor) return
+    codeBeforeBlocks.current = code
+    setShowBlockEditor(true)
+  }
+
+  const toggleBlockEditor = () => {
+    if (showBlockEditor) {
+      setShowBlockEditor(false)
+      if (codeBeforeBlocks.current !== null) {
+        setCode(codeBeforeBlocks.current)
+        codeBeforeBlocks.current = null
+      }
+    } else {
+      openBlockEditor()
+    }
+  }
 
   const handleRun = async () => {
     setIsRunning(true)
@@ -79,14 +100,35 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
     if (!hasTests || (simulator.engine !== 'pyodide' && simulator.engine !== 'js')) return
     setIsVerifying(true)
     setVerifyResults(null)
+    setVerifyPassed(false)
 
     try {
       const results =
         simulator.engine === 'js'
           ? await (await import('../../services/jsEngine')).getJsEngine().verify(simulator, code)
           : await (await import('../../services/pyodide')).getPyodideRunner().verify(simulator, code)
-      setVerifyResults(results)
-      const allPassed = results.length > 0 && results.every(r => r.passed)
+      const enginePassed = results.length > 0 && results.every(r => r.passed)
+
+      const required = simulator.bloques_requeridos
+      let blocksResult: VerifyResult | null = null
+      if (required?.length) {
+        const missing = required.filter(id => !placedIds.includes(id))
+        if (missing.length === 0) {
+          blocksResult = { name: t('blocks.retoTitle'), passed: true }
+        } else {
+          blocksResult = {
+            name: t('blocks.retoMissing'),
+            passed: false,
+            detail: missing.map(id => t(`blocks.${id}.label`)).join(', '),
+          }
+          openBlockEditor()
+        }
+      }
+
+      const finalResults = blocksResult ? [blocksResult, ...results] : results
+      setVerifyResults(finalResults)
+      const allPassed = enginePassed && (!blocksResult || blocksResult.passed)
+      setVerifyPassed(allPassed)
       if (allPassed) {
         setFailedVerifies(0)
       } else {
@@ -109,9 +151,8 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
     setOutput('')
     setHasRun(false)
     setVerifyResults(null)
+    setVerifyPassed(false)
   }
-
-  const allPassed = verifyResults ? verifyResults.length > 0 && verifyResults.every(r => r.passed) : false
 
   return (
     <Card title={t('simulator.title')}>
@@ -138,18 +179,20 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
         <Button variant="ghost" onClick={() => setShowSolution(!showSolution)}>
           {showSolution ? t('simulator.hideSolution') : t('simulator.showSolution')}
         </Button>
-        {simulator.engine !== 'js' && (
-          <Button variant="ghost" onClick={() => setShowBlockEditor(!showBlockEditor)}>
-            {showBlockEditor ? t('simulator.hideBlocks') : t('simulator.showBlocks')}
-          </Button>
-        )}
+        <Button variant="ghost" onClick={toggleBlockEditor}>
+          {showBlockEditor ? t('simulator.hideBlocks') : t('simulator.showBlocks')}
+        </Button>
       </div>
 
       {showBlockEditor && (
         <div className="mb-4">
           <BlockEditor
-            language={simulator.engine === 'bash_sim' ? 'bash' : 'python'}
+            language={
+              simulator.engine === 'bash_sim' ? 'bash' : simulator.engine === 'js' ? 'js' : 'python'
+            }
             onCodeChange={setCode}
+            requiredIds={simulator.bloques_requeridos}
+            onBlocksChange={setPlacedIds}
           />
         </div>
       )}
@@ -228,7 +271,7 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
             ))}
           </div>
 
-          {allPassed && (
+          {verifyPassed && (
             <div className="mt-4 p-4 rounded-lg bg-[var(--success)]/20 text-center">
               <p className="font-semibold text-[var(--success)]">
                 🎉 {t('simulator.challengePassed')} (+25 XP)

@@ -156,7 +156,20 @@
     "sh-echo": { "label": "Echo", "desc": "Imprime texto o variables" },
     "sh-pipe": { "label": "Pipe", "desc": "Conecta la salida de un comando con otro" },
     "sh-redirect": { "label": "Redirect", "desc": "Guarda la salida en un archivo" },
-    "sh-trap": { "label": "Trap", "desc": "Limpieza garantizada al salir" }
+    "sh-trap": { "label": "Trap", "desc": "Limpieza garantizada al salir" },
+    "retoTitle": "Reto: usa estos bloques",
+    "retoMissing": "Faltan bloques requeridos",
+    "retoDone": "Bloque requerido usado",
+    "js-const": { "label": "Constante", "desc": "Declara una constante inmutable" },
+    "js-import": { "label": "Importar", "desc": "Importa un módulo ES" },
+    "js-func": { "label": "Función", "desc": "Define una función clásica" },
+    "js-arrow": { "label": "Función flecha", "desc": "Define una función concisa con =>" },
+    "js-return": { "label": "Retornar", "desc": "Devuelve un valor desde una función" },
+    "js-if": { "label": "Si", "desc": "Ejecuta código si la condición es verdadera" },
+    "js-for": { "label": "Bucle for…of", "desc": "Itera sobre los elementos de una lista" },
+    "js-while": { "label": "Mientras", "desc": "Repite mientras la condición sea verdadera" },
+    "js-log": { "label": "console.log", "desc": "Muestra valores en la consola" },
+    "js-try": { "label": "Try/Catch", "desc": "Maneja errores sin romper el programa" }
   },
   "terminal": {
     "title": "Terminal",

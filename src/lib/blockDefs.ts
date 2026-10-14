@@ -1,5 +1,7 @@
 export type BlockCategory = 'estructura' | 'funciones' | 'control' | 'salida' | 'errores'
 
+export type BlockLanguage = 'python' | 'bash' | 'js'
+
 export const BLOCK_CATEGORIES: BlockCategory[] = [
   'estructura',
   'funciones',
@@ -42,3 +44,18 @@ export const BASH_BLOCKS: BlockDef[] = [
   { id: 'sh-redirect', type: 'pipe', category: 'salida', code: 'comando > archivo.txt', color: 'bg-teal-600' },
   { id: 'sh-trap', type: 'error', category: 'errores', code: 'trap "rm -f $TMP" EXIT', color: 'bg-orange-600' },
 ]
+
+export const JS_BLOCKS: BlockDef[] = [
+  { id: 'js-const', type: 'variable', category: 'estructura', code: 'const x = 10', color: 'bg-blue-500' },
+  { id: 'js-import', type: 'import', category: 'estructura', code: "import { modulo } from './modulo.js'", color: 'bg-teal-500' },
+  { id: 'js-func', type: 'function', category: 'funciones', code: 'function nombre() {\n  // cuerpo\n}', color: 'bg-green-500' },
+  { id: 'js-arrow', type: 'function', category: 'funciones', code: 'const doble = (n) => n * 2', color: 'bg-emerald-500' },
+  { id: 'js-return', type: 'function', category: 'funciones', code: 'return valor', color: 'bg-green-600' },
+  { id: 'js-if', type: 'condition', category: 'control', code: 'if (condicion) {\n  // ...\n}', color: 'bg-yellow-500' },
+  { id: 'js-for', type: 'loop', category: 'control', code: 'for (const item of lista) {\n  // ...\n}', color: 'bg-purple-500' },
+  { id: 'js-while', type: 'loop', category: 'control', code: 'while (condicion) {\n  // ...\n}', color: 'bg-purple-600' },
+  { id: 'js-log', type: 'print', category: 'salida', code: 'console.log(valor)', color: 'bg-red-500' },
+  { id: 'js-try', type: 'error', category: 'errores', code: 'try {\n  // ...\n} catch (error) {\n  console.error(error)\n}', color: 'bg-orange-500' },
+]
+
+export const ALL_BLOCKS: BlockDef[] = [...PYTHON_BLOCKS, ...BASH_BLOCKS, ...JS_BLOCKS]

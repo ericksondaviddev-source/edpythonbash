@@ -156,7 +156,20 @@
     "sh-echo": { "label": "Echo", "desc": "Print text or variables" },
     "sh-pipe": { "label": "Pipe", "desc": "Connect one command's output to another" },
     "sh-redirect": { "label": "Redirect", "desc": "Save output to a file" },
-    "sh-trap": { "label": "Trap", "desc": "Guaranteed cleanup on exit" }
+    "sh-trap": { "label": "Trap", "desc": "Guaranteed cleanup on exit" },
+    "retoTitle": "Challenge: use these blocks",
+    "retoMissing": "Required blocks missing",
+    "retoDone": "Required block used",
+    "js-const": { "label": "Constant", "desc": "Declare an immutable constant" },
+    "js-import": { "label": "Import", "desc": "Import an ES module" },
+    "js-func": { "label": "Function", "desc": "Define a classic function" },
+    "js-arrow": { "label": "Arrow function", "desc": "Define a concise function with =>" },
+    "js-return": { "label": "Return", "desc": "Return a value from a function" },
+    "js-if": { "label": "If", "desc": "Run code when the condition is true" },
+    "js-for": { "label": "For…of loop", "desc": "Iterate over the elements of a list" },
+    "js-while": { "label": "While", "desc": "Repeat while the condition is true" },
+    "js-log": { "label": "console.log", "desc": "Print values to the console" },
+    "js-try": { "label": "Try/Catch", "desc": "Handle errors without breaking the program" }
   },
   "terminal": {
     "title": "Terminal",

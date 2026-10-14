@@ -26,9 +26,12 @@ import AIReviewCard from './AIReviewCard'
 import {
   PYTHON_BLOCKS,
   BASH_BLOCKS,
+  JS_BLOCKS,
   BLOCK_CATEGORIES,
+  ALL_BLOCKS,
   type BlockDef,
   type BlockCategory,
+  type BlockLanguage,
 } from '../../lib/blockDefs'
 
 interface PlacedBlock {
@@ -41,8 +44,12 @@ let uidCounter = 0
 const nextUid = () => `placed-${++uidCounter}`
 
 interface BlockEditorProps {
-  language: 'python' | 'bash'
+  language: BlockLanguage
   onCodeChange: (code: string) => void
+  /** IDs de bloques requeridos para superar el reto de la lección. */
+  requiredIds?: string[]
+  /** Notifica los IDs de bloques colocados en el lienzo. */
+  onBlocksChange?: (blockIds: string[]) => void
 }
 
 function buildCode(placed: PlacedBlock[]): string {
@@ -57,7 +64,7 @@ function buildCode(placed: PlacedBlock[]): string {
     .join('\n')
 }
 
-function highlight(code: string, language: 'python' | 'bash'): string {
+function highlight(code: string, language: BlockLanguage): string {
   try {
     return Prism.highlight(code, Prism.languages[language] ?? Prism.languages.plain, language)
   } catch {
@@ -65,11 +72,17 @@ function highlight(code: string, language: 'python' | 'bash'): string {
   }
 }
 
-export default function BlockEditor({ language, onCodeChange }: BlockEditorProps) {
+export default function BlockEditor({
+  language,
+  onCodeChange,
+  requiredIds,
+  onBlocksChange,
+}: BlockEditorProps) {
   const { t } = useTranslation()
-  const blocks = language === 'bash' ? BASH_BLOCKS : PYTHON_BLOCKS
+  const blocks = language === 'bash' ? BASH_BLOCKS : language === 'js' ? JS_BLOCKS : PYTHON_BLOCKS
   const [placed, setPlaced] = useState<PlacedBlock[]>([])
   const [tab, setTab] = useState<'all' | BlockCategory>('all')
+  const required = requiredIds ?? []
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -83,7 +96,8 @@ export default function BlockEditor({ language, onCodeChange }: BlockEditorProps
 
   useEffect(() => {
     onCodeChange(buildCode(placed))
-  }, [placed, onCodeChange])
+    onBlocksChange?.(placed.map(p => p.def.id))
+  }, [placed, onCodeChange, onBlocksChange])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -141,9 +155,11 @@ export default function BlockEditor({ language, onCodeChange }: BlockEditorProps
 
   const codePreview = useMemo(() => buildCode(placed), [placed])
   const visibleBlocks = tab === 'all' ? blocks : blocks.filter(b => b.category === tab)
+  const languageLabel = language === 'bash' ? 'Bash' : language === 'js' ? 'JavaScript' : 'Python'
+  const placedIds = useMemo(() => new Set(placed.map(p => p.def.id)), [placed])
 
   return (
-    <Card title={`${t('blocks.title')} (${language === 'bash' ? 'Bash' : 'Python'})`}>
+    <Card title={`${t('blocks.title')} (${languageLabel})`}>
       <div className="mb-4">
         <p className="text-sm text-[var(--text-secondary)] mb-2">{t('blocks.hint')}</p>
         <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1" role="tablist" aria-label={t('blocks.title')}>
@@ -187,6 +203,38 @@ export default function BlockEditor({ language, onCodeChange }: BlockEditorProps
         </div>
       </div>
 
+      {required.length > 0 && (
+        <div
+          data-testid="required-blocks"
+          className="mb-4 p-3 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/10"
+        >
+          <p className="text-xs font-semibold text-[var(--text-primary)] mb-2">
+            {t('blocks.retoTitle')}
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {required.map(id => {
+              const done = placedIds.has(id)
+              const def = ALL_BLOCKS.find(b => b.id === id)
+              const label = def ? t(`blocks.${id}.label`) : id
+              return (
+                <li
+                  key={id}
+                  data-testid={`reto-${id}`}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${
+                    done
+                      ? 'bg-[var(--success)]/15 border-[var(--success)] text-[var(--success)]'
+                      : 'bg-[var(--bg-secondary)] border-[var(--border)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  <span aria-hidden="true">{done ? '✓' : '○'}</span>
+                  {label}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div
           ref={setDropRef}
@@ -211,6 +259,7 @@ export default function BlockEditor({ language, onCodeChange }: BlockEditorProps
                     indent={indent}
                     lineNumber={index + 1}
                     language={language}
+                    required={required.includes(def.id)}
                     onRemove={() => removeBlock(uid)}
                     onIndent={() => changeIndent(uid, 1)}
                     onOutdent={() => changeIndent(uid, -1)}
@@ -254,7 +303,7 @@ function PaletteBlock({
   onAdd,
 }: {
   block: BlockDef
-  language: 'python' | 'bash'
+  language: BlockLanguage
   onAdd: () => void
 }) {
   const { t } = useTranslation()
@@ -295,7 +344,8 @@ interface PlacedBlockRowProps {
   def: BlockDef
   indent: number
   lineNumber: number
-  language: 'python' | 'bash'
+  language: BlockLanguage
+  required?: boolean
   onRemove: () => void
   onIndent: () => void
   onOutdent: () => void
@@ -307,6 +357,7 @@ function PlacedBlockRow({
   indent,
   lineNumber,
   language,
+  required,
   onRemove,
   onIndent,
   onOutdent,
@@ -342,6 +393,15 @@ function PlacedBlockRow({
         className={`flex-1 py-2 pr-1 font-mono text-xs text-[var(--code-text)] language-${language} whitespace-pre-wrap break-words self-center`}
         dangerouslySetInnerHTML={{ __html: highlight(def.code, language) }}
       />
+      {required && (
+        <span
+          aria-label={t('blocks.retoDone')}
+          title={t('blocks.retoDone')}
+          className="flex items-center px-1.5 text-[var(--success)]"
+        >
+          ✓
+        </span>
+      )}
       <span className="flex items-center gap-0.5 pr-1">
         <button
           {...attributes}

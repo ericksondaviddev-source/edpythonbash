@@ -49,3 +49,53 @@ describe('BlockEditor pro', () => {
     expect(onCodeChange).toHaveBeenLastCalledWith('')
   })
 })
+
+describe('BlockEditor paleta JS', () => {
+  it('muestra los bloques JS y genera código JS', () => {
+    const onCodeChange = vi.fn()
+    render(<BlockEditor language="js" onCodeChange={onCodeChange} />)
+    fireEvent.click(screen.getByText('console.log'))
+    expect(onCodeChange).toHaveBeenLastCalledWith('console.log(valor)')
+  })
+
+  it('el título identifica JavaScript', () => {
+    render(<BlockEditor language="js" onCodeChange={() => {}} />)
+    expect(screen.getByText(/JavaScript/)).toBeTruthy()
+  })
+})
+
+describe('BlockEditor reto de bloques requeridos', () => {
+  it('lista los bloques requeridos y se marcan al colocarlos', () => {
+    const onBlocksChange = vi.fn()
+    render(
+      <BlockEditor
+        language="python"
+        onCodeChange={() => {}}
+        requiredIds={['py-var', 'py-print']}
+        onBlocksChange={onBlocksChange}
+      />
+    )
+    const reto = screen.getByTestId('required-blocks')
+    expect(reto).toBeTruthy()
+    expect(screen.getByTestId('reto-py-var').textContent).toContain('○')
+    expect(screen.getByTestId('reto-py-print').textContent).toContain('○')
+
+    fireEvent.click(screen.getByRole('button', { name: /^Variable/ }))
+    expect(screen.getByTestId('reto-py-var').textContent).toContain('✓')
+    expect(screen.getByTestId('reto-py-print').textContent).toContain('○')
+    expect(onBlocksChange).toHaveBeenLastCalledWith(['py-var'])
+  })
+
+  it('el bloque colocado en el lienzo muestra el distintivo de requerido', () => {
+    render(
+      <BlockEditor language="python" onCodeChange={() => {}} requiredIds={['py-var']} />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^Variable/ }))
+    expect(screen.getByLabelText(/bloque requerido usado/i)).toBeTruthy()
+  })
+
+  it('sin requiredIds no se muestra el reto', () => {
+    render(<BlockEditor language="python" onCodeChange={() => {}} />)
+    expect(screen.queryByTestId('required-blocks')).toBeNull()
+  })
+})

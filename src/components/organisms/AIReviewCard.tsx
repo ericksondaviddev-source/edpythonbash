@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useAI } from '../../hooks/useAI'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../atoms'
+import type { BlockLanguage } from '../../lib/blockDefs'
 
 interface AIReviewCardProps {
   code: string
-  language: 'python' | 'bash'
+  language: BlockLanguage
 }
 
 export default function AIReviewCard({ code, language }: AIReviewCardProps) {
@@ -23,6 +24,7 @@ export default function AIReviewCard({ code, language }: AIReviewCardProps) {
     setNeedsCode(false)
     setReview(null)
 
+    const languageName = language === 'bash' ? 'Bash' : language === 'js' ? 'JavaScript' : 'Python'
     const response = await chat([
       {
         role: 'system',
@@ -31,7 +33,7 @@ export default function AIReviewCard({ code, language }: AIReviewCardProps) {
       {
         role: 'user',
         content: t('aiReview.userPrompt', {
-          language: language === 'bash' ? 'Bash' : 'Python',
+          language: languageName,
           langCode: language,
           code
         })
