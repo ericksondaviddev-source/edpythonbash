@@ -1058,4 +1058,598 @@
       }
     ]
   }
+,
+  {
+    "id": "F0.3-011",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "competencia": "Arrays y Objetos: map, filter y find sobre colecciones",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Listar solo los cursos activos del catálogo y mostrar sus nombres",
+    "modelo_mental": "Un array es una lista ordenada que no sabe nada de tu dominio: filter devuelve OTRO array con los elementos que cumplen el predicado, map devuelve OTRO array con valores transformados, y find devuelve UN elemento (o undefined si no hay coincidencia). Ninguno de los tres devuelve 'el objeto con nombre'. Por eso activos.name es undefined de forma silenciosa: los arrays solo tienen propiedades numéricas y length, no las propiedades de tus cursos. El error silencioso es el más peligroso en JavaScript: undefined no lanza excepción hasta que intentas usarlo. El patrón mental correcto es pipeline: filtrar → transformar → presentar, encadenando filter().map() y reservando find() para cuando necesitas exactamente uno con un guard (?. o ternario) por si no existe.",
+    "codigo_roto": "const activos = courses.filter((c) => c.active);\nconsole.log(activos.name); // undefined — activos es un array, no un curso\n\nconst bash = courses.find((c) => c.name === 'Bash');\nconsole.log(bash.price); // funciona... hasta que find no encuentra nada",
+    "diagnostico": "1. courses.filter((c) => c.active) crea un array nuevo con los cursos que cumplen (Python y JavaScript). Ese array tiene propiedades como length, 0, 1 y métodos como map, pero NO tiene name: leer activos.name devuelve undefined sin ningún aviso.\n\n2. El resultado de filter siempre es un array, aunque coincida un solo elemento. Tratarlo como un objeto del dominio es el bug clásico de quien viene de lenguajes donde find devuelve el elemento.\n\n3. courses.find devuelve el elemento o undefined. bash.price funciona solo porque hay coincidencia; si el nombre cambiara, obtendrías TypeError: Cannot read properties of undefined. El acceso debe protegerse con bash?.price o un ternario.",
+    "codigo_corregido": "const activos = courses.filter((c) => c.active);\nconsole.log(activos.length); // 2\n\nconst nombres = activos.map((c) => c.name);\nconsole.log(nombres.join(', ')); // 'Python, JavaScript'\n\nconst bash = courses.find((c) => c.name === 'Bash');\nconsole.log(bash ? bash.price : 'no existe'); // 20",
+    "codigo_optimizado": "const nombres = courses\n  .filter(({ active }) => active)\n  .map(({ name }) => name);\n\nconsole.log(`Activos (${nombres.length}): ${nombres.join(', ')}`);",
+    "disenso_experto": "Cuidado con el encadenamiento infinito: filter().map().filter().map() recorre el array varias veces y en listas grandes se nota. A veces conviene un solo reduce que filtre y transforme a la vez. Además, filter/map devuelven arrays nuevos (inmutabilidad), lo cual es bueno para prevenir bugs pero cuesta memoria; en hot paths con cientos de miles de elementos se prefiere un for clásico. Y recuerda: findIndex + splice muta el original, no confundas esos métodos con el resto del pipeline inmutable.",
+    "pregunta_transferencia": "Escenario: una API te devuelve cursos y necesitas el precio total de los activos en dólares. Escribes courses.filter((c) => c.active).price y obtienes undefined. Pista: filter deja un array; el precio total es la suma de price sobre ese array, y el acumulador clásico para eso es reduce.",
+    "quiz": {
+      "pregunta": "¿Qué devuelve courses.filter((c) => c.active).price?",
+      "opciones": [
+        "La suma de los precios de los cursos activos",
+        "El price del primer curso activo",
+        "undefined, porque filter devuelve un array y los arrays no tienen la propiedad price",
+        "Lanza TypeError de inmediato"
+      ],
+      "correcta": "C",
+      "explicacion": "filter siempre devuelve un array. Leer .price sobre un array no lanza error: devuelve undefined en modo silencioso. Para la suma se necesita reduce."
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "engine": "js",
+      "instruccion": "getActiveNames() debe devolver un array con los nombres de los cursos activos, pero devuelve undefined. Arréglala sin cambiar la firma de la función.",
+      "codigo_inicial": "function getActiveNames() {\n  const activos = courses.filter((c) => c.active);\n  return activos.name; // bug: activos es un array\n}\n\nconsole.log(getActiveNames());",
+      "test_code": "const r = getActiveNames();\nconsole.log(Array.isArray(r) && r.join(',') === 'Python,JavaScript' ? 'PASS' : 'FAIL: obtuvo ' + JSON.stringify(r));",
+      "asserts_return": [
+        {
+          "caso": "getActiveNames().length",
+          "esperado": 2
+        }
+      ],
+      "asserts_forbidden": [
+        "activos.name"
+      ],
+      "solucion": "function getActiveNames() {\n  const activos = courses.filter((c) => c.active);\n  return activos.map((c) => c.name);\n}\n\nconsole.log(getActiveNames().join(', '));",
+      "validacion": "getActiveNames debe devolver un array de strings con el name de cada curso con active=true, en el orden del catálogo. No aceptar activos[0].name (solo el primero) ni hardcodear los nombres.",
+      "disenso_experto": "El pipeline filter().map() recorre el array dos veces; un reduce único es más eficiente pero menos legible. Elige legibilidad salvo que el perfil diga lo contrario."
+    },
+    "audio_script": "El bug más común con arrays es confundir el resultado con el objeto. Cuando haces filter, JavaScript te devuelve una lista nueva, punto. No te devuelve el curso con sus propiedades. Por eso activos.name es undefined: un array solo sabe de índices y de length. La cadena correcta es filter para quedarte con los que te sirven, map para quedarte solo con lo que necesitas de cada uno. Y si usas find, recuerda que puede devolver undefined: protege el acceso o el día que falte un curso, tu app truena con TypeError.",
+    "video_prompt": "Video de 60s. Tres cajas de frutas sobre una mesa (el catálogo). Un filtro selecciona dos cajas activas y las pone en una canasta NUEVA (el array de filter). Luego intentan leer una etiqueta 'name' pegada en la canasta misma: sale undefined. Una flecha enseña que la etiqueta está en cada fruta, no en la canasta; un map recoge las etiquetas en una lista limpia. Overlay: 'filter devuelve array, no objeto'.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "MDN - Array.prototype.filter",
+        "MDN - Array.prototype.map",
+        "MDN - Array.prototype.find"
+      ],
+      "conceptos_clave": [
+        "arrays",
+        "filter",
+        "map",
+        "find",
+        "undefined",
+        "pipeline"
+      ]
+    },
+    "tags_rag": [
+      "javascript",
+      "arrays",
+      "objetos",
+      "filter",
+      "map",
+      "find"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál de estas afirmaciones sobre Array.prototype.filter es correcta?",
+        "opciones": [
+          "Devuelve el primer elemento que cumple el predicado",
+          "Devuelve un array nuevo con todos los elementos que cumplen el predicado",
+          "Modifica el array original quitando los que no cumplen",
+          "Devuelve undefined si ningún elemento cumple"
+        ],
+        "correcta": "B",
+        "explicacion": "filter crea un array nuevo (no muta el original) con todos los elementos que devuelven truthy en el predicado. Si ninguno cumple, el array resultante está vacío, no undefined. find es quien devuelve el primer elemento o undefined.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Dado el catálogo courses, ¿qué imprime console.log(courses.map((c) => c.name).length)?",
+        "opciones": [
+          "3",
+          "undefined",
+          "['Python', 'Bash', 'JavaScript']",
+          "TypeError"
+        ],
+        "correcta": "A",
+        "explicacion": "map devuelve un array de la misma longitud que el original (una entrada de entrada), así que .length es 3. Si se quisiera el array completo habría que imprimir el resultado de map, no su longitud.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Tu código hace const c = courses.find((x) => x.name === 'Rust'); console.log(c.price) y la app truena. ¿Por qué?",
+        "opciones": [
+          "find es asíncrono y hay que usar await",
+          "El catálogo no tiene 'Rust', find devuelve undefined y leer .price lanza TypeError",
+          "price no existe en ningún curso del stub",
+          "find solo funciona con números, no con strings"
+        ],
+        "correcta": "B",
+        "explicacion": "find devuelve undefined cuando no hay coincidencia; acceder a undefined.price lanza TypeError. Protege con c?.price o un ternario. find es síncrono y price sí existe en el catálogo.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Para transformar cada precio con impuesto en un solo paso sobre un array existente, ¿qué combinación es idiomática?",
+        "opciones": [
+          "courses.filter((c) => c.price * 1.16)",
+          "courses.map((c) => c.price * 1.16)",
+          "courses.find((c) => c.price * 1.16)",
+          "courses.reduce((c) => c.price * 1.16)"
+        ],
+        "correcta": "B",
+        "explicacion": "map transforma cada elemento en uno nuevo: aquí cada curso en su precio con impuesto. filter selecciona, find extrae uno, reduce acumula (también sirve pero con forma distinta).",
+        "tipo": "codigo"
+      }
+    ]
+  },
+  {
+    "id": "F0.3-012",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "competencia": "Clases: constructor, métodos y el contexto this",
+    "nivel": "principiante",
+    "fase": 0,
+    "microproyecto": "Modelar un Curso con nombre y precio para presentar el catálogo",
+    "modelo_mental": "Una clase es una fábrica de objetos: el constructor recibe los datos y los fija en la instancia con this.propiedad = valor. Los métodos viven en el prototipo y comparten una función única; 'this' se resuelve en el momento de la LLAMADA y apunta al objeto del punto que invocó el método (py.resumen() → this es py). El bug silencioso clásico es usar identificadores libres (nombre en vez de this.nombre) dentro del método: en un script sin 'use strict', nombre resuelve contra el scope global (window.nombre → undefined) y el método devuelve 'undefined' en vez de tronar. La IA comete este error constantemente al refactorizar. Regla de oro: dentro de una clase, todo acceso a estado de la instancia pasa por this.",
+    "codigo_roto": "class Curso {\n  constructor(nombre, precio) {\n    this.nombre = nombre;\n    this.precio = precio;\n  }\n  resumen() {\n    return `${nombre} cuesta $${precio}`; // olvidaron this.\n  }\n}\n\nconst py = new Curso('Python', 10);\nconsole.log(py.resumen()); // 'undefined cuesta $undefined'",
+    "diagnostico": "1. El constructor está bien: this.nombre y this.precio guardan el estado en la instancia creada (py).\n\n2. resumen() usa nombre y precio como identificadores libres. Al no existir en el scope local de la función, el motor sube al scope global: window.nombre y window.precio son undefined. No hay ReferenceError porque en modo sloppy los identificadores no declarados se resuelven (o crean) en window.\n\n3. La corrección es this.nombre y this.precio: 'this' es el objeto que invocó el método (py). Si resumen se desestructurara (const r = py.resumen; r()), se perdería el enlace y this sería window; por eso también existen los métodos bind o las arrow functions en class fields.",
+    "codigo_corregido": "class Curso {\n  constructor(nombre, precio) {\n    this.nombre = nombre;\n    this.precio = precio;\n  }\n  resumen() {\n    return `${this.nombre} cuesta $${this.precio}`;\n  }\n}\n\nconst py = new Curso('Python', 10);\nconsole.log(py.resumen()); // 'Python cuesta $10'",
+    "codigo_optimizado": "class Curso {\n  constructor(nombre, precio) {\n    this.nombre = nombre;\n    this.precio = precio;\n    Object.freeze(this);\n  }\n  get resumen() {\n    return `${this.nombre} cuesta $${this.precio}`;\n  }\n}\n\nconsole.log(new Curso('Python', 10).resumen); // 'Python cuesta $10'",
+    "disenso_experto": "Las clases de ES2015 son azúcar sobre prototipos; entender prototype te salva en depuración avanzada. Object.freeze previene mutaciones accidentales pero también rompe patrones válidos (lazy init). Los getters parecen propiedades y engañan al leer; úsalos con moderación. Y cuidado: class fields con arrow functions crean una función por instancia (coste de memoria) a cambio de capturar this sin bind.",
+    "pregunta_transferencia": "Escenario: extraes resumen() a una utilidad const resumen = py.resumen; y al llamarla imprime 'undefined cuesta $undefined'. Pista: ¿quién es 'this' cuando no hay objeto antes del punto?",
+    "quiz": {
+      "pregunta": "Dentro de un método de clase, ¿qué es 'this'?",
+      "opciones": [
+        "La instancia con la que se invocó el método (el objeto antes del punto)",
+        "El objeto window siempre",
+        "La clase misma (el constructor)",
+        "Un alias fijo de la primera instancia creada"
+      ],
+      "correcta": "A",
+      "explicacion": "'this' se determina en la llamada: si haces py.resumen(), this es py. Si no hay objeto antes del punto (resumen()), this es window en sloppy mode o undefined en strict mode.",
+      "tipo": "concepto"
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "engine": "js",
+      "instruccion": "resumen() imprime 'undefined cuesta $undefined'. Arréglalo usando el estado de la instancia; no cambies el constructor.",
+      "codigo_inicial": "class Curso {\n  constructor(nombre, precio) {\n    this.nombre = nombre;\n    this.precio = precio;\n  }\n  resumen() {\n    return `${nombre} cuesta $${precio}`;\n  }\n}\n\nconst py = new Curso('Python', 10);\nconsole.log(py.resumen());",
+      "test_code": "const c = new Curso('Bash', 20);\nconsole.log(c.resumen() === 'Bash cuesta $20' ? 'PASS' : 'FAIL: ' + c.resumen());",
+      "asserts_return": [
+        {
+          "caso": "new Curso('Bash', 20).resumen()",
+          "esperado": "Bash cuesta $20"
+        }
+      ],
+      "solucion": "class Curso {\n  constructor(nombre, precio) {\n    this.nombre = nombre;\n    this.precio = precio;\n  }\n  resumen() {\n    return `${this.nombre} cuesta $${this.precio}`;\n  }\n}\n\nconst py = new Curso('Python', 10);\nconsole.log(py.resumen());",
+      "validacion": "resumen() debe devolver '<nombre> cuesta $<precio>' usando this. No vale hardcodear el string ni leer window.nombre.",
+      "disenso_experto": "En modo sloppy, un identificador libre no declarado CREARÍA una propiedad global al asignarlo: el bug puede contagiar window y durar toda la sesión. 'use strict' convierte ese fallo en ReferenceError, más ruidoso y más fácil de detectar."
+    },
+    "audio_script": "Las clases son fábricas: el constructor monta cada pieza con this punto y coma. El error que más veo con la IA es que dentro del método usa las variables como si fueran locales: nombre en vez de this punto nombre. JavaScript no truena; en modo normal busca en el window y encuentra undefined, así que tu método devuelve mentiras. Recuerda: this es el objeto que está antes del punto cuando llamas al método. Sin ese punto, se te cae el contexto y el resumen se convierte en papel mojado.",
+    "video_prompt": "Video de 60s. Molde de fábrica (clase) que estampa chapa tras chapa (instancias). En cada chapa se sueldan las piezas etiquetadas NOMBRE y PRECIO con etiqueta 'this.'. Un trabajador tuerce las etiquetas quitando el 'this.' y las piezas se descolgan al piso (undefined). Overlay: 'Sin this. no hay instancia'.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "MDN - Classes",
+        "MDN - this",
+        "MDN - Object.freeze"
+      ],
+      "conceptos_clave": [
+        "clases",
+        "constructor",
+        "this",
+        "prototipos",
+        "strict-mode"
+      ]
+    },
+    "tags_rag": [
+      "javascript",
+      "clases",
+      "constructor",
+      "this",
+      "poo"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Por qué class Curso { constructor(n) { nombre = n; } } es un anti-patrón en modo sloppy?",
+        "opciones": [
+          "Porque nombre no está declarada, la asignación crea window.nombre y no hay propiedad en la instancia",
+          "Porque constructor no admite parámetros",
+          "Porque nombre es palabra reservada de JavaScript",
+          "Porque siempre lanza ReferenceError"
+        ],
+        "correcta": "A",
+        "explicacion": "Sin 'use strict', asignar a un identificador no declarado crea una variable global en window. La instancia queda sin la propiedad y el estado se contamina globalmente. En strict mode sería ReferenceError; la forma correcta es this.nombre = n.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Dado const py = new Curso('Python', 10); const r = py.resumen; console.log(r()); ¿qué ocurre?",
+        "opciones": [
+          "Imprime 'Python cuesta $10'",
+          "Imprime 'undefined cuesta $undefined' porque this ya no es py",
+          "Lanza TypeError: resumen is not a function",
+          "Imprime el código fuente del método"
+        ],
+        "correcta": "B",
+        "explicacion": "Desestructurar el método quita el objeto del punto: al invocar r(), this es window (sloppy) o undefined (strict), y las lecturas this.nombre dan undefined. Solución: r.call(py) o bind en la definición.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Qué garantiza Object.freeze(this) en el constructor?",
+        "opciones": [
+          "Los métodos dejan de poder ejecutarse",
+          "No se pueden añadir ni reasignar propiedades en la instancia (el objeto es inmutable superficialmente)",
+          "Las propiedades se convierten en getters privados",
+          "El objeto se serializa a JSON automáticamente"
+        ],
+        "correcta": "B",
+        "explicacion": "freeze hace inmutable la instancia de forma superficial: reasignaciones o nuevas propiedades fallan en strict mode o se ignoran silenciosamente. No afecta a los métodos ni a objetos anidados.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En get resumen() { ... } dentro de una clase, ¿cómo se lee el valor desde fuera?",
+        "opciones": [
+          "py.resumen() con paréntesis, como un método",
+          "py.resumen sin paréntesis, como una propiedad calculada",
+          "Solo se puede leer desde dentro de la clase",
+          "Curso.resumen estaticamente"
+        ],
+        "correcta": "B",
+        "explicacion": "Un getter se invoca al acceder a la propiedad: py.resumen (sin llamada). Si dejas los paréntesis intentas invocar el valor devuelto (un string) como función y truena.",
+        "tipo": "codigo"
+      }
+    ]
+  },
+  {
+    "id": "F0.3-013",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "competencia": "Módulos y scope: de IIFE al patrón namespace",
+    "nivel": "intermedio",
+    "fase": 0,
+    "microproyecto": "Exponer utilidades de formato de precio sin ensuciar el scope global",
+    "modelo_mental": "Un módulo es una habitación con puerta: export controla qué sale y import qué entra. En un script clásico (sin type=module) no existe esa puerta: cada function en el top-level se cuelga de window y dos archivos con la misma función se pisan en silencio. Antes de ESM, el patrón estándar era la IIFE reveladora: una función autoinvocada que define sus helpers en privado y devuelve solo el objeto namespace que quieres exponer. Hoy el bundler resuelve los imports en tiempo de build, pero el modelo mental sigue vigente: scope privado + superficie pública mínima. Dato clave: los exports de ESM son enlaces vivos, no copias; y un import solo es válido en top-level, nunca dentro de un if.",
+    "codigo_roto": "import { formatPrice } from './utils.js';\n\nconsole.log(formatPrice(9.5));\n// SyntaxError: Cannot use import statement outside a module",
+    "diagnostico": "1. import es azúcar de módulos ES (ESM). El navegador (y el harness del simulador) ejecuta este archivo como script clásico, donde import es un error de sintaxis en tiempo de parseo: la ejecución ni siquiera llega a la línea 3.\n\n2. Para que import funcione haría falta <script type=\">module\"> o un bundler que resuelva el grafo en build. Fuera de ese contexto, la forma tradicional de encapsular es la IIFE que devuelve un namespace.\n\n3. La segunda lección del scope global: en script clásico, dos function formatPrice en el mismo archivo (o en dos scripts) no coexisten; la última pisa a la anterior sin aviso. El namespace elimina ambas amenazas: sintaxis válida y un solo nombre público.",
+    "codigo_corregido": "const money = (function () {\n  function formatPrice(n) {\n    return `$${Number(n).toFixed(2)}`;\n  }\n  function sumPrecios(items) {\n    return items.reduce((acc, p) => acc + p.price, 0);\n  }\n  return { formatPrice, sumPrecios };\n})();\n\nconsole.log(money.formatPrice(9.5)); // '$9.50'\nconsole.log(money.sumPrecios(courses)); // 60",
+    "codigo_optimizado": "const money = {\n  formatPrice: (n) => `$${Number(n).toFixed(2)}`,\n  sumPrecios: (items) => items.reduce((acc, { price }) => acc + price, 0),\n};\n\nconsole.log(money.formatPrice(9.5), money.sumPrecios(courses));",
+    "disenso_experto": "Hoy la IIFE es historia: se usa ESM nativo con el bundler. El namespace object plano también tiene costes (sin privacidad real, cualquier llamada money.formatPrice = null rompe el módulo). En entornos modernos elige export const; la IIFE sigue siendo útil para snippets de entrevistas, código embebido y entender el legado. Y recuerda: el tree-shaking solo funciona con ESM estático, no con require dinámico ni con IIFE.",
+    "pregunta_transferencia": "Escenario: tu bundler resuelve import con errores porque el import está dentro de un if (carga condicional). Pista: los imports son declaraciones y viven en el top-level del módulo; la carga condicional moderna se hace con import() como promesa.",
+    "quiz": {
+      "pregunta": "¿Por qué el código con import falla en el simulador del curso?",
+      "opciones": [
+        "Porque ./utils.js no existe en el servidor",
+        "Porque import solo es válido en módulos ESM (type=module o bundler); el harness ejecuta scripts clásicos",
+        "Porque import requiere Node.js",
+        "Porque formatPrice no está exportada con export default"
+      ],
+      "correcta": "B",
+      "explicacion": "El harness ejecuta el código como script clásico, donde import es SyntaxError al parsear. No es un problema del archivo importado ni del tipo de export.",
+      "tipo": "concepto"
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "engine": "js",
+      "instruccion": "Completa la IIFE para que money.exponga formatPrice y el console.log imprima '$9.50'.",
+      "codigo_inicial": "const money = (function () {\n  function formatPrice(n) {\n    return `$${Number(n).toFixed(2)}`;\n  }\n  // TODO: devuelve el objeto con formatPrice (no olvides el return)\n})();\n\nconsole.log(money.formatPrice(9.5));",
+      "test_code": "console.log(money && typeof money.formatPrice === 'function' ? 'PASS' : 'FAIL: money.formatPrice no existe');\nconsole.log(money.formatPrice(2) === '$2.00' ? 'PASS' : 'FAIL: ' + money.formatPrice(2));",
+      "asserts_return": [
+        {
+          "caso": "money.formatPrice(3)",
+          "esperado": "$3.00"
+        }
+      ],
+      "solucion": "const money = (function () {\n  function formatPrice(n) {\n    return `$${Number(n).toFixed(2)}`;\n  }\n  return { formatPrice };\n})();\n\nconsole.log(money.formatPrice(9.5));",
+      "validacion": "Debe agregarse return { formatPrice }; dentro de la IIFE (o un objeto equivalente). money debe ser el namespace y formatPrice una función pública; los helpers internos no deben salir si no se piden.",
+      "disenso_experto": "El patrón IIFE-namespace data de la era pre-ESM. En proyectos actuales se reemplaza por export/import; la IIFE queda para pegar snippets sin romper el global scope. Ojo con confundirla con el módulo CommonJS (require/module.exports), que es síncrono y de Node."
+    },
+    "audio_script": "Imagina que cada archivo de módulo es una habitación. En módulos ES, la puerta tiene cerradura: export lo que quieres mostrar, import lo que necesitas entrar. Pero en un script viejo no hay puerta: todo cae al pasillo global y dos functions con el mismo nombre se pisan sin avisar. El truco ancestral es la IIFE: una función que se llama a sí misma, trabaja en privado y solo deja en el pasillo un objeto con lo público. money punto formatPrice es ese objeto. Hoy el bundler hace de cerrajero con import y export, pero el modelo mental del espacio privado es exactamente el mismo.",
+    "video_prompt": "Video de 60s. Oficina open-space caótica (scope global) donde dos empleados gritan 'formatPrice' y se pisan los papeles. Luego, una sala con puerta marcada 'IIFE': el trabajo pasa adentro y por la ventanilla solo sale una caja etiquetada 'money'. Al final, puertas modernas con letreros 'export/import' de un edificio de módulos. Overlay: 'Scope privado, API pública'.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "MDN - JavaScript modules",
+        "MDN - Immediately Invoked Function Expressions"
+      ],
+      "conceptos_clave": [
+        "modulos",
+        "iife",
+        "scope",
+        "namespace",
+        "esm"
+      ]
+    },
+    "tags_rag": [
+      "javascript",
+      "modulos",
+      "iife",
+      "scope",
+      "namespace",
+      "esm"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la forma canónica de un módulo IIFE reveladora?",
+        "opciones": [
+          "(function () { /* código */ })(); al final del archivo sin asignar nada",
+          "const ns = (function () { /* helpers privados */ return { api }; })();",
+          "function modulo() { return { api }; } y llamarla desde HTML",
+          "Object.freeze({ api: function () {} });"
+        ],
+        "correcta": "B",
+        "explicacion": "La IIFE reveladora se invoca inmediatamente y devuelve (revela) el objeto con la API pública. Los helpers viven en el closure privado. A es una IIFE sin revelar nada; C expone la fábrica; D es un objeto congelado, no un módulo.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "En un script clásico, dos archivos hacen function util() {} y ambos se cargan con <script>. ¿Qué pasa?",
+        "opciones": [
+          "JavaScript lanza DuplicateDeclarationError",
+          "La segunda definición pisa a la primera en window.util, silenciosamente",
+          "Coexisten en namespaces distintos automáticamente",
+          "El navegador carga solo el primero"
+        ],
+        "correcta": "B",
+        "explicacion": "En el global scope, las declaraciones de función se cuelgan de window y la última gana. No hay error: el bug aparece cuando el código anterior llama a util esperando el primer comportamiento.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Los exports de ESM son copias estáticas de los valores?",
+        "opciones": [
+          "Sí, se copian en el momento del import",
+          "No, son enlaces vivos: si el módulo exportado cambia el binding, el importado lo ve",
+          "Solo los exports por defecto son enlaces vivos",
+          "Depende del bundler"
+        ],
+        "correcta": "B",
+        "explicacion": "Los bindings de ESM son vivos y síncronos entre módulos; por eso se pueden tener counter modules o HMR. Las funciones reasignadas en el módulo exportador se reflejan en quien importó el nombre.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Dónde es legal escribir import { x } from 'y'?",
+        "opciones": [
+          "En el top-level del módulo, nunca dentro de if/for",
+          "Dentro de un if para carga condicional",
+          "Dentro de una función auxiliar",
+          "En cualquier lugar de un script clásico"
+        ],
+        "correcta": "A",
+        "explicacion": "import es una declaración estática y debe estar en top-level; el grafo se resuelve antes de ejecutar. La carga condicional moderna usa import() (una promesa), que sí admite posición dinámica.",
+        "tipo": "codigo"
+      }
+    ]
+  },
+  {
+    "id": "F0.3-014",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "competencia": "fetch, Promesas y async/await sobre APIs",
+    "nivel": "intermedio",
+    "fase": 0,
+    "microproyecto": "Cargar el catálogo desde /api/courses y contar cuántos cursos hay",
+    "modelo_mental": "fetch devuelve una PROMESA de Response, no la respuesta. res.json() devuelve otra promesa, esta vez del cuerpo ya parseado. Mientras la promesa no se resuelve, el valor no existe: leer .length sobre una Promise es undefined, otro error silencioso. async/await es azúcar: convierte la cadena .then en código secuencial donde cada await suspende la función hasta que la promesa se cumple, sin bloquear el hilo principal. Reglas vitales: (1) toda función async devuelve una promesa, incluso si no tienes return; (2) await solo cuelga dentro de una función async (o top-level en módulos); (3) comprueba res.ok, porque fetch NO lanza error en un 404 o 500: solo falla si la red no responde. Envuelve en try/catch lo que pueda rechazar.",
+    "codigo_roto": "function loadCourses() {\n  const res = fetch('/api/courses');\n  const data = res.json();\n  console.log(data.length); // undefined — data es una Promise\n}\n\nloadCourses();",
+    "diagnostico": "1. fetch('/api/courses') devuelve una Promise que se resolverá con el Response HTTP. En la línea siguiente, res todavía es esa promesa: res.json no existe en Promise, por lo que la llamada lanza TypeError (res.json is not a function). Cuando la promesa se resuelve, el valor real llega tarde.\n\n2. Aunque se resuelva la primera promesa con await, res.json() devuelve OTRA promesa: data.length sobre una promesa es undefined. Dos promesas, dos awaits.\n\n3. La forma correcta es una función async con await en cada paso y un return del dato. Llama con await loadCourses() (o .then) y encadena try/catch. Recuerda: fetch solo rechaza si falla la red; un 404 llega con ok=false.",
+    "codigo_corregido": "async function loadCourses() {\n  const res = await fetch('/api/courses');\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  const data = await res.json();\n  console.log(`Cursos: ${data.length}`); // 3\n  return data;\n}\n\nawait loadCourses();",
+    "codigo_optimizado": "async function loadCourses() {\n  try {\n    const res = await fetch('/api/courses');\n    if (!res.ok) throw new Error(`HTTP ${res.status}`);\n    const data = await res.json();\n    const activos = data.filter((c) => c.active).length;\n    console.log(`Activos: ${activos} de ${data.length}`);\n    return data;\n  } catch (e) {\n    console.error('Fallo al cargar:', e.message);\n    return [];\n  }\n}\n\nawait loadCourses();",
+    "disenso_experto": "async/await no es gratis: oculta la naturaleza concurrente. Si haces await en serie dos llamadas independientes, pierdes paralelismo; usa Promise.all. fetch no tiene timeout nativo: en producción añade AbortController. Y ojo con el error de red vs error HTTP: solo el primero rechaza la promesa. Por último, await en el top-level solo vale en módulos ESM; en un script clásico envuelve en una async IIFE.",
+    "pregunta_transferencia": "Escenario: una API responde 503 con cuerpo JSON de error y tu código solo hace await fetch sin chequear ok, luego await res.json() y pinta data.cursos que es undefined. Pista: ¿fetch lanza excepción en 503?",
+    "quiz": {
+      "pregunta": "¿Qué devuelve una función marcada con async incluso sin return explícito?",
+      "opciones": [
+        "undefined",
+        "Una promesa resuelta con undefined (o con el valor que devuelvas)",
+        "null",
+        "Lanza SyntaxError si falta el return"
+      ],
+      "correcta": "B",
+      "explicacion": "Todo async devuelve una promesa. Sin return se resuelve con undefined; con return value se resuelve con value; si lanza, la promesa se rechaza.",
+      "tipo": "concepto"
+    },
+    "simulador": {
+      "tipo": "fix_bug",
+      "engine": "js",
+      "instruccion": "loadCourses imprime undefined porque trata las promesas como valores. Arréglala con async/await para que imprima 'Cursos: 3' y devuelva el array.",
+      "codigo_inicial": "function loadCourses() {\n  const res = fetch('/api/courses');\n  const data = res.json();\n  console.log(`Cursos: ${data.length}`);\n  return data;\n}\n\nawait loadCourses();",
+      "test_code": "const r = await loadCourses();\nconsole.log(Array.isArray(r) && r.length === 3 ? 'PASS' : 'FAIL: obtuvo ' + JSON.stringify(r));",
+      "asserts_return": [
+        {
+          "caso": "(await loadCourses()).length",
+          "esperado": 3
+        }
+      ],
+      "asserts_stdout": [
+        "Cursos: 3"
+      ],
+      "solucion": "async function loadCourses() {\n  const res = await fetch('/api/courses');\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  const data = await res.json();\n  console.log(`Cursos: ${data.length}`);\n  return data;\n}\n\nawait loadCourses();",
+      "validacion": "loadCourses debe ser async, hacer await a fetch y a res.json, comprobar res.ok, imprimir 'Cursos: 3' y devolver el array. No aceptar .then encadenados dentro de la función síncrona original.",
+      "disenso_experto": "El código de partida falla distinto según el modo: sin await, res.json es TypeError (promesa sin ese método); con await solo al fetch, data.length es undefined. Diagnosticar exige mirar el tipo real en cada paso. En la práctica, añade timeout con AbortController: un fetch colgado en móviles es un bug de UX real."
+    },
+    "audio_script": "Fetch no te da la respuesta: te da la promesa de una respuesta. Y cuando la resuelves, res punto json te da otra promesa, la del cuerpo. Son dos capas de espera. Si llamas res punto json sin esperar, el motor grita TypeError porque la promesa no tiene ese método. Con async y await dices: espera aquí, y el resto de la página sigue sin bloquearse. Y un detalle que olvida todo el mundo: fetch no truena con 404 o 500; tienes que mirar res punto ok o te comes los errores silenciosos.",
+    "video_prompt": "Video de 60s. Un mensajero (fetch) entrega un sobre lacrado (Promise). Lo abren y dentro hay otro sobre más pequeño (json). Solo al abrir el segundo hay un número real de cursos. Un programador lee el sobre cerrado e imprime 'undefined'. Overlay: 'fetch = Promise de Response; json = Promise de data'.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "MDN - fetch",
+        "MDN - async function",
+        "MDN - res.ok"
+      ],
+      "conceptos_clave": [
+        "fetch",
+        "promesas",
+        "async-await",
+        "http",
+        "res-ok"
+      ]
+    },
+    "tags_rag": [
+      "javascript",
+      "fetch",
+      "async",
+      "await",
+      "promesas",
+      "http"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "fetch('/api/courses') devuelve...",
+        "opciones": [
+          "El array de cursos ya parseado",
+          "Una Promise que se resuelve con un Response (sin cuerpo parseado)",
+          "Una Promise que se resuelve con el JSON",
+          "El objeto XMLHttpRequest antiguo"
+        ],
+        "correcta": "B",
+        "explicacion": "fetch resuelve con Response: para leer el cuerpo hay que llamar res.json() (u .text()), que devuelve OTRA promesa. El JSON no llega hasta el segundo await.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué imprime este código con el stub del curso?\nasync function f() {\n  const r = await fetch('/api/check-email');\n  return (await r.json()).exists;\n}\nconsole.log(await f());",
+        "opciones": [
+          "true",
+          "false",
+          "undefined",
+          "[object Promise]"
+        ],
+        "correcta": "B",
+        "explicacion": "El stub responde {exists:true} solo si la URL contiene 'taken'; sin esa palabra existe es false. Los awaits devuelven el objeto parseado correctamente.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "fetch('/api/inexistente').then(r => console.log(r.ok)) imprime...",
+        "opciones": [
+          "false, porque el stub solo define /api/courses",
+          "true, porque fetch solo rechaza si falla la red y el stub responde ok:true a cualquier URL",
+          "undefined",
+          "Lanza excepción por 404"
+        ],
+        "correcta": "B",
+        "explicacion": "El stub responde ok:true para toda URL desconocida; en la red real, un 404 también llega con ok=false sin rechazar la promesa. El error HTTP debe chequearse a mano.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Por qué se prefiere await a .then() encadenado en código nuevo?",
+        "opciones": [
+          "Porque await es más rápido en ejecución",
+          "Porque el flujo secuencial con try/catch legible refleja mejor el paso a paso asíncrono",
+          "Porque .then está deprecado en ECMAScript",
+          "Porque await funciona con fetch pero .then no"
+        ],
+        "correcta": "B",
+        "explicacion": "Rendimiento y semántica son equivalentes: await es azúcar sobre promesas. La ventaja es legibilidad y un solo try/catch para varios pasos. .then sigue siendo válido y útil en cadenas cortas.",
+        "tipo": "concepto"
+      }
+    ]
+  },
+  {
+    "id": "F0.3-015",
+    "modulo": "F0.3 - JavaScript Fundamentos",
+    "competencia": "Patrones de eventos: delegación vs listener por elemento",
+    "nivel": "intermedio",
+    "fase": 0,
+    "microproyecto": "Detectar clicks en la lista de cursos aunque se agreguen nuevos ítems en caliente",
+    "modelo_mental": "addEventListener se pega a un NODO, no a un selector. querySelectorAll devuelve una foto (NodeList) del momento: los elementos que existan después no reciben listeners. La delegación invierte el enfoque: escuchas UN listener en el ancestro común (ul.course-list) y, cuando el evento burbujea, preguntas con e.target.closest('.course-item') cuál es el ítem real. Ventajas: cientos de elementos con un solo listener, y los nodos creados dinámicamente funcionan sin re-registrar nada. Matices: e.target puede ser un span interior (closest sube hasta el matching), los clicks en el padding del ul no son ítems (el null-check importa), y stopPropagation en un hijo rompe la cadena. Es el patrón base de las listas reactivas.",
+    "codigo_roto": "document.querySelectorAll('.course-item').forEach((item) => {\n  item.addEventListener('click', () => console.log('Curso:', item.dataset.id));\n});\n\nconst nuevo = document.createElement('li');\nnuevo.className = 'course-item';\nnuevo.dataset.id = '99';\nnuevo.textContent = 'Rust';\ndocument.querySelector('.course-list').appendChild(nuevo);\n\ndocument.querySelectorAll('.course-item')[0].click(); // imprime 1\nnuevo.click(); // silencio: nadie le puso listener",
+    "diagnostico": "1. forEach sobre querySelectorAll cuelga un listener en cada li que existía en ese instante. Es un snapshot: la NodeList no se actualiza sola.\n\n2. El nodo nuevo se agrega al DOM después; nadie le pasó addEventListener, así que su click no imprime nada. No hay error: el evento simplemente no tiene a quién avisarle.\n\n3. La solución delegada es un listener en ul.course-list (el ancestro común). Los clicks en los li burbujean hasta ahí; e.target.closest('.course-item') identifica el ítem aunque el click haya sido en un span interno. Los ítems futuros funcionan gratis.",
+    "codigo_corregido": "document.querySelector('.course-list').addEventListener('click', (e) => {\n  const item = e.target.closest('.course-item');\n  if (!item) return;\n  console.log('Curso:', item.dataset.id, item.textContent);\n});\n\nconst nuevo = document.createElement('li');\nnuevo.className = 'course-item';\nnuevo.dataset.id = '99';\nnuevo.textContent = 'Rust';\ndocument.querySelector('.course-list').appendChild(nuevo);\n\ndocument.querySelectorAll('.course-item')[0].click(); // Curso: 1 Python\nnuevo.click(); // Curso: 99 Rust",
+    "codigo_optimizado": "const lista = document.querySelector('.course-list');\n\nlista.addEventListener('click', (e) => {\n  const item = e.target.closest('.course-item');\n  if (!item || !lista.contains(item)) return;\n  console.log(`#${item.dataset.id} → ${item.textContent}`);\n});\n\nlista.addEventListener('click', () => console.log('delegación viva'));",
+    "disenso_experto": "La delegación no es gratis: cada click ejecuta closest y puede atrapar eventos no deseados (mitigable con matches o contains). Si un hijo llama stopPropagation, el ancestro nunca se entera. Y si el listener del ancestro hace trabajo pesado sincrónico, el click se siente laggy: throttle/debounce con cuidado. Para listas de 10 elementos, el listener directo es más simple y no hay drama; el patrón brilla con listas grandes, virtualizadas o dinámicas.",
+    "pregunta_transferencia": "Escenario: una lista virtual reutiliza los li al hacer scroll: el mismo nodo DOM muestra datos de distintos items con dataset distinto cada frame. Pista: si el listener está cuelgado del nodo reutilizado pero lee el dataset en el closure viejo, ¿qué id imprime?",
+    "quiz": {
+      "pregunta": "¿Por qué un li creado después de forEach(querySelectorAll) no responde a los clicks registrados?",
+      "opciones": [
+        "Porque createElement no hereda eventos",
+        "Porque addEventListener se colgó de nodos concretos; la NodeList es un snapshot y el nodo nuevo no estaba en él",
+        "Porque los eventos no burbujean en listas ul",
+        "Porque dataset.id debe definirse antes del appendChild"
+      ],
+      "correcta": "B",
+      "explicacion": "Los listeners viven en nodos, no en selectores. querySelectorAll no es una colección viva. Por eso se delega en el ancestro, que sí permanece.",
+      "tipo": "concepto"
+    },
+    "simulador": {
+      "tipo": "fill_blank",
+      "engine": "js",
+      "instruccion": "Implementa la delegación: reemplaza el TODO para que el click sobre el ítem nuevo (id 99) imprima 'Curso: 99'.",
+      "codigo_inicial": "document.querySelector('.course-list').addEventListener('click', (e) => {\n  const item = e.target.parentElement; // TODO: debe ser el ancestor .course-item\n  if (item) console.log('Curso:', item.dataset.id);\n});\n\nconst nuevo = document.createElement('li');\nnuevo.className = 'course-item';\nnuevo.dataset.id = '99';\nnuevo.textContent = 'Rust';\ndocument.querySelector('.course-list').appendChild(nuevo);\nnuevo.click();",
+      "test_code": "document.querySelector('.course-list').click();\nconsole.log('PASS: delegacion sin crash');",
+      "asserts_stdout": [
+        "Curso: 99"
+      ],
+      "asserts_forbidden": [
+        "item.addEventListener"
+      ],
+      "solucion": "document.querySelector('.course-list').addEventListener('click', (e) => {\n  const item = e.target.closest('.course-item');\n  if (item) console.log('Curso:', item.dataset.id);\n});\n\nconst nuevo = document.createElement('li');\nnuevo.className = 'course-item';\nnuevo.dataset.id = '99';\nnuevo.textContent = 'Rust';\ndocument.querySelector('.course-list').appendChild(nuevo);\nnuevo.click();",
+      "validacion": "Reemplazar e.target.parentElement por e.target.closest('.course-item'). parentElement falla cuando el click cae en un hijo (span) o devuelve el ul si el target es el li directo pero con lectura incorrecta en otros contextos; closest es el API correcto de delegación.",
+      "disenso_experto": "closest es la pieza clave porque sube desde e.target hasta el primer match. En listas donde el li Y el span comparten clase, closest devolverá el span: cuida la estructura. Alternativa moderna: listener en el ul con e.target.matches('.course-item') si el elemento clickeado SIEMPRE es el li exacto."
+    },
+    "audio_script": "El listener se pega al nodo, no al selector. Si haces forEach y luego metes un elemento nuevo a la lista, ese elemento no tiene nadie escuchándolo: el click no truena, simplemente nadie contesta. La delegación es el patrón profesional: UN listener en el ul padre, y cuando el evento burbujea preguntas con closest quién es el item real. Así los elementos del futuro funcionan gratis y ahorras cientos de listeners. Solo acuérdate de validar el null, porque un click en el padding del ul no es un curso.",
+    "video_prompt": "Video de 60s. Correo humano repartiendo cartas puerta a puerta (listener por nodo): llega una puerta nueva construida después y el cartero ni la mira. Luego, un solo buzón en la entrada del edificio (delegación en ul) con un detector que lee el sobre y sabe de qué departamento viene aunque el vecino nuevo acaba de mudarse. Overlay: 'Un listener en el ancestro, closest identifica el item'.",
+    "trazabilidad": {
+      "libros_fuente": [
+        "MDN - Event delegation",
+        "MDN - Element.closest",
+        "MDN - Event bubbling"
+      ],
+      "conceptos_clave": [
+        "eventos",
+        "delegation",
+        "bubbling",
+        "closest",
+        "dom"
+      ]
+    },
+    "tags_rag": [
+      "javascript",
+      "eventos",
+      "delegation",
+      "dom",
+      "closest"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "En la delegación, ¿por qué se usa e.target.closest('.course-item') y no e.target directamente?",
+        "opciones": [
+          "Porque closest es más rápido",
+          "Porque el click puede caer en un hijo (span, strong) del li; closest sube hasta el primer ancestor que matchee",
+          "Porque e.target es siempre el ul",
+          "Porque closest filtra los eventos que no son click"
+        ],
+        "correcta": "B",
+        "explicacion": "e.target es el nodo más profundo que recibió el evento. Si el HTML es <li><span>Python</span></li> y el usuario pulsa el texto, target es el span. closest sube por el árbol hasta encontrar .course-item (el li).",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué imprime el listener delegado si el usuario hace click en el padding del ul.course-list (fuera de cualquier li)?",
+        "opciones": [
+          "Curso: undefined",
+          "Nada, si el código hace if (!item) return;",
+          "TypeError",
+          "Curso: null"
+        ],
+        "correcta": "B",
+        "explicacion": "closest devuelve null si ningún ancestor matchea. El null-check evita imprimir basura o lanzar TypeError al leer dataset de null.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Un hijo dentro del li llama e.stopPropagation() en su propio listener. ¿Qué le pasa a la delegación en el ul?",
+        "opciones": [
+          "Sigue recibiendo el evento, la delegación es independiente",
+          "No recibe el evento: stopPropagation corta la burbujea hacia el ancestro",
+          "Recibe el evento dos veces",
+          "Se lanza un warning de consola"
+        ],
+        "correcta": "B",
+        "explicacion": "stopPropagation impide que el evento suba por la cadena (bubbling). La delegación depende exactamente de esa subida; si un hijo corta la burbujea, el ancestro nunca se entera. stopImmediatePropagation además mata a los listeners hermanos del mismo nodo.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "Para 5 ítems estáticos que jamás cambian, ¿cuándo conviene el listener directo por nodo?",
+        "opciones": [
+          "Nunca: la delegación siempre es mejor",
+          "Cuando la simplicidad importa más que la flexibilidad y no hay lista dinámica: menos código y más directo",
+          "Solo si usas jQuery",
+          "Cuando hay más de 100 listeners"
+        ],
+        "correcta": "B",
+        "explicacion": "La delegación brilla con listas grandes o dinámicas. Con pocos nodos estáticos, el listener directo es simple, explícito y sin overhead de closest. Se elige según el contexto, no por dogma.",
+        "tipo": "concepto"
+      }
+    ]
+  }
 ]
