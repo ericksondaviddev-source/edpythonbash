@@ -1086,7 +1086,8 @@
     },
     "simulador": {
       "tipo": "fix_bug",
-      "engine": "js",
+      "engine": "js",
+      "bloques_requeridos": ["js-func","js-const","js-log"],
       "instruccion": "getActiveNames() debe devolver un array con los nombres de los cursos activos, pero devuelve undefined. Arréglala sin cambiar la firma de la función.",
       "codigo_inicial": "function getActiveNames() {\n  const activos = courses.filter((c) => c.active);\n  return activos.name; // bug: activos es un array\n}\n\nconsole.log(getActiveNames());",
       "test_code": "const r = getActiveNames();\nconsole.log(Array.isArray(r) && r.join(',') === 'Python,JavaScript' ? 'PASS' : 'FAIL: obtuvo ' + JSON.stringify(r));",

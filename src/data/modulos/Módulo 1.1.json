@@ -27,6 +27,7 @@
     "simulador": {
       "tipo": "fix_bug",
       "engine": "pyodide",
+      "bloques_requeridos": ["py-func","py-try"],
       "instruccion": "Corrige esta función que procesa edades. Debe: (1) convertir el string a int, (2) validar que esté entre 0 y 150, (3) retornar la edad el próximo año.",
       "setup_code": "",
       "codigo_inicial": "def edad_proximo_anio(edad_str):\n    # Esta función está rota: no convierte tipos\n    return edad_str + 1",
@@ -714,6 +715,7 @@
     "simulador": {
       "tipo": "fix_bug",
       "engine": "pyodide",
+      "bloques_requeridos": ["py-func","py-if"],
       "instruccion": "Esta función procesa precios y descuentos. Tiene 3 bugs sutiles (is vs ==, floats, mutación). Encuéntralos y corrígelos.",
       "setup_code": "",
       "codigo_inicial": "def aplicar_descuento(producto, descuento_pct):\n    '''Aplica descuento a un producto. Retorna precio final o 'GRATIS' si es 0.'''\n    if producto['id'] is 0:  # Bug 1: is vs ==\n        return 'producto inválido'\n    \n    precio_original = producto['precio']\n    descuento = precio_original * descuento_pct\n    precio_final = precio_original - descuento\n    \n    # Bug 2: comparación exacta de float\n    if precio_final == 0:\n        return 'GRATIS'\n    \n    # Bug 3: mutación del argumento\n    producto['precio'] = precio_final\n    return round(precio_final, 2)",
