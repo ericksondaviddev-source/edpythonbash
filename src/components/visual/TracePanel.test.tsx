@@ -47,4 +47,13 @@ describe('TracePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /reiniciar/i }))
     expect(screen.getByText(/paso 1 de 3/i)).toBeTruthy()
   })
+
+  it('resalta solo las variables nuevas o modificadas respecto al paso anterior', () => {
+    render(<TracePanel code={'x = 5'} steps={STEPS} />)
+    // Paso 1 (estado inicial): sin resaltado
+    expect(screen.queryAllByLabelText(/modificado/i)).toHaveLength(0)
+    // Paso 2: 'name' es nueva (resaltada); 'x' sigue en '5' (sin resalto)
+    fireEvent.click(screen.getByRole('button', { name: /siguiente/i }))
+    expect(screen.getAllByLabelText(/modificado/i)).toHaveLength(1)
+  })
 })

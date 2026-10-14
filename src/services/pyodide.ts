@@ -3,6 +3,9 @@ import type { TraceStep, TraceResult } from '../types/trace'
 const PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
 const PYODIDE_SCRIPT = `${PYODIDE_URL}pyodide.js`
 
+/** Máximo de pasos de traza Python antes de abortar (evita congelar). */
+export const MAX_TRACE_STEPS = 500
+
 type LoadPyodideFn = (opts: { indexURL: string }) => Promise<unknown>
 
 function getLoadPyodide(): LoadPyodideFn | undefined {
@@ -27,6 +30,8 @@ def __safe_repr(v):
     except Exception:
         return '<unrepresentable>'
 def __snap__(lineno, variables, out):
+    if len(__STEPS) >= ${MAX_TRACE_STEPS}:
+        raise RuntimeError('Traza detenida: se superaron ${MAX_TRACE_STEPS} pasos.')
     _filtered = {}
     for _k, _v in variables.items():
         _base = __BASELINE.get(_k)

@@ -33,8 +33,10 @@ function CodeView({ code, activeLine }: { code: string; activeLine: number }) {
   )
 }
 
-/** Cajas de memoria: nombre, valor y tipo deducido del repr. */
-function MemoryView({ step }: { step: TraceStep }) {
+/** Cajas de memoria: nombre, valor y tipo deducido del repr.
+ *  Resalta en ámbar las variables nuevas o cuyo valor cambió respecto al
+ *  paso anterior (diff). En el paso 0 no se resalta nada (estado inicial). */
+function MemoryView({ step, prevStep }: { step: TraceStep; prevStep?: TraceStep }) {
   const { t } = useTranslation()
   const entries = Object.entries(step.variables)
   if (entries.length === 0) {
@@ -46,19 +48,36 @@ function MemoryView({ step }: { step: TraceStep }) {
   }
   return (
     <ul className="space-y-1">
-      {entries.map(([name, repr]) => (
-        <li
-          key={name}
-          className="flex items-center gap-2 rounded-md bg-[var(--bg-secondary)] px-2 py-1 font-mono text-sm"
-        >
-          <span className="text-[var(--accent)] font-semibold">{name}</span>
-          <span className="text-[var(--text-secondary)]">=</span>
-          <span className="text-[var(--text-primary)] break-all">{repr}</span>
-          <span className="ml-auto shrink-0 rounded bg-[var(--bg-tertiary)] px-1.5 py-0.5 text-[10px] uppercase text-[var(--text-secondary)]">
-            {guessType(repr)}
-          </span>
-        </li>
-      ))}
+      {entries.map(([name, repr]) => {
+        const prev = prevStep ? prevStep.variables[name] : undefined
+        const changed = Boolean(prevStep) && (prev === undefined || prev !== repr)
+        return (
+          <li
+            key={name}
+            className={`flex items-center gap-2 rounded-md px-2 py-1 font-mono text-sm ${
+              changed
+                ? 'bg-[var(--accent)]/10 ring-1 ring-[var(--accent)]/50'
+                : 'bg-[var(--bg-secondary)]'
+            }`}
+          >
+            <span className="text-[var(--accent)] font-semibold">{name}</span>
+            <span className="text-[var(--text-secondary)]">=</span>
+            <span className="text-[var(--text-primary)] break-all">{repr}</span>
+            <span className="ml-auto shrink-0 rounded bg-[var(--bg-tertiary)] px-1.5 py-0.5 text-[10px] uppercase text-[var(--text-secondary)]">
+              {guessType(repr)}
+            </span>
+            {changed ? (
+              <span
+                aria-label={t('trace.changed')}
+                title={t('trace.changed')}
+                className="shrink-0 text-[var(--accent)]"
+              >
+                ●
+              </span>
+            ) : null}
+          </li>
+        )
+      })}
     </ul>
   )
 }
@@ -144,7 +163,10 @@ export default function TracePanel({ code, steps }: TracePanelProps) {
           <h3 className="mb-2 text-sm font-semibold text-[var(--text-primary)]">
             {t('trace.memory')}
           </h3>
-          <MemoryView step={step ?? { lineno: -1, variables: {}, output: [] }} />
+          <MemoryView
+            step={step ?? { lineno: -1, variables: {}, output: [] }}
+            prevStep={stepIdx > 0 ? steps[stepIdx - 1] : undefined}
+          />
         </section>
       </div>
 

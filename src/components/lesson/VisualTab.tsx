@@ -22,9 +22,6 @@ export default function VisualTab({ lesson }: { lesson: Lesson }) {
   const [steps, setSteps] = useState<TraceStep[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [jsOutput, setJsOutput] = useState<string | null>(null)
-  const [jsError, setJsError] = useState<string | null>(null)
-  const [jsLoading, setJsLoading] = useState(false)
 
   const runTrace = async () => {
     setLoading(true)
@@ -40,19 +37,18 @@ export default function VisualTab({ lesson }: { lesson: Lesson }) {
     }
   }
 
-  const runJs = async () => {
-    setJsLoading(true)
-    setJsError(null)
-    setJsOutput('')
+  const runJsTrace = async () => {
+    setLoading(true)
+    setError(null)
+    setSteps([])
     try {
       const { getJsEngine } = await import('../../services/jsEngine')
-      const result = await getJsEngine().run(lesson.codigo_corregido)
-      setJsOutput(result.output)
-      if (result.error) setJsError(result.error)
+      const result = await getJsEngine().trace(lesson.codigo_corregido)
+      setSteps(result)
     } catch (e: any) {
-      setJsError(e?.message ?? String(e))
+      setError(e?.message ?? String(e))
     } finally {
-      setJsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -84,35 +80,24 @@ export default function VisualTab({ lesson }: { lesson: Lesson }) {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={runJs} disabled={jsLoading}>
-            {jsLoading ? t('visual.running') : t('visual.runJs')}
+          <Button onClick={runJsTrace} disabled={loading}>
+            {loading ? t('visual.running') : t('visual.runJsTrace')}
           </Button>
           <p className="text-sm text-[var(--text-secondary)]">
             {t('visual.jsHint')}
           </p>
         </div>
 
-        {jsError ? (
+        {error ? (
           <div className="rounded-lg border border-[var(--error)]/40 bg-[var(--error)]/10 p-3">
-            <p className="font-mono text-sm text-[var(--error)]">{jsError}</p>
+            <p className="font-mono text-sm text-[var(--error)]">{error}</p>
           </div>
         ) : null}
 
-        {jsOutput ? (
-          <div>
-            <h3 className="mb-2 text-sm font-semibold text-[var(--text-primary)]">
-              {t('visual.jsConsole')}
-            </h3>
-            <pre className="rounded-lg bg-[var(--code-bg)] p-4 font-mono text-sm text-[var(--code-text)] whitespace-pre-wrap">
-              {jsOutput}
-            </pre>
-          </div>
-        ) : jsOutput !== null && !jsError ? (
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] p-3">
-            <p className="text-sm text-[var(--text-secondary)]">{t('visual.jsNoOutput')}</p>
-          </div>
+        {steps.length > 0 ? (
+          <TracePanel code={lesson.codigo_corregido} steps={steps} />
         ) : (
-          !jsLoading && (
+          !loading && (
             <div className="rounded-xl glass p-6 text-center">
               <p className="text-sm text-[var(--text-secondary)]">
                 {t('visual.pressRun')}

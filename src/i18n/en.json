@@ -206,7 +206,8 @@
     "memory": "Memory",
     "noVars": "No variables in memory yet.",
     "output": "Console",
-    "noOutput": "No output yet."
+    "noOutput": "No output yet.",
+    "changed": "changed"
   },
   "visual": {
     "title": "Visual",
@@ -218,9 +219,16 @@
     "pythonHint": "Run the fixed code line by line and watch the variables.",
     "pressRun": "Press «Run trace» to see the code in action.",
     "runJs": "Run JS code",
-    "jsHint": "Run the fixed code in an isolated environment and watch the console.",
+    "runJsTrace": "Run JS trace",
+    "jsHint": "Run the fixed code step by step and watch the variables.",
     "jsConsole": "Console",
     "jsNoOutput": "The code finished without printing anything to the console. This is normal in DOM, events, or async lessons: the effect happens inside the isolated environment, not in the console."
+  },
+  "audio": {
+    "playing": "Playing…",
+    "loading": "Loading…",
+    "ready": "Ready",
+    "part": "Part {{n}}"
   },
   "flowchart": {
     "tab": "Diagram",

@@ -111,18 +111,16 @@ export default function LessonView({
         >
           {t('tutor.title')}
         </button>
-        {!isFlowchart && (
-          <button
-            onClick={() => setActiveTab('visual')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'visual'
-                ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-            }`}
-          >
-            {t('visual.title')}
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab('visual')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+            activeTab === 'visual'
+              ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
+              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+          }`}
+        >
+          {t('visual.title')}
+        </button>
         <button
           onClick={() => setActiveTab('quiz')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap flex-shrink-0 ${

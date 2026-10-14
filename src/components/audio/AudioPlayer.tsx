@@ -5,11 +5,9 @@ import { Button, Icon } from '../atoms'
 interface AudioPlayerProps {
   script: string
   lang: 'es' | 'en'
-  autoPlay?: boolean
 }
 
 interface Chapter {
-  title: string
   text: string
 }
 
@@ -20,10 +18,7 @@ function parseChapters(script: string): Chapter[] {
 
   for (let i = 0; i < sentences.length; i += chunkSize) {
     const chunk = sentences.slice(i, i + chunkSize).join('. ').trim()
-    chapters.push({
-      title: `Parte ${Math.floor(i / chunkSize) + 1}`,
-      text: chunk + '.'
-    })
+    chapters.push({ text: chunk + '.' })
   }
 
   return chapters
@@ -114,7 +109,7 @@ export default function AudioPlayer({ script, lang }: AudioPlayerProps) {
       </div>
 
       <div className="space-y-2 mb-4">
-        {chapters.map((chapter, index) => (
+        {chapters.map((_, index) => (
           <button
             key={index}
             onClick={() => playChapter(index)}
@@ -130,7 +125,7 @@ export default function AudioPlayer({ script, lang }: AudioPlayerProps) {
               ) : (
                 <Icon name="play" size={14} />
               )}
-              <span className="text-sm">{chapter.title}</span>
+              <span className="text-sm">{t('audio.part', { n: index + 1 })}</span>
             </div>
           </button>
         ))}
@@ -156,10 +151,10 @@ export default function AudioPlayer({ script, lang }: AudioPlayerProps) {
         </button>
         <div className="flex-1">
           <p className="text-sm font-medium text-[var(--text-primary)]">
-            {chapters[currentChapter]?.title}
+            {t('audio.part', { n: currentChapter + 1 })}
           </p>
           <p className="text-xs text-[var(--text-secondary)]">
-            {isPlaying ? 'Reproduciendo...' : isLoading ? 'Cargando...' : 'Listo'}
+            {isPlaying ? t('audio.playing') : isLoading ? t('audio.loading') : t('audio.ready')}
           </p>
         </div>
       </div>

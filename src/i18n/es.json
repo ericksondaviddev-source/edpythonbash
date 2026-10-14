@@ -206,7 +206,8 @@
     "memory": "Memoria",
     "noVars": "Aún no hay variables en memoria.",
     "output": "Consola",
-    "noOutput": "Sin salida todavía."
+    "noOutput": "Sin salida todavía.",
+    "changed": "modificado"
   },
   "visual": {
     "title": "Visual",
@@ -218,9 +219,16 @@
     "pythonHint": "Ejecuta el código corregido línea por línea y observa las variables.",
     "pressRun": "Pulsa «Ejecutar traza» para ver el código en acción.",
     "runJs": "Ejecutar código JS",
-    "jsHint": "Ejecuta el código corregido en un entorno aislado y observa la consola.",
+    "runJsTrace": "Ejecutar traza JS",
+    "jsHint": "Ejecuta el código corregido paso a paso y observa las variables.",
     "jsConsole": "Consola",
     "jsNoOutput": "El código terminó sin imprimir nada en la consola. Es normal en lecciones de DOM, eventos o asincronía: el efecto ocurre dentro del entorno aislado, no en la consola."
+  },
+  "audio": {
+    "playing": "Reproduciendo…",
+    "loading": "Cargando…",
+    "ready": "Listo",
+    "part": "Parte {{n}}"
   },
   "flowchart": {
     "tab": "Diagrama",
