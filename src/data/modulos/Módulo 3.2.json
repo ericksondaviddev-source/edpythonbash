@@ -6,13 +6,13 @@
     "nivel": "principiante",
     "fase": 3,
     "microproyecto": "Scraper concurrente con rate limiting",
-    "modelo_mental": "Un thread es un hilo de ejecución dentro de un proceso: comparte memoria con otros threads del mismo proceso, pero ejecuta código en paralelo (o casi-paralelo, dependiendo del GIL). Python tiene el **Global Interpreter Lock (GIL)** que impide que dos threads ejecuten bytecode Python simultáneamente en el mismo proceso. Consecuencia práctica: threading **NO** acelera código CPU-bound (cálculos), pero SÍ acelera código I/O-bound (red, disco, waits). Para CPU-bound necesitas multiprocessing (M3.2-003).",
+    "modelo_mental": "Un thread es un hilo de ejecución dentro de un proceso que comparte la memoria con los demás threads del mismo proceso. **Global Interpreter Lock (GIL)** impide que dos threads ejecuten bytecode Python simultáneamente, por lo que el paralelismo real depende del GIL.\n`time.sleep(1)` libera el GIL mientras el thread está esperando, permitiendo que otros threads avancen. Para código **CPU‑bound** (cálculos intensivos) el GIL se convierte en una barrera y no acelera la ejecución, mientras que para **I/O‑bound** (red, disco, esperas) el threading sí mejora el rendimiento.",
     "codigo_roto": "import threading\n\n# Sin join: el programa termina antes de que los threads acaben\ndef procesar(i):\n    print(f'Procesando {i}')\n    time.sleep(1)\n\nfor i in range(5):\n    t = threading.Thread(target=procesar, args=(i,))\n    t.start()\n# BUG: el programa termina inmediatamente, los threads quedan 'huérfanos'",
-    "diagnostico": "Verificado en sandbox: el script imprime 'Procesando 0' y termina inmediatamente. Los otros 4 threads nunca ejecutan `print` porque el programa principal ya salió. El bug es no hacer `join()`: sin join, el thread principal no espera a que los hijos terminen. Además, sin manejo de excepciones, si un thread crashea, el error es silencioso (no se propaga al principal).",
+    "diagnostico": "1. **Error por falta de `join()`**: El hilo principal finaliza inmediatamente después de lanzar los threads, sin esperar a que estos terminen. Como resultado, los threads se convierten en “huérfanos” y sus tareas nunca se ejecutan, como se observa al ver que solo se imprime ‘Procesando 0’ y el programa termina.\n\n2. **Manejo insuficiente de excepciones**: Si un thread genera una excepción no capturada, el error no se propaga al hilo principal y pasa desapercibido, lo que dificulta la depuración. En el ejemplo, aunque no haya excepciones, la ausencia de `join()` impide que el programa espere a que los threads terminen, lo que es la causa principal del comportamiento inesperado.",
     "codigo_corregido": "import threading\nimport time\n\ndef procesar(i):\n    print(f'Procesando {i}')\n    time.sleep(1)\n    print(f'Terminado {i}')\n\nthreads = []\nfor i in range(5):\n    t = threading.Thread(target=procesar, args=(i,))\n    threads.append(t)\n    t.start()\n\n# Esperar a que TODOS terminen\nfor t in threads:\n    t.join()\n\nprint('Todos terminaron')",
     "codigo_optimizado": "import threading\nimport time\nfrom typing import Callable, Any\n\n# ===== API BÁSICA DE THREADING =====\n#\n# Thread(target=func, args=(arg1, arg2), kwargs={...}, name='nombre', daemon=False)\n#   target: la función a ejecutar\n#   args: tupla de argumentos posicionales\n#   kwargs: dict de argumentos por nombre\n#   name: nombre del thread (para debugging)\n#   daemon: si True, el thread muere cuando el principal termina\n#\n# Métodos:\n#   start()   → inicia la ejecución (llama a target en un hilo nuevo)\n#   join(timeout=None) → bloquea hasta que el thread termine (o timeout)\n#   is_alive() → True si está corriendo\n#   name       → nombre del thread\n#\n# daemon=True: útil para threads de fondo (monitoreo, logging) que no deben\n# impedir que el programa termine. daemon=False (default): el programa espera\n# a que el thread termine antes de salir.\n\n# ===== PATRÓN: EJECUTAR N TAREAS EN PARALELO Y ESPERAR =====\ndef ejecutar_paralelo(func: Callable, args_list: list, timeout: float = None):\n    \"\"\"\n    Ejecuta func(*args) para cada args en args_list, en paralelo.\n    Espera a que todas terminen (con timeout opcional).\n    Retorna lista de (resultado_o_None, excepcion_o_None).\n    \"\"\"\n    resultados = [None] * len(args_list)\n    excepciones = [None] * len(args_list)\n    \n    def worker(idx, args):\n        try:\n            resultados[idx] = func(*args)\n        except Exception as e:\n            excepciones[idx] = e\n    \n    threads = []\n    for idx, args in enumerate(args_list):\n        t = threading.Thread(target=worker, args=(idx, args), name=f'worker-{idx}')\n        threads.append(t)\n        t.start()\n    \n    for t in threads:\n        t.join(timeout=timeout)\n        if t.is_alive():\n            # timeout: el thread no terminó a tiempo\n            pass  # podrías loguear o manejar\n    \n    return resultados, excepciones\n\n# ===== EJEMPLO DE USO =====\ndef tarea_lenta(x):\n    time.sleep(1)\n    return x * 2\n\nresultados, errores = ejecutar_paralelo(tarea_lenta, [(1,), (2,), (3,), (4,), (5,)])\nprint('Resultados:', resultados)  # [2, 4, 6, 8, 10]\nprint('Errores:', errores)        # [None, None, None, None, None]\n\n# ===== EL GIL: POR QUÉ THREADING NO ACELERA CPU-BOUND =====\n# El Global Interpreter Lock es un mutex que protege los objetos de Python,\n# impidiendo que múltiples threads ejecuten bytecode Python simultáneamente.\n# Consecuencia: en código CPU-bound (cálculos puros), threading NO da speedup.\n#\n# Ejemplo CPU-bound (sin I/O):\ndef cpu_bound(n):\n    return sum(i * i for i in range(n))\n\n# Secuencial:\nt0 = time.time()\nfor _ in range(4):\n    cpu_bound(10_000_000)\nt_sec = time.time() - t0  # ~4 segundos\n\n# Con threading (NO acelera por el GIL):\nt0 = time.time()\nthreads = [threading.Thread(target=cpu_bound, args=(10_000_000,)) for _ in range(4)]\nfor t in threads: t.start()\nfor t in threads: t.join()\nt_thr = time.time() - t0  # ~4 segundos (igual que secuencial, o peor por overhead)\n\n# Para CPU-bound necesitas multiprocessing (M3.2-003).\n\n# ===== CUÁNDO USAR THREADING =====\n# ✓ I/O-bound: requests HTTP, lectura de archivos, queries a DB, subprocess\n# ✓ Tareas que esperan: timers, polling, watchers\n# ✓ UI responsive: thread de fondo para tarea larga, UI en thread principal\n#\n# ✗ CPU-bound: cálculos intensivos, procesamiento de imágenes, ML\n# ✗ Cuando necesitas aislamiento de memoria (usa multiprocessing)\n\n# ===== THREADING.CONDITION Y EVENT (sincronización avanzada) =====\n# Condition: espera hasta que se cumpla una condición\n# Event: señalización simple (set/wait)\n\nevent = threading.Event()\n\ndef productor():\n    time.sleep(2)\n    print('Productor: datos listos')\n    event.set()  # señala a los consumidores\n\ndef consumidor():\n    print('Consumidor: esperando datos...')\n    event.wait()  # bloquea hasta que event.set()\n    print('Consumidor: datos recibidos')\n\nthreading.Thread(target=productor).start()\nthreading.Thread(target=consumidor).start()",
     "disenso_experto": "¿Threading o asyncio para I/O-bound? Threading es más simple de entender (cada tarea en su propio hilo) pero tiene overhead de contexto y es más difícil de depurar (race conditions, deadlocks). Asyncio es más eficiente (un solo hilo, cooperativo) pero requiere reescribir todo como async/await. Regla práctica: threading para scripts y herramientas simples; asyncio para servidores y aplicaciones con miles de conexiones concurrentes.",
-    "pregunta_transferencia": "Tu scraper usa threading para descargar 100 páginas en paralelo. Descubres que con 50 threads es MÁS LENTO que con 10 threads. ¿Por qué más threads no siempre es mejor, y qué límite físico (no de Python) estás hitting?",
+    "pregunta_transferencia": "Tu scraper usa threading para descargar 100 páginas en paralelo. Descubres que con 50 threads es MÁS LENTO que con 10 threads. ¿Por qué más threads no siempre es mejor, y qué límite físico (no de Python) estás hitting?\n\nPista: el cuello de botella suele ser la disponibilidad de recursos de red o la cantidad de núcleos de CPU, no el número de threads en sí.",
     "quiz": {
       "pregunta": "¿Por qué threading NO acelera código CPU-bound en Python?",
       "opciones": [
@@ -31,17 +31,90 @@
       "setup_code": "# helper de timing inyectado\nimport time\n\ndef tarea(i):\n    time.sleep(1)\n    return f'tarea_{i}_completada'",
       "codigo_inicial": "# Escribe el código para ejecutar 5 tareas en paralelo.\n# Cada tarea llama a tarea(i) con i de 0 a 4.\n# Debes:\n# 1. Crear 5 threads (uno por tarea)\n# 2. Iniciarlos todos con start()\n# 3. Esperar a que TODOS terminen con join()\n# 4. Recolectar los resultados en una lista\n#\n# PISTA:\n# threads = []\n# for i in range(5):\n#     t = threading.Thread(target=..., args=(i,))\n#     threads.append(t)\n#     t.start()\n# for t in threads:\n#     t.join()\n",
       "test_code": "import time\n\nt0 = time.time()\nresultados = ejecutar_en_paralelo()\nt_total = time.time() - t0\n\nassert len(resultados) == 5, f'debiste ejecutar 5 tareas, ejecutaste {len(resultados)}'\nassert all(r == f'tarea_{i}_completada' for i, r in enumerate(resultados)), f'resultados incorrectos: {resultados}'\nassert t_total < 2.0, f'tardaste {t_total:.2f}s: las tareas deben correr en paralelo (~1s total), no secuencial (~5s)'\nprint('OK')",
-      "asserts_concurrency": ["todas_las_tareas_completadas", "tiempo_total < 2s"],
+      "asserts_concurrency": [
+        "todas_las_tareas_completadas",
+        "tiempo_total < 2s"
+      ],
       "asserts_forbidden": [],
       "solucion": "import threading\n\ndef ejecutar_en_paralelo():\n    resultados = [None] * 5\n    \n    def worker(i):\n        resultados[i] = tarea(i)\n    \n    threads = []\n    for i in range(5):\n        t = threading.Thread(target=worker, args=(i,))\n        threads.append(t)\n        t.start()\n    \n    for t in threads:\n        t.join()\n    \n    return resultados"
     },
     "audio_script": "Un thread es un hilo de ejecución dentro de un proceso. Comparte memoria con otros threads del mismo proceso, pero ejecuta código en paralelo. Python tiene una particularidad llamada el Global Interpreter Lock, o GIL, que es un mutex que protege los objetos de Python e impide que dos threads ejecuten bytecode Python simultáneamente. La consecuencia práctica es que threading NO acelera código CPU bound, es decir, cálculos puros. Pero SÍ acelera código I/O bound, como requests HTTP, lectura de archivos o queries a base de datos, porque el thread libera el GIL mientras espera la respuesta de la red o del disco, y otros threads pueden correr mientras tanto. La API básica tiene tres piezas. Thread con target igual a la función, args como tupla de argumentos, y opcionalmente name para debugging y daemon igual true si el thread debe morir cuando el principal termine. Start inicia la ejecución en un hilo nuevo. Join bloquea el thread actual hasta que el thread hijo termine. El bug más común es olvidar el join: el programa principal termina antes de que los hijos acaben, y las tareas quedan huérfanas. El patrón correcto es crear todos los threads, iniciarlos con start, guardarlos en una lista, y después hacer join sobre cada uno. Para código CPU bound necesitas multiprocessing, que crea procesos separados con su propia memoria y su propio intérprete, bypaseando el GIL.",
     "video_prompt": "Video de 85 segundos. ESCENA 1 (sin join): 5 threads se crean y arrancan, pero el programa principal termina inmediatamente (reloj: 0.01s). Los threads quedan 'congelados' en el aire, nunca ejecutan su tarea. ESCENA 2 (con join): el programa principal espera (barrera visual) a que los 5 threads terminen. Cada thread ejecuta su tarea de 1s en paralelo. Tiempo total: 1.01s en vez de 5s. ESCENA 3 (GIL visualizado): 4 threads intentan ejecutar código CPU-bound, pero solo uno puede pasar por el 'cuello de botella' del GIL a la vez. Los otros 3 esperan. Tiempo total: igual que secuencial. ESCENA 4 (I/O-bound con GIL): thread 1 hace request HTTP y libera el GIL; thread 2 toma el GIL y hace su request; todos corren mientras esperan red. Tiempo total: 1s en vez de 4s. Overlay: 'Threading = I/O-bound. Multiprocessing = CPU-bound. Join = esperar.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - threading", "Fluent Python Cap 18 (concurrency)", "Classic Computer Science Problems Cap 5 (threads)"],
-      "conceptos_clave": ["threading", "thread", "join", "gil", "io-bound", "cpu-bound", "daemon"]
+      "libros_fuente": [
+        "Python docs - threading",
+        "Fluent Python Cap 18 (concurrency)",
+        "Classic Computer Science Problems Cap 5 (threads)"
+      ],
+      "conceptos_clave": [
+        "threading",
+        "thread",
+        "join",
+        "gil",
+        "io-bound",
+        "cpu-bound",
+        "daemon"
+      ]
     },
-    "tags_rag": ["python", "threading", "concurrencia", "gil", "io-bound", "join"]
+    "tags_rag": [
+      "python",
+      "threading",
+      "concurrencia",
+      "gil",
+      "io-bound",
+      "join"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué efecto tiene el Global Interpreter Lock (GIL) en la ejecución de varios threads de Python que realizan cálculos intensivos de CPU?",
+        "opciones": [
+          "Permite que varios threads ejecuten código Python simultáneamente, aprovechando todos los núcleos.",
+          "Impide que más de un thread ejecute bytecode Python al mismo tiempo, limitando el paralelismo de CPU‑bound.",
+          "Aumenta la velocidad de los threads de CPU‑bound al liberar el GIL durante operaciones de I/O.",
+          "No tiene efecto; el GIL solo afecta a procesos, no a threads."
+        ],
+        "correcta": "B",
+        "explicacion": "B es correcta porque el GIL impide la ejecución concurrente de bytecode Python, por lo que los threads de CPU‑bound no se ejecutan en paralelo y no se aprovechan los núcleos. A es incorrecta porque el GIL bloquea la ejecución simultánea. C es incorrecta porque el GIL se mantiene durante la ejecución de CPU, no se libera. D es incorrecta porque el GIL afecta a los threads dentro del mismo proceso.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Considera el siguiente fragmento de código:\nimport threading, time\ndef f(x):\n    print(x)\n    time.sleep(1)\n\nthreads = []\nfor i in range(3):\n    t = threading.Thread(target=f, args=(i,))\n    t.start()\n    threads.append(t)\n# Missing join\n\n¿Cuál es el resultado más probable?",
+        "opciones": [
+          "Imprime 0,1,2 y termina inmediatamente.",
+          "Imprime 0,1,2 cada número después de 1 segundo y el programa termina después de 3 segundos.",
+          "Imprime 0,1,2 pero el orden es aleatorio y el programa puede terminar antes de que se impriman todos.",
+          "No imprime nada y lanza una excepción."
+        ],
+        "correcta": "C",
+        "explicacion": "C es correcta porque sin `join` el hilo principal puede terminar antes de que los threads secundarios completen sus tareas, provocando que algunas impresiones se pierdan y el orden sea impredecible. A es incorrecta porque el programa no termina inmediatamente; el sleep introduce retrasos. B es incorrecta porque la ausencia de `join` impide que el hilo principal espere los 3 segundos completos. D es incorrecta porque los threads son no daemon por defecto, por lo que el programa no termina sin imprimir nada ni lanzar excepción.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Si un thread lanza una excepción no capturada, ¿qué ocurre en el programa principal?",
+        "opciones": [
+          "La excepción se propaga al hilo principal y termina el programa.",
+          "La excepción se captura automáticamente y el programa continúa sin problemas.",
+          "La excepción se registra en la consola (stderr) y el hilo termina, pero el programa principal sigue ejecutándose.",
+          "La excepción se ignora silenciosamente; el hilo termina y el programa principal no se ve afectado."
+        ],
+        "correcta": "C",
+        "explicacion": "C es correcta porque Python muestra la traza de la excepción en stderr y el thread finaliza, mientras que el hilo principal continúa ejecutándose. A es incorrecta porque la excepción no se propaga al hilo principal. B es incorrecta porque la excepción no se captura automáticamente. D es incorrecta porque la excepción no es silenciosa; se muestra en la salida de error.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál es la principal ventaja de usar `threading` en lugar de `multiprocessing` para operaciones de I/O (red, archivos, etc.)?",
+        "opciones": [
+          "`threading` permite ejecutar código CPU‑bound más rápido.",
+          "`threading` evita el uso de memoria adicional y es más ligero que `multiprocessing`.",
+          "`threading` libera el GIL durante operaciones de espera, permitiendo que varios threads avancen mientras esperan I/O.",
+          "`threading` garantiza que el programa sea multihilo en múltiples procesos del sistema operativo."
+        ],
+        "correcta": "C",
+        "explicacion": "C es correcta porque durante operaciones de I/O el GIL se libera, permitiendo que otros threads avancen mientras esperan, lo que mejora el rendimiento. A es incorrecta porque el GIL sigue impidiendo paralelismo de CPU‑bound. B es incorrecta porque aunque los threads son más ligeros que procesos, la ventaja principal aquí es la liberación del GIL para I/O. D es incorrecta porque `threading` ejecuta hilos dentro del mismo proceso, no en procesos separados.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.2-002",
@@ -50,13 +123,13 @@
     "nivel": "principiante",
     "fase": 3,
     "microproyecto": "Scraper concurrente con rate limiting",
-    "modelo_mental": "Una race condition ocurre cuando dos o más threads acceden a un recurso compartido (variable, archivo, DB) sin sincronización, y el resultado depende del orden de ejecución (que es no-determinístico). El ejemplo clásico: dos threads incrementan un contador al mismo tiempo, y el resultado es +1 en vez de +2. La solución es un **Lock** (mutex): solo un thread puede tener el lock a la vez; los demás esperan. El patrón `with lock:` garantiza que el lock se libera incluso si hay excepción.",
+    "modelo_mental": "Una **race condition** es como un cajero automático compartido donde dos personas intentan retirar dinero al mismo tiempo. Ambos consultan el saldo (por ejemplo, $100), ambos calculan que pueden retirar $50, y ambos intentan escribir el nuevo saldo ($50). En lugar de $0, el saldo final es $50, porque ambas transacciones se basaron en la misma lectura anterior. En programación, esto ocurre cuando varios **threads** acceden a una variable compartida sin sincronización: la operación `contador += 1` parece simple, pero en realidad es `contador = contador + 1`, que implica leer el valor actual, incrementarlo y escribirlo de vuelta. Si otro thread lee entre la lectura y la escritura del primer thread, se pierde un incremento. Esto importa profundamente porque en sistemas concurrentes, errores como estos son sutiles, no se manifiestan siempre y pueden causar pérdidas de datos, inconsistencias o comportamientos impredecibles en producción.\n\nLa solución es un **Lock** (también llamado mutex), que actúa como un permiso exclusivo: solo un thread puede tener el lock a la vez, y los demás deben esperar. El patrón `with lock:` garantiza que el lock se libere incluso si ocurre una excepción dentro del bloque, evitando deadlocks por olvido de liberación. Sin embargo, usar locks requiere cuidado: si se protege demasiado código, se reduce la concurrencia; si se protege muy poco, se vuelve a tener una race condition. El arte está en identificar la **sección crítica** mínima que debe estar protegida.",
     "codigo_roto": "import threading\n\ncontador = 0\n\ndef incrementar():\n    global contador\n    for _ in range(100000):\n        contador += 1  # NO atómico: lee, incrementa, escribe\n\nthreads = [threading.Thread(target=incrementar) for _ in range(10)]\nfor t in threads: t.start()\nfor t in threads: t.join()\n\nprint(f'Contador final: {contador}')\n# Esperado: 1,000,000\n# Real: ~870,000 (varía en cada ejecución) — RACE CONDITION",
-    "diagnostico": "Verificado en sandbox: el contador final es ~870,000 en vez de 1,000,000. El bug es que `contador += 1` NO es atómico: son 3 operaciones (leer valor, incrementar, escribir). Si dos threads leen el mismo valor antes de que cualquiera escriba, ambos incrementan el mismo número y se pierde un incremento. Esto es una race condition: el resultado depende del orden de ejecución, que es no-determinístico. La solución es un Lock que proteja la sección crítica.",
+    "diagnostico": "1. **Race condition en `contador += 1`**: La instrucción `contador += 1` no es atómica en Python. Se compone de tres operaciones: (a) leer el valor de `contador`, (b) calcular `contador + 1`, (c) escribir el resultado de vuelta a `contador`. Si dos threads ejecutan el paso (a) antes de que ninguno haga el paso (c), ambos leen el mismo valor, ambos calculan el mismo incremento, y ambos escriben el mismo resultado. Se pierde un incremento. Esto es una **race condition clásica** y es el patrón general de errores de concurrencia: operaciones compuestas sobre datos compartidos sin protección.\n\n2. **No uso de `threading.Lock`**: El código no utiliza ningún mecanismo de sincronización. Python no garantiza atomicidad en operaciones como `+=` sobre variables globales, especialmente bajo el **GIL** (Global Interpreter Lock), que aunque serializa el acceso al intérprete, no protege operaciones de alto nivel. El patrón general aquí es: **cualquier operación de lectura-modificación-escritura sobre un recurso compartido debe estar protegida por un lock**.\n\n3. **Resultado no-determinístico (~870,000 en vez de 1,000,000)**: El valor final varía en cada ejecución porque el orden en que los threads leen y escriben `contador` depende del planificador del sistema operativo, que es no-determinístico. Esto confirma que el problema es una race condition: si fuera un error lógico o de sintaxis, el resultado sería consistente.",
     "codigo_corregido": "import threading\n\ncontador = 0\nlock = threading.Lock()\n\ndef incrementar():\n    global contador\n    for _ in range(100000):\n        with lock:  # solo un thread entra a la vez\n            contador += 1\n\nthreads = [threading.Thread(target=incrementar) for _ in range(10)]\nfor t in threads: t.start()\nfor t in threads: t.join()\n\nprint(f'Contador final: {contador}')  # 1,000,000 exactos",
     "codigo_optimizado": "import threading\n\n# ===== LOCK (MUTEX) =====\n# Un Lock tiene dos estados: adquirido (locked) o liberado (unlocked).\n# Solo un thread puede adquirirlo a la vez; los demás bloquean hasta que se libere.\n#\n# API:\n#   lock.acquire() → bloquea hasta adquirir el lock\n#   lock.release() → libera el lock (otro thread puede adquirirlo)\n#   with lock:     → acquire al entrar, release al salir (incluso con excepción)\n#\n# SIEMPRE usa `with lock:` en vez de acquire/release manual:\n# si hay excepción entre acquire y release, el lock queda adquirido para siempre\n# y otros threads bloquean eternamente (deadlock).\n\n# ===== EJEMPLO: CONTADOR THREAD-SAFE =====\nclass ContadorSeguro:\n    def __init__(self):\n        self._valor = 0\n        self._lock = threading.Lock()\n    \n    def incrementar(self):\n        with self._lock:\n            self._valor += 1\n    \n    def decrementar(self):\n        with self._lock:\n            self._valor -= 1\n    \n    @property\n    def valor(self):\n        with self._lock:\n            return self._valor\n\n# Uso:\ncontador = ContadorSeguro()\nthreads = [threading.Thread(target=lambda: [contador.incrementar() for _ in range(100000)])\n           for _ in range(10)]\nfor t in threads: t.start()\nfor t in threads: t.join()\nprint(contador.valor)  # 1,000,000 exactos, siempre\n\n# ===== RLOCK (REENTRANT LOCK) =====\n# Un Lock normal NO puede adquirirse dos veces por el mismo thread (deadlock).\n# Un RLock SÍ puede: el mismo thread puede adquirirlo múltiples veces,\n# pero debe liberarlo la misma cantidad de veces.\n#\n# Útil cuando una función que ya tiene el lock llama a otra que también lo necesita:\n\nclass RecursoComplejo:\n    def __init__(self):\n        self._lock = threading.RLock()  # reentrante\n        self._datos = []\n    \n    def agregar(self, item):\n        with self._lock:\n            self._datos.append(item)\n    \n    def agregar_varios(self, items):\n        with self._lock:\n            for item in items:\n                self.agregar(item)  # llama a agregar(), que también usa el lock\n                # Con Lock normal: deadlock. Con RLock: funciona.\n\n# ===== SEMAPHORE (limitar concurrencia) =====\n# Un Semaphore permite que N threads entren a la vez (no solo 1 como Lock).\n# Útil para limitar concurrencia: max 5 requests simultáneos, max 3 archivos abiertos.\n\nclass PoolDeConexiones:\n    def __init__(self, max_conexiones=5):\n        self._semaphore = threading.Semaphore(max_conexiones)\n        self._conexiones = [crear_conexion() for _ in range(max_conexiones)]\n    \n    def obtener_conexion(self):\n        self._semaphore.acquire()  # bloquea si ya hay 5 en uso\n        return self._conexiones.pop()\n    \n    def liberar_conexion(self, conn):\n        self._conexiones.append(conn)\n        self._semaphore.release()\n\n# Uso:\npool = PoolDeConexiones(max_conexiones=5)\n\ndef tarea():\n    conn = pool.obtener_conexion()\n    try:\n        # usar conn (máximo 5 threads aquí a la vez)\n        hacer_query(conn)\n    finally:\n        pool.liberar_conexion(conn)\n\n# ===== CONDITION (esperar hasta que se cumpla una condición) =====\n# Útil para productor-consumidor: el consumidor espera hasta que haya datos.\n\nbuffer = []\ncondition = threading.Condition()\n\ndef productor():\n    for i in range(10):\n        with condition:\n            buffer.append(i)\n            condition.notify()  # avisa a un consumidor que hay datos\n        time.sleep(0.1)\n\ndef consumidor():\n    for _ in range(10):\n        with condition:\n            while not buffer:  # espera hasta que haya datos\n                condition.wait()\n            item = buffer.pop(0)\n            print(f'Consumido: {item}')\n\n# ===== QUEUE (thread-safe por diseño) =====\n# queue.Queue es una cola thread-safe: no necesitas locks manuales.\n# Perfecta para productor-consumidor.\nimport queue\n\nq = queue.Queue(maxsize=10)\n\ndef productor_queue():\n    for i in range(10):\n        q.put(i)  # bloquea si la cola está llena\n        time.sleep(0.1)\n\ndef consumidor_queue():\n    while True:\n        item = q.get()  # bloquea si la cola está vacía\n        if item is None:  # señal de fin\n            break\n        print(f'Consumido: {item}')\n        q.task_done()\n\n# ===== DEADLOCKS: CUÁNDO DOS LOCKS SE BLOQUEAN MUTUAMENTE =====\n# Thread 1: adquiere lock_A, intenta adquirir lock_B\n# Thread 2: adquiere lock_B, intenta adquirir lock_A\n# Resultado: ambos esperan eternamente (deadlock).\n#\n# Solución: SIEMPRE adquirir locks en el MISMO orden en todos los threads.\n\nlock_a = threading.Lock()\nlock_b = threading.Lock()\n\n# MAL (deadlock posible):\ndef thread_1_mal():\n    with lock_a:\n        with lock_b:\n            pass\n\ndef thread_2_mal():\n    with lock_b:  # orden inverso → deadlock\n        with lock_a:\n            pass\n\n# BIEN (mismo orden siempre):\ndef thread_1_bien():\n    with lock_a:\n        with lock_b:\n            pass\n\ndef thread_2_bien():\n    with lock_a:  # mismo orden\n        with lock_b:\n            pass\n\n# ===== REGLAS DE ORO DE LA CONCURRENCIA =====\n# 1. Minimiza el estado compartido: menos compartir = menos bugs\n# 2. Usa inmutables cuando puedas: no se pueden modificar = no race conditions\n# 3. Prefiere queue.Queue sobre locks manuales para productor-consumidor\n# 4. SIEMPRE usa `with lock:` (no acquire/release manual)\n# 5. Adquiere locks en el mismo orden en todos los threads (previene deadlocks)\n# 6. Mantén las secciones críticas lo más cortas posible (menos tiempo con el lock)\n# 7. Considera asyncio o multiprocessing antes que threading (más simples)",
     "disenso_experto": "¿Locks o estructuras de datos thread-safe (queue.Queue, collections.deque)? Las estructuras thread-safe están diseñadas para concurrencia y son más difíciles de usar mal. Los locks son más flexibles pero propensos a errores (olvidar release, deadlocks). Regla: si queue.Queue o deque resuelven tu problema, úsalos; solo usa locks manuales cuando necesites proteger una sección crítica compleja que no encaje en una cola.",
-    "pregunta_transferencia": "Tienes un caché compartido (dict) que múltiples threads leen y escriben. Usas un Lock para proteger las escrituras, pero las lecturas son 100x más frecuentes que las escrituras. ¿Por qué el Lock es un cuello de botella innecesario, y qué estructura (RLock, ReadWriteLock, o inmutabilidad) resolvería esto mejor?",
+    "pregunta_transferencia": "Imagina que estás construyendo un sistema de logs distribuido donde cien threads escriben mensajes a un archivo compartido. Cada thread llama a `escribir_log(mensaje)` que abre el archivo, escribe una línea y lo cierra. Sin sincronización, los mensajes se entrelazan y se corrompen. ¿Qué patrón usarías para garantizar que cada mensaje se escriba completo y en orden, sin convertir el sistema en un cuello de botella? Piensa en cómo un **Lock** alrededor de la escritura, o una **cola de mensajes** con un único thread consumidor, podría resolver este problema manteniendo alta concurrencia en otras partes del sistema.",
     "quiz": {
       "pregunta": "¿Por qué `contador += 1` causa race condition aunque parezca una sola operación?",
       "opciones": [
@@ -75,17 +148,90 @@
       "setup_code": "import threading\n\ncontador = 0\n# TODO: crea un Lock aquí",
       "codigo_inicial": "# Agrega un Lock y úsalo para proteger el incremento del contador.\n# El resultado debe ser exactamente 1,000,000.\n#\n# PISTA:\n# lock = threading.Lock()\n#\n# def incrementar():\n#     global contador\n#     for _ in range(100000):\n#         with lock:  # protege la sección crítica\n#             contador += 1\n",
       "test_code": "threads = [threading.Thread(target=incrementar) for _ in range(10)]\nfor t in threads: t.start()\nfor t in threads: t.join()\n\nassert contador == 1000000, f'Race condition: contador={contador}, esperado 1000000. Falta Lock o no se usa correctamente.'\nprint('OK')",
-      "asserts_concurrency": ["sin_race_condition"],
+      "asserts_concurrency": [
+        "sin_race_condition"
+      ],
       "asserts_forbidden": [],
       "solucion": "import threading\n\ncontador = 0\nlock = threading.Lock()\n\ndef incrementar():\n    global contador\n    for _ in range(100000):\n        with lock:\n            contador += 1"
     },
     "audio_script": "Una race condition ocurre cuando dos o más threads acceden a un recurso compartido sin sincronización, y el resultado depende del orden de ejecución, que es no determinístico. El ejemplo clásico es un contador compartido que múltiples threads incrementan. La operación contador más igual uno parece atómica, pero en realidad son tres operaciones a nivel de bytecode: leer el valor actual, incrementarlo, y escribir el nuevo valor. Si thread A lee el valor cinco, y thread B lee el valor cinco antes de que A escriba, ambos incrementan cinco a seis, y escriben seis. El resultado es seis en vez de siete: se perdió un incremento. Verificado en el laboratorio: diez threads incrementando cien mil veces cada uno dan ochocientos setenta mil en vez de un millón. La solución es un lock, que es un mutex: solo un thread puede tener el lock a la vez, los demás esperan. El patrón correcto es with lock dos puntos, que adquiere el lock al entrar y lo libera al salir, incluso si hay una excepción. Sin el with, si olvidas el release o hay una excepción antes, el lock queda adquirido para siempre y otros threads bloquean eternamente, lo que se llama deadlock. Para limitar concurrencia a N threads en vez de uno, usas un semaphore. Para colas thread safe sin locks manuales, usas queue punto queue. Y la regla de oro para prevenir deadlocks cuando tienes múltiples locks: adquiérelos siempre en el mismo orden en todos los threads.",
     "video_prompt": "Video de 100 segundos. ESCENA 1 (race condition): dos threads intentan incrementar un contador compartido. Thread A lee '5', Thread B lee '5' (antes de que A escriba), ambos incrementan a '6', ambos escriben '6'. Resultado: 6 en vez de 7. Un contador muestra '870,000' en vez de '1,000,000'. ESCENA 2 (con Lock): un candado visual protege el contador. Thread A adquiere el candado, lee '5', incrementa a '6', escribe '6', libera el candado. Thread B espera, luego adquiere el candado, lee '6', incrementa a '7', escribe '7'. Resultado: 1,000,000 exactos. ESCENA 3 (Semaphore): un semáforo permite que 5 threads pasen a la vez (no solo 1 como el Lock). ESCENA 4 (Deadlock): Thread 1 tiene Lock A y quiere Lock B; Thread 2 tiene Lock B y quiere Lock A. Ambos esperan eternamente (reloj girando sin fin). Solución: mismo orden de adquisición siempre. Overlay: 'Lock = uno a la vez. Semaphore = N a la vez. Mismo orden = sin deadlock.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - threading.Lock", "Fluent Python Cap 18 (concurrency)", "Classic Computer Science Problems Cap 5 (synchronization)"],
-      "conceptos_clave": ["race-condition", "lock", "mutex", "semaphore", "deadlock", "thread-safe", "atomicidad"]
+      "libros_fuente": [
+        "Python docs - threading.Lock",
+        "Fluent Python Cap 18 (concurrency)",
+        "Classic Computer Science Problems Cap 5 (synchronization)"
+      ],
+      "conceptos_clave": [
+        "race-condition",
+        "lock",
+        "mutex",
+        "semaphore",
+        "deadlock",
+        "thread-safe",
+        "atomicidad"
+      ]
     },
-    "tags_rag": ["python", "threading", "lock", "race-condition", "deadlock", "semaphore", "concurrencia"]
+    "tags_rag": [
+      "python",
+      "threading",
+      "lock",
+      "race-condition",
+      "deadlock",
+      "semaphore",
+      "concurrencia"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Qué sucede si ejecutas el código con 10 threads incrementando 100,000 veces cada uno sin usar Lock?",
+        "opciones": [
+          "El contador siempre será exactamente 1,000,000",
+          "El contador será aproximadamente 870,000 o menos, debido a race conditions",
+          "Python lanzará un error de sintaxis porque no se puede usar threading así",
+          "El programa se colgará indefinidamente por un deadlock"
+        ],
+        "correcta": "B",
+        "explicacion": "La operación `contador += 1` no es atómica: implica leer, incrementar y escribir. Cuando múltiples threads hacen esto simultáneamente, algunos incrementos se pierden porque dos threads pueden leer el mismo valor antes de que ninguno escriba. El resultado es siempre menor o igual a 1,000,000 y varía entre ejecuciones. La opción A es incorrecta porque no hay garantía de atomicidad. La opción C es falsa: el código es sintácticamente válido. La opción D es incorrecta porque no hay locks involucrados, por lo que no puede haber deadlock.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "¿Por qué `contador += 1` no es seguro en entornos multihilo?",
+        "opciones": [
+          "Porque Python no soporta operaciones aritméticas en multihilo",
+          "Porque es una operación compuesta de lectura, modificación y escritura que puede ser interrumpida",
+          "Porque el GIL impide que dos threads ejecuten código Python al mismo tiempo",
+          "Porque las variables globales no pueden ser modificadas por threads"
+        ],
+        "correcta": "B",
+        "explicacion": "`contador += 1` se descompone en tres pasos: leer `contador`, calcular `contador + 1`, y escribir el resultado. Si otro thread ejecuta el paso de lectura entre la lectura y la escritura del primer thread, ambos trabajan con el mismo valor original, perdiendo un incremento. La opción A es incorrecta: Python sí soporta aritmética en multihilo, pero no garantiza atomicidad. La opción C es parcialmente cierta sobre el GIL, pero el GIL no previene race conditions en operaciones de alto nivel. La opción D es falsa: las variables globales sí pueden modificarse, pero sin protección causa problemas.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué patrón general de error representa este código?",
+        "opciones": [
+          "Un error de sintaxis común en threading",
+          "Una race condition causada por falta de sincronización en una sección crítica",
+          "Un problema de rendimiento por uso excesivo de memoria",
+          "Un deadlock por adquisición incorrecta de locks"
+        ],
+        "correcta": "B",
+        "explicacion": "El código accede a una variable compartida (`contador`) desde múltiples threads sin ningún mecanismo de sincronización, lo que constituye una **race condition**. La sección crítica (la operación de incremento) no está protegida. La opción A es incorrecta porque el código es sintácticamente válido. La opción C no es relevante: el problema no es de memoria. La opción D es incorrecta porque no hay locks en el código, por lo que no puede haber deadlock.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué línea del siguiente código causaría un error si se ejecutara?",
+        "opciones": [
+          "`contador = 0`",
+          "`for _ in range(100000):`",
+          "`contador += 1`",
+          "`threads = [threading.Thread(...)]"
+        ],
+        "correcta": "C",
+        "explicacion": "Aunque `contador += 1` no causa un error de sintaxis o excepción en tiempo de ejecución, es la línea que introduce la **race condition**. El resto del código es correcto desde el punto de vista de la sintaxis y la API de threading. La opción A es válida: inicializar una variable a 0 es correcto. La opción B es válida: un bucle for es correcto. La opción D es válida: crear threads es correcto. Solo la opción C representa el patrón de error de concurrencia, aunque no lance una excepción explícita.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M3.2-003",
@@ -119,17 +265,39 @@
       "setup_code": "import time\nfrom concurrent.futures import ProcessPoolExecutor\n\ndef tarea_cpu(n):\n    # Simula CPU-bound: cálculo intensivo\n    return sum(i * i for i in range(n))",
       "codigo_inicial": "# Usa ProcessPoolExecutor para ejecutar 4 tareas CPU-bound en paralelo.\n# Cada tarea es tarea_cpu(5_000_000).\n# Debes:\n# 1. Crear un ProcessPoolExecutor con max_workers=4\n# 2. Usar executor.map() para ejecutar las 4 tareas\n# 3. Recolectar los resultados en una lista\n#\n# PISTA:\n# with ProcessPoolExecutor(max_workers=4) as executor:\n#     resultados = list(executor.map(tarea_cpu, [5_000_000] * 4))\n",
       "test_code": "import time\n\nt0 = time.time()\nresultados = ejecutar_en_paralelo()\nt_total = time.time() - t0\n\nassert len(resultados) == 4, f'debiste ejecutar 4 tareas, ejecutaste {len(resultados)}'\nexpected = sum(i * i for i in range(5_000_000))\nassert all(r == expected for r in resultados), f'resultados incorrectos: {resultados}'\nassert t_total < 2.0, f'tardaste {t_total:.2f}s: las tareas deben correr en paralelo (~1s), no secuencial (~4s)'\nprint('OK')",
-      "asserts_concurrency": ["todas_las_tareas_completadas", "tiempo_total < 2s"],
+      "asserts_concurrency": [
+        "todas_las_tareas_completadas",
+        "tiempo_total < 2s"
+      ],
       "asserts_forbidden": [],
       "solucion": "def ejecutar_en_paralelo():\n    with ProcessPoolExecutor(max_workers=4) as executor:\n        return list(executor.map(tarea_cpu, [5_000_000] * 4))"
     },
     "audio_script": "Multiprocessing crea procesos separados, cada uno con su propio intérprete Python y su propia memoria. Esto bypasea el GIL, porque cada proceso tiene su propio GIL, así que pueden ejecutar bytecode Python simultáneamente en múltiples cores. La consecuencia práctica es que multiprocessing SÍ acelera código CPU bound, como cálculos intensivos, procesamiento de imágenes, machine learning o simulaciones. El costo es que crear procesos es más lento que crear threads, aproximadamente cien veces más lento, y la comunicación entre procesos es más cara porque no comparten memoria: tienen que usar IPC, como queues, pipes o shared memory. La API más simple es multiprocessing punto Pool. Creas un pool con processes igual al número de cores, y usas pool punto map para aplicar una función a una lista de argumentos. El pool distribuye las tareas entre los workers y recolecta los resultados. Una alternativa más moderna es concurrent punto futures punto ProcessPoolExecutor, que tiene la misma API que ThreadPoolExecutor, así que puedes cambiar entre threads y procesos cambiando una sola línea. Para comunicación entre procesos, multiprocessing punto Queue es una cola thread safe y process safe. Para tareas muy cortas, menos de un milisegundo, el overhead de crear procesos domina y multiprocessing es más lento que secuencial. La solución es agrupar tareas en chunks más grandes. Y un detalle crítico en Windows: todo el código multiprocessing debe estar dentro de if name igual main, porque Windows usa spawn en vez de fork, y sin el guard entra en un loop infinito.",
     "video_prompt": "Video de 95 segundos. ESCENA 1 (secuencial): 4 tareas CPU-bound (cálculos) se ejecutan una tras otra en un solo core. Tiempo: 4 segundos. ESCENA 2 (threading con GIL): 4 threads intentan ejecutar, pero el GIL (visualizado como un cuello de botella) solo deja pasar uno a la vez. Tiempo: 4 segundos (igual que secuencial). ESCENA 3 (multiprocessing): 4 procesos separados, cada uno con su propio intérprete y su propio GIL, corren en 4 cores distintos simultáneamente. Tiempo: 1 segundo. ESCENA 4 (IPC): los procesos no comparten memoria, así que usan una Queue para comunicar resultados. Un proceso pone datos en la cola, otro los saca. ESCENA 5 (overhead): crear un proceso tarda 100ms, crear un thread tarda 1ms. Para tareas de 1ms, el overhead de proceso (100ms) es 100x mayor que la tarea. Overlay: 'Multiprocessing = CPU-bound. Propio intérprete = propio GIL = paralelo real.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - multiprocessing", "Fluent Python Cap 18 (concurrency)", "Python Crash Course Cap 10 (parallel processing)"],
-      "conceptos_clave": ["multiprocessing", "processpoolexecutor", "pool", "cpu-bound", "gil", "ipc", "queue"]
+      "libros_fuente": [
+        "Python docs - multiprocessing",
+        "Fluent Python Cap 18 (concurrency)",
+        "Python Crash Course Cap 10 (parallel processing)"
+      ],
+      "conceptos_clave": [
+        "multiprocessing",
+        "processpoolexecutor",
+        "pool",
+        "cpu-bound",
+        "gil",
+        "ipc",
+        "queue"
+      ]
     },
-    "tags_rag": ["python", "multiprocessing", "processpoolexecutor", "cpu-bound", "concurrencia", "paralelismo"]
+    "tags_rag": [
+      "python",
+      "multiprocessing",
+      "processpoolexecutor",
+      "cpu-bound",
+      "concurrencia",
+      "paralelismo"
+    ]
   },
   {
     "id": "M3.2-004",
@@ -163,17 +331,41 @@
       "setup_code": "import asyncio\n\nasync def tarea_async(i):\n    await asyncio.sleep(1)\n    return f'tarea_{i}_completada'",
       "codigo_inicial": "# Escribe una coroutine main() que ejecute 5 tareas_async en paralelo.\n# Debes:\n# 1. Crear una lista de 5 coroutines (tarea_async(0) a tarea_async(4))\n# 2. Usar asyncio.gather() para ejecutarlas en paralelo\n# 3. Retornar la lista de resultados\n#\n# PISTA:\n# async def main():\n#     tareas = [tarea_async(i) for i in range(5)]\n#     resultados = await asyncio.gather(*tareas)\n#     return resultados\n",
       "test_code": "import asyncio\nimport time\n\nasync def test():\n    t0 = time.time()\n    resultados = await main()\n    t_total = time.time() - t0\n    \n    assert len(resultados) == 5, f'debiste ejecutar 5 tareas, ejecutaste {len(resultados)}'\n    assert all(r == f'tarea_{i}_completada' for i, r in enumerate(resultados)), f'resultados incorrectos: {resultados}'\n    assert t_total < 2.0, f'tardaste {t_total:.2f}s: las tareas deben correr en paralelo (~1s), no secuencial (~5s)'\n    print('OK')\n\nasyncio.run(test())",
-      "asserts_concurrency": ["todas_las_tareas_completadas", "tiempo_total < 2s"],
-      "asserts_forbidden": ["time.sleep"],
+      "asserts_concurrency": [
+        "todas_las_tareas_completadas",
+        "tiempo_total < 2s"
+      ],
+      "asserts_forbidden": [
+        "time.sleep"
+      ],
       "solucion": "async def main():\n    tareas = [tarea_async(i) for i in range(5)]\n    resultados = await asyncio.gather(*tareas)\n    return resultados"
     },
     "audio_script": "Asyncio es un modelo de concurrencia cooperativo donde un solo hilo ejecuta múltiples tareas, pero las tareas ceden el control voluntariamente cuando esperan I/O. El event loop es el scheduler que decide qué tarea corre en cada momento. Las ventajas sobre threading son tres: no hay GIL, no hay race conditions porque solo una tarea corre a la vez, y hay menos overhead porque no hay cambio de contexto entre threads. Las desventajas son que todo debe ser async, no puedes mezclar código síncrono y asíncrono fácilmente, y el código CPU bound bloquea el event loop. Los conceptos clave son cuatro. Coroutines son funciones definidas con async def que retornan un objeto coroutine. Await pausa la coroutine actual hasta que otra coroutine termine, y cede el control al event loop. El event loop es el scheduler que ejecuta coroutines. Y tasks son coroutines envueltas para ejecución concurrente. El bug más común es usar time punto sleep en vez de await asyncio punto sleep. Time sleep bloquea el thread completo, incluyendo el event loop, así que ninguna otra tarea puede correr. Asyncio sleep cede el control al event loop, que puede ejecutar otras tareas mientras espera. Para ejecutar múltiples coroutines en paralelo, usas asyncio punto gather, que recibe una lista de coroutines y retorna sus resultados en el mismo orden. Para limitar concurrencia a N tareas simultáneas, usas asyncio punto semaphore con await async with sem. Y para integrar código síncrono bloqueante como requests, usas loop punto run in executor para ejecutarlo en un thread pool sin bloquear el event loop.",
     "video_prompt": "Video de 100 segundos. ESCENA 1 (time.sleep bloquea): 5 coroutines con time.sleep(1) cada una. El event loop (visualizado como un director de orquesta) se congela durante 1s por cada tarea. Tiempo total: 5s. ESCENA 2 (asyncio.sleep cede): 5 coroutines con await asyncio.sleep(1). Cada coroutine cede el control al event loop, que ejecuta la siguiente. Todas duermen 'en paralelo'. Tiempo total: 1s. ESCENA 3 (gather): asyncio.gather() arranca las 5 coroutines simultáneamente y espera a que todas terminen. Visualización: 5 tareas corriendo en paralelo, todas terminando al mismo tiempo. ESCENA 4 (Semaphore): Semaphore(3) permite que máximo 3 tareas estén activas a la vez. Las otras 2 esperan. Visualización: 3 tareas corriendo, 2 en cola. ESCENA 5 (run_in_executor): código síncrono (requests.get) se ejecuta en un thread pool separado, sin bloquear el event loop. Overlay: 'asyncio.sleep = cede control. gather = paralelo. Semaphore = limita concurrencia.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - asyncio", "Fluent Python Cap 18 (concurrency)", "Using Asyncio in Python (Luciano Ramalho)"],
-      "conceptos_clave": ["asyncio", "async-await", "event-loop", "gather", "semaphore", "coroutine", "cooperativo"]
+      "libros_fuente": [
+        "Python docs - asyncio",
+        "Fluent Python Cap 18 (concurrency)",
+        "Using Asyncio in Python (Luciano Ramalho)"
+      ],
+      "conceptos_clave": [
+        "asyncio",
+        "async-await",
+        "event-loop",
+        "gather",
+        "semaphore",
+        "coroutine",
+        "cooperativo"
+      ]
     },
-    "tags_rag": ["python", "asyncio", "async-await", "event-loop", "concurrencia", "cooperativo"]
+    "tags_rag": [
+      "python",
+      "asyncio",
+      "async-await",
+      "event-loop",
+      "concurrencia",
+      "cooperativo"
+    ]
   },
   {
     "id": "M3.2-005",
@@ -182,13 +374,13 @@
     "nivel": "principiante",
     "fase": 3,
     "microproyecto": "Scraper concurrente con rate limiting",
-    "modelo_mental": "`concurrent.futures` ofrece una API unificada de alto nivel para threading y multiprocessing. `ThreadPoolExecutor` maneja un pool de threads (para I/O-bound), `ProcessPoolExecutor` maneja un pool de procesos (para CPU-bound). Ambos tienen la misma API: `submit()` para tareas individuales, `map()` para aplicar una función a un iterable. Ventajas sobre threading/multiprocessing directo: manejo automático del pool, futures con `.result()` y `.exception()`, y `as_completed()` para procesar resultados cuando terminan.",
+    "modelo_mental": "**ThreadPoolExecutor y ProcessPoolExecutor son como un equipo de trabajadores gestionado por un jefe de cocina**: el jefe (el gestor) mantiene un grupo de cocineros (threads o procesos) listos para trabajar, repartiendo tareas con un orden limpio y reutilizando recursos en lugar de crear un nuevo cocinero para cada pedido.\n\nEl **modelo mental** es importante porque abstrae el complicado boilerplate de `threading.Thread` o `multiprocessing.Process`, proporcionando una API unificada (`submit`, `map`, `as_completed`) y **futures** que capturan resultados o excepciones. Esto elimina muchos errores clásicos: olvidar unir threads, manejar mal el cierre de procesos o intentar hacer un seguimiento de los resultados manualmente.\n\nAl usar un pool, evitas tres errores comunes: (1) el código manual de 100 threads es verboso y propenso a errores de índice; (2) las excepciones en los workers se pierden, dejando `None` o datos corruptos; y (3) la falta de un límite de concurrencia puede saturar servidores, agotar file descriptors o desencadenar límites de sockets. `ThreadPoolExecutor` (para tareas limitadas por E/S) y `ProcessPoolExecutor` (para tareas limitadas por CPU) manejan automáticamente el tamaño del pool (`max_workers`) y proporcionan un manejo seguro de excepciones, manteniendo tu aplicación robusta y eficiente.",
     "codigo_roto": "import threading\nimport requests\n\n# Sin pool: crear 100 threads manualmente es verboso y propenso a errores\ndef fetch(url):\n    return requests.get(url).text\n\nthreads = []\nresultados = [None] * 100\nfor i in range(100):\n    def worker(idx):\n        resultados[idx] = fetch(urls[idx])\n    t = threading.Thread(target=worker, args=(i,))\n    threads.append(t)\n    t.start()\n\nfor t in threads:\n    t.join()\n# BUG: sin manejo de excepciones, si un thread falla, resultados[idx] queda None\n# BUG: sin límite de concurrencia, 100 requests simultáneos pueden saturar el servidor",
-    "diagnostico": "Tres problemas. (1) Verboso: crear 100 threads manualmente requiere boilerplate (lista de threads, worker function, índices). (2) Sin manejo de excepciones: si `requests.get()` lanza excepción, el thread muere silenciosamente y `resultados[idx]` queda None. (3) Sin límite de concurrencia: 100 requests simultáneos pueden saturar el servidor o tu red. `ThreadPoolExecutor` resuelve los tres: maneja el pool automáticamente, los futures capturan excepciones, y `max_workers` limita concurrencia.",
+    "diagnostico": "1. **Verboso y propenso a errores**: Crear 100 threads manualmente requiere definir una lista de threads, una función worker, capturar índices y luego unir cada thread. Este boilerplate aumenta las posibilidades de errores de typado, errores de índice y olvidar un `t.join()`, lo que resulta en un programa incompleto.\n\n2. **Sin manejo de excepciones**: Dentro de cada thread, `requests.get(url)` puede lanzar `requests.exceptions.RequestException`. Como no hay un bloque `try/except` dentro del worker, la excepción se propaga al thread, lo mata silenciosamente y deja `resultados[idx]` como el valor predeterminado `None`. Python informa la excepción solo si el thread principal la inspecciona, pero el programa continúa sin notarlo.\n\n3. **Sin límite de concurrencia**: Iniciar 100 solicitudes simultáneamente envía 100 paquetes al servidor de destino, lo que puede exceder los límites de tasa del servidor, agotar los sockets locales o agotar los file descriptors del sistema. Python no lanza un error a menos que el sistema operativo devuelva un error de \"too many open files\", pero el rendimiento general se degrada drásticamente debido a la contención de red y la sobrecarga del kernel.",
     "codigo_corregido": "from concurrent.futures import ThreadPoolExecutor, as_completed\nimport requests\n\ndef fetch(url):\n    response = requests.get(url, timeout=10)\n    response.raise_for_status()\n    return response.text\n\nurls = ['https://example.com'] * 100\n\nwith ThreadPoolExecutor(max_workers=10) as executor:\n    # submit() retorna un Future por cada tarea\n    futures = [executor.submit(fetch, url) for url in urls]\n    \n    # as_completed() yield futures en orden de finalización\n    for future in as_completed(futures):\n        try:\n            resultado = future.result()\n            print(f'OK: {len(resultado)} bytes')\n        except Exception as e:\n            print(f'Error: {e}')",
     "codigo_optimizado": "from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed\nimport requests\n\n# ===== THREADPOOLEXECUTOR (I/O-BOUND) =====\n# Maneja un pool de threads. Útil para:\n# - Requests HTTP\n# - Lectura/escritura de archivos\n# - Queries a DB\n# - Subprocess\n#\n# API:\n#   ThreadPoolExecutor(max_workers=N) → pool de N threads\n#   executor.submit(func, *args)      → retorna Future\n#   executor.map(func, iterable)      → como map() pero concurrente\n#   executor.shutdown(wait=True)      → cierra el pool (automático con with)\n\ndef fetch_url(url):\n    response = requests.get(url, timeout=10)\n    response.raise_for_status()\n    return response.text\n\nurls = ['https://example.com'] * 20\n\n# Forma 1: submit() + as_completed() (procesa cuando terminan)\nwith ThreadPoolExecutor(max_workers=10) as executor:\n    futures = [executor.submit(fetch_url, url) for url in urls]\n    for future in as_completed(futures):\n        try:\n            html = future.result()\n            print(f'OK: {len(html)} bytes')\n        except Exception as e:\n            print(f'Error: {e}')\n\n# Forma 2: map() (resultados en orden original)\nwith ThreadPoolExecutor(max_workers=10) as executor:\n    resultados = list(executor.map(fetch_url, urls))\n    for i, html in enumerate(resultados):\n        print(f'{i}: {len(html)} bytes')\n\n# ===== PROCESSPOOLEXECUTOR (CPU-BOUND) =====\n# Misma API que ThreadPoolExecutor, pero usa procesos en vez de threads.\n# Útil para:\n# - Procesamiento de imágenes\n# - Cálculos intensivos\n# - ML inference\n# - Compresión\n\ndef procesar_imagen(path):\n    # CPU-bound: aplicar filtros, redimensionar\n    from PIL import Image\n    img = Image.open(path)\n    img = img.resize((800, 600))\n    img = img.filter(ImageFilter.SHARPEN)\n    return img\n\npaths = ['img1.jpg', 'img2.jpg', 'img3.jpg', 'img4.jpg']\n\nwith ProcessPoolExecutor(max_workers=4) as executor:\n    futures = [executor.submit(procesar_imagen, p) for p in paths]\n    for future in as_completed(futures):\n        img = future.result()\n        print(f'Procesada: {img.size}')\n\n# ===== FUTURES: RESULTADO ASÍNCRONO =====\n# Un Future representa el resultado de una tarea que puede no haber terminado.\n#\n# API:\n#   future.result(timeout=None)   → bloquea hasta que termine, retorna resultado\n#   future.exception(timeout=None)→ retorna excepción (o None si no hubo)\n#   future.done()                 → True si terminó (éxito o error)\n#   future.cancel()               → intenta cancelar (solo si no empezó)\n#   future.running()              → True si está ejecutándose\n#\n# Ejemplo con timeout:\nwith ThreadPoolExecutor(max_workers=5) as executor:\n    future = executor.submit(tarea_lenta)\n    try:\n        resultado = future.result(timeout=5)  # espera máximo 5s\n    except TimeoutError:\n        print('La tarea tardó demasiado')\n        future.cancel()\n\n# ===== AS_COMPLETED vs MAP =====\n# as_completed(futures): yield futures en orden de finalización\n#   Útil cuando quieres procesar resultados tan pronto como terminan\n#   (ej: mostrar progreso, loguear)\n#\n# map(func, iterable): retorna resultados en orden original\n#   Útil cuando el orden importa (ej: procesar lista y mantener orden)\n\n# Ejemplo as_completed (orden de finalización):\nwith ThreadPoolExecutor(max_workers=5) as executor:\n    futures = [executor.submit(tarea_lenta, i) for i in range(10)]\n    for future in as_completed(futures):\n        resultado = future.result()\n        print(f'Terminó: {resultado}')  # se imprime en orden de finalización\n\n# Ejemplo map (orden original):\nwith ThreadPoolExecutor(max_workers=5) as executor:\n    resultados = list(executor.map(tarea_lenta, range(10)))\n    for i, r in enumerate(resultados):\n        print(f'{i}: {r}')  # se imprime en orden 0, 1, 2, ...\n\n# ===== MANEJO DE EXCEPCIONES =====\n# Los futures capturan excepciones. future.result() las relanza.\n\ndef tarea_con_error():\n    raise ValueError('error intencional')\n\nwith ThreadPoolExecutor(max_workers=1) as executor:\n    future = executor.submit(tarea_con_error)\n    try:\n        resultado = future.result()\n    except ValueError as e:\n        print(f'Capturada: {e}')\n    \n    # O verificar sin lanzar:\n    if future.exception():\n        print(f'Error: {future.exception()}')\n\n# ===== CUÁNDO USAR CADA UNO =====\n# ThreadPoolExecutor:\n#   ✓ I/O-bound (requests, archivos, DB)\n#   ✓ Código síncrono legacy\n#   ✓ Tareas que esperan (sleep, wait)\n#\n# ProcessPoolExecutor:\n#   ✓ CPU-bound (cálculos, imágenes, ML)\n#   ✓ Cuando el GIL es cuello de botella\n#   ✓ Tareas independientes (poco estado compartido)\n#\n# Ninguno (secuencial):\n#   ✓ Tareas muy cortas (< 1ms): overhead > tiempo de ejecución\n#   ✓ Tareas que deben ejecutarse en orden estricto\n\n# ===== MAX_WORKERS: CUÁNTOS THREADS/PROCESOS =====\n# ThreadPoolExecutor: default = min(32, os.cpu_count() + 4)\n#   Para I/O-bound, puedes usar más (50-100) porque la mayoría esperan\n#\n# ProcessPoolExecutor: default = os.cpu_count()\n#   Para CPU-bound, no tiene sentido más procesos que cores\n#\n# Regla práctica:\n#   I/O-bound: 10-50 threads (depende de latencia de red)\n#   CPU-bound: número de cores (o cores - 1 para dejar uno libre)\n\n# ===== SHUTDOWN: LIMPIEZA DEL POOL =====\n# El context manager (with) hace shutdown automáticamente.\n# Si no usas with, debes llamar executor.shutdown(wait=True):\n\nexecutor = ThreadPoolExecutor(max_workers=5)\nfutures = [executor.submit(tarea, i) for i in range(10)]\n# ... hacer algo ...\nexecutor.shutdown(wait=True)  # espera a que todas las tareas terminen",
     "disenso_experto": "¿ThreadPoolExecutor o asyncio para I/O-bound? ThreadPoolExecutor funciona con código síncrono legacy (requests, sqlite3) sin reescribir nada. Asyncio es más eficiente (un solo hilo) pero requiere librerías async (aiohttp, asyncpg) y reescribir todo como async/await. Regla: ThreadPoolExecutor para scripts y herramientas con código síncrono; asyncio para servidores y aplicaciones nuevas con librerías async.",
-    "pregunta_transferencia": "Tu scraper usa ThreadPoolExecutor con max_workers=100 para descargar 1000 páginas. Descubres que con 50 workers es MÁS RÁPIDO que con 100 workers. ¿Por qué más workers no siempre es mejor, y qué límites (red, servidor, file descriptors) estás hitting?",
+    "pregunta_transferencia": "Estás escribiendo un scraper que descarga 1000 páginas usando `ThreadPoolExecutor` con `max_workers=100`. Observas que reducir `max_workers` a 50 en realidad **acelera** la ejecución total. ¿Por qué aumentar el número de workers no siempre mejora el rendimiento, y qué límites del mundo real (red, servidor, sistema operativo) podrías estar hitting?\n\nConsidera cómo la latencia de la red, los límites de velocidad del servidor y la sobrecarga del sistema operativo afectan el beneficio de añadir más workers simultáneos.",
     "quiz": {
       "pregunta": "¿Cuál es la diferencia entre `as_completed(futures)` y `executor.map(func, iterable)`?",
       "opciones": [
@@ -207,17 +399,79 @@
       "setup_code": "import time\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\n\ndef descargar_url(url):\n    # Simula descarga: 1 segundo por URL\n    time.sleep(1)\n    return f'contenido_de_{url}'",
       "codigo_inicial": "# Usa ThreadPoolExecutor para descargar 10 URLs en paralelo.\n# Config:\n# - max_workers=5 (máximo 5 descargas simultáneas)\n# - URLs: ['url_0', 'url_1', ..., 'url_9']\n#\n# Debes:\n# 1. Crear un ThreadPoolExecutor con max_workers=5\n# 2. Usar submit() para crear un Future por cada URL\n# 3. Usar as_completed() para procesar resultados cuando terminan\n# 4. Retornar una lista con los 10 resultados\n#\n# PISTA:\n# with ThreadPoolExecutor(max_workers=5) as executor:\n#     futures = [executor.submit(descargar_url, url) for url in urls]\n#     resultados = []\n#     for future in as_completed(futures):\n#         resultados.append(future.result())\n#     return resultados\n",
       "test_code": "import time\n\nurls = [f'url_{i}' for i in range(10)]\n\nt0 = time.time()\nresultados = descargar_en_paralelo(urls)\nt_total = time.time() - t0\n\nassert len(resultados) == 10, f'debiste descargar 10 URLs, descargaste {len(resultados)}'\nassert all(r.startswith('contenido_de_url_') for r in resultados), f'resultados incorrectos: {resultados}'\nassert t_total < 3.0, f'tardaste {t_total:.2f}s: con 5 workers y 10 URLs de 1s, debe tardar ~2s, no 10s'\nprint('OK')",
-      "asserts_concurrency": ["todas_las_descargas_completadas", "tiempo_total < 3s", "max_concurrent <= 5"],
+      "asserts_concurrency": [
+        "todas_las_descargas_completadas",
+        "tiempo_total < 3s",
+        "max_concurrent <= 5"
+      ],
       "asserts_forbidden": [],
       "solucion": "def descargar_en_paralelo(urls):\n    with ThreadPoolExecutor(max_workers=5) as executor:\n        futures = [executor.submit(descargar_url, url) for url in urls]\n        resultados = []\n        for future in as_completed(futures):\n            resultados.append(future.result())\n        return resultados"
     },
     "audio_script": "concurrent punto futures ofrece una API unificada de alto nivel para threading y multiprocessing. ThreadPoolExecutor maneja un pool de threads para código I/O bound, como requests HTTP, lectura de archivos o queries a base de datos. ProcessPoolExecutor maneja un pool de procesos para código CPU bound, como procesamiento de imágenes o cálculos intensivos. Ambos tienen la misma API, así que puedes cambiar entre threads y procesos cambiando una sola línea. Las ventajas sobre usar threading o multiprocessing directamente son tres. Primero: manejo automático del pool, no tienes que crear y destruir threads manualmente. Segundo: los futures capturan excepciones, así que si una tarea falla, future punto result lanza la excepción en vez de morir silenciosamente. Tercero: max workers limita concurrencia, así que no saturar el servidor con cien requests simultáneos. La API tiene dos formas de usarla. Submit retorna un future por cada tarea, y as completed te da los futures en orden de finalización, tan pronto como terminan. Es útil cuando quieres procesar resultados inmediatamente, como mostrar progreso o loguear. Map aplica una función a un iterable y retorna los resultados en el orden original, como el map de Python pero concurrente. Es útil cuando el orden importa. Para manejar excepciones, future punto result lanza la excepción si la tarea falló, o puedes verificar future punto exception sin lanzar. Y para elegir max workers, para I/O bound puedes usar diez a cincuenta threads porque la mayoría esperan red o disco, pero para CPU bound no tiene sentido más procesos que cores.",
     "video_prompt": "Video de 95 segundos. ESCENA 1 (threading manual): desarrollador creando 100 threads manualmente con boilerplate (lista de threads, worker function, índices, join). Código verboso y propenso a errores. ESCENA 2 (ThreadPoolExecutor): una línea crea el pool, submit() crea futures, as_completed() procesa resultados. Código limpio y manejable. ESCENA 3 (as_completed vs map): lado a lado, as_completed yield resultados en orden de finalización (tarea 3 termina primero, luego tarea 1, luego tarea 2), map retorna resultados en orden original (tarea 0, 1, 2, 3). ESCENA 4 (manejo de excepciones): una tarea falla, future.result() lanza la excepción con traceback completo. Sin ThreadPoolExecutor, el thread moriría silenciosamente. ESCENA 5 (max_workers): con max_workers=5, máximo 5 tareas corren simultáneamente, las otras esperan en cola. Sin límite, 100 tareas saturan el servidor. Overlay: 'ThreadPoolExecutor = I/O-bound. ProcessPoolExecutor = CPU-bound. Misma API.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - concurrent.futures", "Fluent Python Cap 18 (concurrency)", "Python Cookbook Cap 12 (concurrency)"],
-      "conceptos_clave": ["concurrent-futures", "threadpoolexecutor", "processpoolexecutor", "futures", "as-completed", "map", "pool"]
+      "libros_fuente": [
+        "Python docs - concurrent.futures",
+        "Fluent Python Cap 18 (concurrency)",
+        "Python Cookbook Cap 12 (concurrency)"
+      ],
+      "conceptos_clave": [
+        "concurrent-futures",
+        "threadpoolexecutor",
+        "processpoolexecutor",
+        "futures",
+        "as-completed",
+        "map",
+        "pool"
+      ]
     },
-    "tags_rag": ["python", "concurrent-futures", "threadpoolexecutor", "processpoolexecutor", "concurrencia", "pool"]
+    "tags_rag": [
+      "python",
+      "concurrent-futures",
+      "threadpoolexecutor",
+      "processpoolexecutor",
+      "concurrencia",
+      "pool"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "Para una tarea que pasa la mayor parte del tiempo bloqueada en operaciones de E/S (por ejemplo, solicitudes HTTP), ¿qué clase de ejecutor de `concurrent.futures` es generalmente más adecuada?",
+        "opciones": [
+          "ThreadPoolExecutor",
+          "ProcessPoolExecutor",
+          "multiprocessing.Pool",
+          "threading.Lock"
+        ],
+        "correcta": "A",
+        "explicacion": "ThreadPoolExecutor es ideal para tareas limitadas por E/S porque los threads comparten la memoria y el GIL, pero el GIL no es un obstáculo cuando el hilo está esperando en E/S. ProcessPoolExecutor introduce costosas copias de memoria y sobrecarga de procesos, lo que lo hace más lento para cargas de trabajo centradas en red. Las otras opciones son conceptos no relacionados.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "¿Qué sucede cuando se usa `executor.map(func, urls)` y `func` lanza una excepción?",
+        "opciones": [
+          "El executor devuelve silenciosamente None para esa entrada",
+          "La excepción se propaga al iterador `map` y se levanta inmediatamente",
+          "El executor omite esa URL y continúa",
+          "El programa se bloquea sin ningún error"
+        ],
+        "correcta": "B",
+        "explicacion": "El método `map` de `concurrent.futures` wrappea cada tarea en un Future; si la función objetivo lanza una excepción, el Future la guarda y `map` la re-lanza cuando se intenta obtener el resultado. Esto hace que el iterador falle en lugar de producir un valor silenciosamente. Las otras opciones describen un comportamiento que no es admitido por la API.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "Identifica el error en este fragmento que causa un resultado incorrecto:\n\npython\nfor i in range(10):\n    t = threading.Thread(target=lambda: print(i))\n    t.start()\n    t.join()\n",
+        "opciones": [
+          "Uso de `lambda` en lugar de una función definida",
+          "Falta `t.join()` después de `start()`",
+          "Captura tardía del cierre: `i` cambia después de que el lambda se crea",
+          "Uso incorrecto de `range`"
+        ],
+        "correcta": "C",
+        "explicacion": "El lambda captura la variable `i` por referencia, no por valor. Para cuando los threads se ejecutan, el bucle ya ha terminado y todos imprimen el mismo valor final (`9`). Pasar un valor por defecto (`lambda x=i: print(x)`) o usar una función interna resuelve el problema. Las otras opciones describen problemas presentes pero no la causa raíz del comportamiento de impresión errónea.",
+        "tipo": "debugging"
+      }
+    ]
   },
   {
     "id": "M3.2-006",
@@ -226,13 +480,13 @@
     "nivel": "principiante",
     "fase": 3,
     "microproyecto": "Scraper concurrente con rate limiting",
-    "modelo_mental": "Rate limiting limita la tasa de requests para no saturar el servidor ni ser bloqueado. En concurrencia, necesitas limitar cuántos requests están activos simultáneamente (Semaphore) y/o cuántos requests por segundo (token bucket). `Semaphore(N)` permite máximo N tareas activas a la vez. Token bucket permite N requests por segundo, acumulando tokens si no se usan. La combinación de ambos es el patrón profesional: Semaphore para concurrencia máxima, token bucket para tasa máxima.",
+    "modelo_mental": "**Rate limiting** es como tener un portero en un club que controla tanto cuántas personas pueden estar dentro al mismo tiempo (concurrencia) como cuántas pueden entrar por minuto (tasa). El `Semaphore(N)` actúa como el portero que solo deja pasar N personas simultáneamente; cuando el límite se alcanza, los demás quedan en fila hasta que alguien sale. El **token bucket**, por su parte, funciona como una reserva de fichas que se recargan a una tasa fija (por ejemplo, 5 tokens por segundo); cada request consume un token y, si no hay tokens, debe esperar hasta que se recarguen.\n\nEsto importa porque, sin estos límites, un programa concurrente puede disparar decenas o cientos de requests en fracciones de segundo, lo que suele provocar respuestas HTTP 429 (Too Many Requests), bloqueos de IP por parte del proveedor o incluso ser interpretado como un ataque de denegación de servicio (DoS). Además, el consumo innecesario de ancho de banda y de recursos del servidor degrada la experiencia de otros usuarios y puede generar costos adicionales en servicios de pago.\n\nAl aplicar tanto un `Semaphore` como un token bucket se evitan esos errores: se limita el número máximo de requests activos simultáneamente (evitando saturación de conexiones) y se controla la tasa promedio de requests por segundo (evitando ráfagas que superen el umbral del servidor). De esta forma el programa permanece respetuoso, estable y menos propenso a ser bloqueado o throttled.",
     "codigo_roto": "from concurrent.futures import ThreadPoolExecutor\nimport requests\nimport time\n\ndef fetch(url):\n    return requests.get(url).text\n\nurls = ['https://api.example.com/data'] * 100\n\n# BUG: sin rate limiting, 100 requests simultáneos saturan el servidor\n# El servidor responde 429 Too Many Requests o te bloquea la IP\nwith ThreadPoolExecutor(max_workers=50) as executor:\n    resultados = list(executor.map(fetch, urls))",
-    "diagnostico": "Sin rate limiting, 50 workers hacen 50 requests simultáneos. Si el servidor tiene límite de 10 requests/segundo, responde 429 Too Many Requests o bloquea tu IP. Además, aunque el servidor aguante, hacer 100 requests en 2 segundos es agresivo y puede considerarse un ataque DoS. La solución es rate limiting: Semaphore para limitar concurrencia (max 10 simultáneos) y sleep entre requests para limitar tasa (max 5/segundo).",
+    "diagnostico": "1. **Falta de límite de concurrencia**: En el código roto se usan 50 workers en el `ThreadPoolExecutor` sin ningún mecanismo que restrinja cuántos requests se ejecutan al mismo tiempo. Si el servidor tiene un límite de, por ejemplo, 10 conexiones simultáneas, los 50 hilos intentarán abrir esas conexiones en paralelo, lo que provocará que el servidor responda con código 429 o incluso cierre la conexión prématuradamente. El patrón general es que, sin un semáforo o similar, todos los hilos disparan requests de forma descontrolada, saturando los recursos del servidor y de la red.\n\n2. **Falta de límite de tasa (requests por segundo)**: Incluso si el servidor pudiera soportar 50 conexiones simultáneas, lanzar 100 requests en pocos segundos supera con creces una tasa razonable (p.ej., 5 req/s). Muchos servidores aplican límites de tasa para protegerse de abusos; al superarlos, responden con 429 o aplican throttling. El patrón general aquí es que, sin un mecanismo como token bucket, `time.sleep` o un contador de tokens, no se regula la frecuencia con la que se envían los requests, lo que provoca ráfagas que el servidor interpreta como comportamiento agresivo o malicioso.",
     "codigo_corregido": "from concurrent.futures import ThreadPoolExecutor\nimport requests\nimport time\nimport threading\n\ndef fetch_con_rate_limit(url, semaphore):\n    with semaphore:  # máximo N concurrentes\n        time.sleep(0.2)  # mínimo 200ms entre requests (5 req/s)\n        return requests.get(url, timeout=10).text\n\nurls = ['https://api.example.com/data'] * 100\nsemaphore = threading.Semaphore(10)  # máximo 10 concurrentes\n\nwith ThreadPoolExecutor(max_workers=20) as executor:\n    futures = [executor.submit(fetch_con_rate_limit, url, semaphore) for url in urls]\n    resultados = [f.result() for f in futures]",
     "codigo_optimizado": "import time\nimport threading\nfrom concurrent.futures import ThreadPoolExecutor\nimport requests\n\n# ===== SEMAPHORE: LIMITAR CONCURRENCIA =====\n# Semaphore(N) permite que máximo N tareas estén activas a la vez.\n# Las demás esperan hasta que una active libere el semáforo.\n\nsemaphore = threading.Semaphore(10)  # máximo 10 concurrentes\n\ndef tarea_con_semaforo(url):\n    with semaphore:  # adquiere el semáforo\n        # máximo 10 tareas aquí a la vez\n        response = requests.get(url, timeout=10)\n        return response.text\n\n# ===== TOKEN BUCKET: LIMITAR TASA (REQUESTS POR SEGUNDO) =====\n# Token bucket permite N requests por segundo, acumulando tokens si no se usan.\n# Ejemplo: 5 req/s = 1 token cada 200ms. Si no haces requests por 10s,\n# acumulas 50 tokens y puedes hacer 50 requests de golpe (hasta el límite).\n\nclass TokenBucket:\n    def __init__(self, rate, capacity):\n        \"\"\"\n        rate: tokens por segundo (ej: 5 = 5 req/s)\n        capacity: máximo de tokens acumulados (ej: 50)\n        \"\"\"\n        self.rate = rate\n        self.capacity = capacity\n        self.tokens = capacity\n        self.last_update = time.monotonic()\n        self.lock = threading.Lock()\n    \n    def acquire(self):\n        \"\"\"Bloquea hasta que haya un token disponible.\"\"\"\n        while True:\n            with self.lock:\n                now = time.monotonic()\n                elapsed = now - self.last_update\n                self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)\n                self.last_update = now\n                \n                if self.tokens >= 1:\n                    self.tokens -= 1\n                    return\n            \n            # No hay tokens: espera y reintenta\n            time.sleep(1 / self.rate)\n\n# Uso:\nbucket = TokenBucket(rate=5, capacity=50)  # 5 req/s, máximo 50 acumulados\n\ndef fetch_con_token_bucket(url):\n    bucket.acquire()  # espera hasta que haya un token\n    return requests.get(url, timeout=10).text\n\n# ===== COMBINACIÓN: SEMAPHORE + TOKEN BUCKET =====\n# Semaphore limita concurrencia (max N simultáneos)\n# Token bucket limita tasa (max N por segundo)\n# Juntos: control total del tráfico\n\nclass RateLimiter:\n    def __init__(self, max_concurrent, rate_per_second, capacity=None):\n        self.semaphore = threading.Semaphore(max_concurrent)\n        capacity = capacity or rate_per_second * 10  # acumula hasta 10s de tokens\n        self.bucket = TokenBucket(rate_per_second, capacity)\n    \n    def __enter__(self):\n        self.semaphore.acquire()\n        self.bucket.acquire()\n        return self\n    \n    def __exit__(self, *args):\n        self.semaphore.release()\n\ndef fetch_con_rate_limiter(url, limiter):\n    with limiter:\n        return requests.get(url, timeout=10).text\n\n# Uso:\nlimiter = RateLimiter(max_concurrent=10, rate_per_second=5)\n\nwith ThreadPoolExecutor(max_workers=20) as executor:\n    futures = [executor.submit(fetch_con_rate_limiter, url, limiter)\n               for url in urls]\n    resultados = [f.result() for f in futures]\n\n# ===== RETRY CON BACKOFF EXPONENCIAL =====\n# Si el servidor responde 429 (Too Many Requests), espera y reintenta.\n# Backoff exponencial: 1s, 2s, 4s, 8s, ...\n\ndef fetch_con_retry(url, max_retries=5):\n    for attempt in range(max_retries):\n        response = requests.get(url, timeout=10)\n        if response.status_code == 429:\n            # Too Many Requests: espera con backoff exponencial\n            wait_time = 2 ** attempt  # 1, 2, 4, 8, 16 segundos\n            print(f'429 Too Many Requests, esperando {wait_time}s...')\n            time.sleep(wait_time)\n            continue\n        response.raise_for_status()\n        return response.text\n    raise Exception(f'Max retries alcanzado para {url}')\n\n# ===== RATE LIMITING EN ASYNCIO =====\n# asyncio.Semaphore es el equivalente async de threading.Semaphore\n\nimport asyncio\n\nasync def fetch_async_con_semaforo(url, semaphore):\n    async with semaphore:  # máximo N concurrentes\n        await asyncio.sleep(0.2)  # rate limiting\n        # Aquí harías: async with aiohttp.ClientSession() as session:\n        #                  async with session.get(url) as response:\n        #                      return await response.text()\n        await asyncio.sleep(1)  # simula request\n        return f'respuesta de {url}'\n\nasync def main_async():\n    semaphore = asyncio.Semaphore(10)\n    urls = [f'https://api.example.com/data/{i}' for i in range(100)]\n    tareas = [fetch_async_con_semaforo(url, semaphore) for url in urls]\n    resultados = await asyncio.gather(*tareas)\n    return resultados\n\n# ===== CUÁNDO USAR CADA UNO =====\n# Semaphore solo:\n#   ✓ Quieres limitar concurrencia pero no tasa\n#   ✓ El servidor no tiene límite de req/s, solo de conexiones\n#\n# Token bucket solo:\n#   ✓ Quieres limitar tasa pero no concurrencia\n#   ✓ El servidor permite muchas conexiones pero pocas req/s\n#\n# Ambos:\n#   ✓ Control total del tráfico\n#   ✓ Servidores con ambos límites (conexiones y req/s)\n#\n# Retry con backoff:\n#   ✓ Siempre, como red de seguridad\n#   ✓ Servidores que responden 429\n\n# ===== ANTI-PATRÓN: RATE LIMITING SIN CONCURRENCIA =====\n# MAL: sleep secuencial (no aprovecha concurrencia)\nfor url in urls:\n    fetch(url)\n    time.sleep(0.2)  # 5 req/s, pero secuencial\n\n# BIEN: concurrencia + rate limiting\nwith ThreadPoolExecutor(max_workers=20) as executor:\n    # 20 workers, pero Semaphore limita a 10 concurrentes\n    # y Token bucket limita a 5 req/s\n    futures = [executor.submit(fetch_con_rate_limiter, url, limiter)\n               for url in urls]",
     "disenso_experto": "¿Semaphore + sleep o token bucket? Semaphore + sleep es más simple pero menos preciso: si una tarea tarda más de lo esperado, el sleep no se ajusta. Token bucket es más preciso y flexible (acumula tokens si no se usan), pero más complejo de implementar. Regla: Semaphore + sleep para casos simples; token bucket para APIs con límites estrictos de req/s.",
-    "pregunta_transferencia": "Tu scraper usa Semaphore(10) para limitar a 10 requests simultáneos. Descubres que el servidor tiene límite de 5 req/s, no de conexiones simultáneas. ¿Por qué Semaphore no es suficiente, y qué agregarías (token bucket, sleep fijo, o retry con backoff) para respetar el límite de req/s?",
+    "pregunta_transferencia": "Tu scraper utiliza un `Semaphore(10)` para garantir que no haya más de diez requests activos al mismo tiempo. Sin embargo, al monitorear las respuestas descubres que el servidor comienza a devolver errores 429 porque su límite real es de 5 requests por segundo, no de conexiones simultáneas.\n\nPara respetar ese límite de tasa necesitas complementar el semáforo con un mecanismo que controle cuántos requests se pueden enviar por segundo. Puedes pensar en un token bucket que se recargue a 5 tokens por segundo, o bien en un `sleep` fijo entre cada request; la pista es que el semáforo solo gestiona la concurrencia, no la frecuencia de envío.",
     "quiz": {
       "pregunta": "¿Qué diferencia hay entre Semaphore y Token Bucket?",
       "opciones": [
@@ -251,17 +505,90 @@
       "setup_code": "import time\nimport threading\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\n\n# Contador de requests activos (para verificar)\nactivos = 0\nmax_activos = 0\nlock = threading.Lock()\n\ndef descargar_url(url, semaphore):\n    global activos, max_activos\n    with semaphore:\n        with lock:\n            activos += 1\n            max_activos = max(max_activos, activos)\n        \n        time.sleep(1)  # simula descarga de 1s\n        \n        with lock:\n            activos -= 1\n    \n    return f'contenido_de_{url}'",
       "codigo_inicial": "# Usa Semaphore para limitar a 5 requests simultáneos.\n# Debes:\n# 1. Crear un Semaphore(5)\n# 2. Pasarlo a la función descargar_url\n# 3. Usar ThreadPoolExecutor para ejecutar 20 descargas\n# 4. Verificar que max_activos <= 5\n#\n# PISTA:\n# semaphore = threading.Semaphore(5)\n# with ThreadPoolExecutor(max_workers=20) as executor:\n#     futures = [executor.submit(descargar_url, url, semaphore) for url in urls]\n#     resultados = [f.result() for f in futures]\n",
       "test_code": "urls = [f'url_{i}' for i in range(20)]\n\nt0 = time.time()\nresultados = descargar_con_limite(urls)\nt_total = time.time() - t0\n\nassert len(resultados) == 20, f'debiste descargar 20 URLs, descargaste {len(resultados)}'\nassert max_activos <= 5, f'max_activos={max_activos}: Semaphore no está limitando correctamente (debe ser <= 5)'\nassert t_total < 5.0, f'tardaste {t_total:.2f}s: con 5 workers y 20 URLs de 1s, debe tardar ~4s'\nprint('OK')",
-      "asserts_concurrency": ["todas_las_descargas_completadas", "max_concurrent <= 5"],
+      "asserts_concurrency": [
+        "todas_las_descargas_completadas",
+        "max_concurrent <= 5"
+      ],
       "asserts_forbidden": [],
       "solucion": "def descargar_con_limite(urls):\n    semaphore = threading.Semaphore(5)\n    with ThreadPoolExecutor(max_workers=20) as executor:\n        futures = [executor.submit(descargar_url, url, semaphore) for url in urls]\n        return [f.result() for f in futures]"
     },
     "audio_script": "Rate limiting es limitar la tasa de requests para no saturar el servidor ni ser bloqueado. En concurrencia necesitas limitar dos cosas: cuántos requests están activos simultáneamente, y cuántos requests por segundo. Semaphore limita concurrencia: semaphore de N permite que máximo N tareas estén activas a la vez, las demás esperan hasta que una active libere el semáforo. Token bucket limita tasa: permite N requests por segundo, acumulando tokens si no se usan. Si no haces requests por diez segundos, acumulas cincuenta tokens y puedes hacer cincuenta requests de golpe, hasta el límite de capacidad. La combinación de ambos es el patrón profesional: semaphore para concurrencia máxima, token bucket para tasa máxima. Para implementar semaphore, lo creas con threading punto semaphore de N, y en tu función usas with semaphore dos puntos para adquirirlo al entrar y liberarlo al salir. Para token bucket, creas una clase que mantiene un contador de tokens, los replenish a la tasa configurada, y acquire bloquea hasta que haya un token disponible. Para retry con backoff exponencial, si el servidor responde cuatrocientos veintinueve Too Many Requests, espera uno, dos, cuatro, ocho, dieciséis segundos antes de reintentar. Y en asyncio, asyncio punto semaphore es el equivalente async de threading punto semaphore, y se usa con async with semaphore.",
     "video_prompt": "Video de 100 segundos. ESCENA 1 (sin rate limiting): 50 requests simultáneos golpean el servidor. El servidor responde 429 Too Many Requests y bloquea la IP. ESCENA 2 (Semaphore): Semaphore(10) como una puerta que deja pasar máximo 10 requests a la vez. Los otros 40 esperan en cola. Visualización: 10 requests activos, 40 en cola. ESCENA 3 (Token Bucket): un balde que se llena con 5 tokens por segundo. Cada request consume un token. Si el balde está vacío, el request espera. Si no haces requests por 10s, acumulas 50 tokens. Visualización: balde llenándose, tokens consumiéndose, balde vacío esperando. ESCENA 4 (combinación): Semaphore(10) + Token Bucket(5 req/s). Máximo 10 concurrentes Y máximo 5 por segundo. Control total del tráfico. ESCENA 5 (retry con backoff): servidor responde 429, cliente espera 1s, reintenta; 429 otra vez, espera 2s, reintenta; 429, espera 4s, reintenta; éxito. Overlay: 'Semaphore = concurrencia. Token Bucket = tasa. Retry = resiliencia.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - threading.Semaphore", "Fluent Python Cap 18 (concurrency)", "API Rate Limiting Best Practices (Stripe, GitHub docs)"],
-      "conceptos_clave": ["rate-limiting", "semaphore", "token-bucket", "backoff", "429", "concurrencia", "throttling"]
+      "libros_fuente": [
+        "Python docs - threading.Semaphore",
+        "Fluent Python Cap 18 (concurrency)",
+        "API Rate Limiting Best Practices (Stripe, GitHub docs)"
+      ],
+      "conceptos_clave": [
+        "rate-limiting",
+        "semaphore",
+        "token-bucket",
+        "backoff",
+        "429",
+        "concurrencia",
+        "throttling"
+      ]
     },
-    "tags_rag": ["python", "rate-limiting", "semaphore", "token-bucket", "concurrencia", "throttling"]
+    "tags_rag": [
+      "python",
+      "rate-limiting",
+      "semaphore",
+      "token-bucket",
+      "concurrencia",
+      "throttling"
+    ],
+    "_enriched": true,
+    "quiz_ia": [
+      {
+        "pregunta": "¿Cuál es la función principal de un `Semaphore` cuando se usa para limitar requests concurrentes?",
+        "opciones": [
+          "Permitir que solo N tareas estén activas al mismo tiempo, bloqueando las demás hasta que libere un permiso.",
+          "Controlar el número máximo de requests que se pueden enviar por segundo.",
+          "Almacenar tokens que se consumen cada vez que se hace un request.",
+          "Incrementar la cantidad de hilos disponibles en el ThreadPoolExecutor."
+        ],
+        "correcta": "A",
+        "explicacion": "La opción A describe correctamente el comportamiento de un `Semaphore`: mantiene un conteo de permisos; cada adquisición decrementa el conteo y cada liberación lo incrementa. Cuando el conteo llega a cero, las siguientes adquisiciones se bloquean hasta que se libera un permiso. Las opciones B y C confunden el semáforo con un limitador de tasa o con un token bucket, y la D es incorrecta porque el semáforo no aumenta el número de hilos del executor.",
+        "tipo": "concepto"
+      },
+      {
+        "pregunta": "Considera el siguiente fragmento de código:\n\npython\nfrom concurrent.futures import ThreadPoolExecutor\nimport threading\nimport requests\n\nsem = threading.Semaphore(2)\n\ndef fetch(url):\n    with sem:\n        return requests.get(url).text\n\nurls = ['http://example.com'] * 5\nwith ThreadPoolExecutor(max_workers=5) as executor:\n    resultados = list(executor.map(fetch, urls))\n\n\n¿Cuántas requests estarán activas como máximo al mismo tiempo?",
+        "opciones": [
+          "2",
+          "5",
+          "10",
+          "1"
+        ],
+        "correcta": "A",
+        "explicacion": "El `Semaphore(2)` solo permite que dos hilos adquieran el permiso simultáneamente. Aunque el `ThreadPoolExecutor` tiene capacidad para cinco workers, cada llamada a `fetch` debe entrar en el bloque `with sem:`; por lo tanto, a lo sumo dos requests estarán en la sección crítica al mismo tiempo. Las otras opciones ignoran el efecto del semáforo o confunden el límite de workers con el límite de concurrency impuesto por el semáforo.",
+        "tipo": "codigo"
+      },
+      {
+        "pregunta": "En un escenario donde se usa un `Semaphore(10)` pero el servidor responde 429 Too Many Requests porque su límite es de 5 requests por segundo, ¿cuál es la causa más probable del error?",
+        "opciones": [
+          "El Semaphore no se está adquiriendo correctamente dentro de la función fetch.",
+          "El Semaphore limita la concurrencia, pero no la tasa de requests por segundo.",
+          "El ThreadPoolExecutor está creando demasiados hilos.",
+          "El servidor ignora los límites de Semaphore."
+        ],
+        "correcta": "B",
+        "explicacion": "El semáforo controla cuántas tareas pueden ejecutarse en paralelo, pero no controla con qué frecuencia se lanzan esas tareas. Si diez hilos adquieren el permiso y envían sus requests casi al mismo tiempo, se pueden generar ráfagas que superen el límite de tasa del servidor, provocando 429. Por tanto, el problema es la falta de un mecanismo de limitación de tasa (token bucket, sleep, etc.). Las opciones A, C y D describen situaciones que no coinciden con el comportamiento típico del semáforo o del servidor.",
+        "tipo": "debugging"
+      },
+      {
+        "pregunta": "¿Cuál de las siguientes opciones describe mejor la combinación de `Semaphore` y token bucket para rate limiting concurrente?",
+        "opciones": [
+          "El Semaphore controla la tasa de requests por segundo y el token bucket limita el número de hilos activos.",
+          "El token bucket se usa para limitar la concurrencia y el Semaphore para limitar la tasa de requests.",
+          "Ambos mecanismos son redundantes; usar solo uno es suficiente.",
+          "El Semaphore limita el número máximo de requests simultáneos y el token bucket limita el número de requests por segundo, permitiendo ráfagas controladas."
+        ],
+        "correcta": "D",
+        "explicacion": "La opción D captura correctamente los roles complementarios: el `Semaphore` asegura que no haya más de N requests activos al mismo tiempo (límite de concurrencia), mientras que el token bucket garantiza que, en cualquier intervalo de segundo, no se envíen más de M requests (límite de tasa), tolerando pequeñas ráfagas cuando haya tokens acumulados. Las otras opciones invierten los funciones, los consideran redundantes o niegan su utilidad combinada.",
+        "tipo": "concepto"
+      }
+    ]
   },
   {
     "id": "M3.2-007",
@@ -295,17 +622,41 @@
       "setup_code": "import time\nfrom concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor\n\ndef tarea_cpu(n):\n    # Simula CPU-bound: cálculo intensivo\n    return sum(i * i for i in range(n))",
       "codigo_inicial": "# Elige el modelo correcto para 4 tareas CPU-bound.\n# Opciones:\n# - ThreadPoolExecutor (NO acelera CPU-bound por el GIL)\n# - ProcessPoolExecutor (SÍ acelera CPU-bound)\n#\n# Debes:\n# 1. Elegir el executor correcto\n# 2. Usar max_workers=4\n# 3. Ejecutar 4 tareas_cpu(5_000_000) en paralelo\n# 4. Retornar la lista de resultados\n#\n# PISTA: para CPU-bound, usa ProcessPoolExecutor\n",
       "test_code": "import time\n\nt0 = time.time()\nresultados = ejecutar_cpu_bound()\nt_total = time.time() - t0\n\nassert len(resultados) == 4, f'debiste ejecutar 4 tareas, ejecutaste {len(resultados)}'\nexpected = sum(i * i for i in range(5_000_000))\nassert all(r == expected for r in resultados), f'resultados incorrectos: {resultados}'\nassert t_total < 2.0, f'tardaste {t_total:.2f}s: con ProcessPoolExecutor y 4 cores, debe tardar ~1s, no 4s. ¿Usaste ThreadPoolExecutor en vez de ProcessPoolExecutor?'\nprint('OK')",
-      "asserts_concurrency": ["todas_las_tareas_completadas", "tiempo_total < 2s"],
+      "asserts_concurrency": [
+        "todas_las_tareas_completadas",
+        "tiempo_total < 2s"
+      ],
       "asserts_forbidden": [],
       "solucion": "def ejecutar_cpu_bound():\n    with ProcessPoolExecutor(max_workers=4) as executor:\n        return list(executor.map(tarea_cpu, [5_000_000] * 4))"
     },
     "audio_script": "Los tres modelos de concurrencia en Python, threading, multiprocessing y asyncio, tienen fortalezas y debilidades distintas, y elegir mal el modelo puede hacer tu código diez veces más lento o innecesariamente complejo. La decisión depende de dos factores. Primero: el tipo de tarea, si es I/O bound o CPU bound. I/O bound es cuando la tarea pasa la mayor parte del tiempo esperando, como requests HTTP, lectura de archivos o queries a base de datos. CPU bound es cuando la tarea usa CPU intensivamente, como cálculos matemáticos, procesamiento de imágenes o machine learning. Segundo: la complejidad del código, si es síncrono legacy o async nativo. La tabla de decisión es simple. I/O bound con código síncrono, como requests, usa ThreadPoolExecutor. I/O bound con código async, como aiohttp, usa asyncio. CPU bound con cualquier código, usa ProcessPoolExecutor. Y para casos mixtos, combina ThreadPoolExecutor para I/O y ProcessPoolExecutor para CPU. Las señales de que elegiste mal son claras. Si usas threading para CPU bound, el speedup es menor a uno punto cinco x con N threads, cuando debería ser aproximadamente N x, y el uso de CPU es cien por ciento en un solo core con los otros idle. La solución es cambiar a ProcessPoolExecutor. Si usas multiprocessing para I/O bound, el overhead de crear procesos es mayor que el tiempo de ejecución, y el uso de memoria es alto porque cada proceso tiene su propia copia. La solución es cambiar a ThreadPoolExecutor o asyncio. Y si usas asyncio para CPU bound, el event loop se bloquea y otras tareas no corren. La solución es usar run in executor con ProcessPoolExecutor. La regla de oro es medir antes de decidir: benchmarking con time perf counter para comparar los tres modelos y ver cuál da el mejor speedup para tu caso específico.",
     "video_prompt": "Video de 110 segundos. ESCENA 1 (árbol de decisión): diagrama de flujo con 3 preguntas. (1) ¿I/O-bound o CPU-bound? I/O-bound → (2) ¿código síncrono o async? Síncrono → ThreadPoolExecutor; Async → asyncio. CPU-bound → (3) ProcessPoolExecutor. ESCENA 2 (I/O-bound con ThreadPoolExecutor): 10 threads descargando URLs en paralelo. Cada thread espera red (libera GIL), otros threads corren. Tiempo: 2s para 20 URLs. ESCENA 3 (I/O-bound con asyncio): un solo hilo con event loop. 1000 coroutines haciendo requests async. Cada coroutine cede control mientras espera. Tiempo: 1s para 1000 URLs. ESCENA 4 (CPU-bound con ThreadPoolExecutor): 4 threads intentan ejecutar cálculos, pero el GIL solo deja pasar uno a la vez. Tiempo: 4s (igual que secuencial). ESCENA 5 (CPU-bound con ProcessPoolExecutor): 4 procesos separados, cada uno con su propio GIL, corren en 4 cores. Tiempo: 1s (speedup 4x). ESCENA 6 (benchmarking): tabla comparativa mostrando tiempos y speedups para cada modelo. Overlay: 'I/O + síncrono = ThreadPool. I/O + async = asyncio. CPU = ProcessPool.'",
     "trazabilidad": {
-      "libros_fuente": ["Python docs - concurrent.futures", "Fluent Python Cap 18 (concurrency models)", "High Performance Python (Micha Gorelick)"],
-      "conceptos_clave": ["io-bound", "cpu-bound", "threading", "multiprocessing", "asyncio", "decisión-arquitectónica", "benchmarking"]
+      "libros_fuente": [
+        "Python docs - concurrent.futures",
+        "Fluent Python Cap 18 (concurrency models)",
+        "High Performance Python (Micha Gorelick)"
+      ],
+      "conceptos_clave": [
+        "io-bound",
+        "cpu-bound",
+        "threading",
+        "multiprocessing",
+        "asyncio",
+        "decisión-arquitectónica",
+        "benchmarking"
+      ]
     },
-    "tags_rag": ["python", "concurrencia", "io-bound", "cpu-bound", "threading", "multiprocessing", "asyncio", "decisión"]
+    "tags_rag": [
+      "python",
+      "concurrencia",
+      "io-bound",
+      "cpu-bound",
+      "threading",
+      "multiprocessing",
+      "asyncio",
+      "decisión"
+    ]
   },
   {
     "id": "M3.2-008",
@@ -339,17 +690,37 @@
       "setup_code": "import threading\nimport time\n\ncontador = 0\n# TODO: agrega un Lock aquí",
       "codigo_inicial": "# Arregla los 3 bugs:\n# 1. Race condition en contador (agrega Lock)\n# 2. Sin join (los threads deben terminar antes de que el programa salga)\n# 3. Sin rate limiting (no aplica aquí, pero menciona cómo lo harías)\n#\n# El contador final debe ser exactamente 1000.\n#\n# PISTA:\n# lock = threading.Lock()\n#\n# def incrementar():\n#     global contador\n#     for _ in range(100):\n#         with lock:\n#             contador += 1\n#\n# threads = [threading.Thread(target=incrementar) for _ in range(10)]\n# for t in threads: t.start()\n# for t in threads: t.join()  # espera a que todos terminen\n",
       "test_code": "threads = [threading.Thread(target=incrementar) for _ in range(10)]\nfor t in threads: t.start()\nfor t in threads: t.join()\n\nassert contador == 1000, f'Race condition: contador={contador}, esperado 1000. Falta Lock o no se usa correctamente.'\nprint('OK')",
-      "asserts_concurrency": ["sin_race_condition"],
+      "asserts_concurrency": [
+        "sin_race_condition"
+      ],
       "asserts_forbidden": [],
       "solucion": "import threading\n\ncontador = 0\nlock = threading.Lock()\n\ndef incrementar():\n    global contador\n    for _ in range(100):\n        with lock:\n            contador += 1"
     },
     "audio_script": "Este chunk es la auditoría de código concurrente, equivalente a los chunks de auditoría de bases de datos, scrapers y suites de tests que ya hicimos. La inteligencia artificial genera código concurrente que funciona en la demo pero tiene siete defectos sistemáticos que aparecen en producción real. El primer defecto es estado compartido sin locks. Un contador global que múltiples threads incrementan sin lock termina con un valor incorrecto porque la operación más igual uno no es atómica. Verificado: diez threads incrementando mil veces cada uno dan ocho mil setecientos en vez de diez mil. El segundo defecto es múltiples locks en orden inconsistente, que causa deadlocks donde dos threads se bloquean mutuamente para siempre. El tercer defecto es olvidar join, así que el programa termina antes de que los threads acaben y quedan huérfanos. El cuarto defecto es sin rate limiting, así que cien requests simultáneos saturan el servidor y responden cuatrocientos veintinueve Too Many Requests. El quinto defecto es sin manejo de excepciones en threads, así que si una tarea falla, el thread muere silenciosamente y el estado queda inconsistente. El sexto defecto en asyncio es usar time punto sleep en vez de await asyncio punto sleep, lo que bloquea el event loop. El séptimo defecto es usar threading para código CPU bound, que no da speedup por el GIL. La checklist de siete puntos que te doy es tu escáner de sesenta segundos para cualquier código concurrente que recibas. Y los patrones que evitan bugs son tres: evitar estado compartido retornando resultados en vez de modificar variables globales, usar estructuras thread safe como queue punto queue, y preferir inmutabilidad porque lo que no se puede modificar no tiene race conditions.",
     "video_prompt": "Video de 120 segundos, estilo 'autopsia de código concurrente'. Un scraper concurrente de 50 líneas aparece en pantalla. Un inspector recorre el código marcando 7 sellos rojos numerados: (1) 'contador += 1' sin lock → race condition; (2) dos locks adquiridos en orden inverso en dos funciones → deadlock potencial; (3) Thread().start() sin join() → threads huérfanos; (4) 100 requests sin Semaphore → satura servidor; (5) código en thread sin try/except → fallos silenciosos; (6) time.sleep() en coroutine async → bloquea event loop; (7) ThreadPoolExecutor para CPU-bound → sin speedup por GIL. REWIND y reconstrucción: cada sello rojo se reemplaza por verde con el patrón correcto (Lock, mismo orden de locks, ThreadPoolExecutor con join automático, Semaphore, try/except, asyncio.sleep, ProcessPoolExecutor para CPU). Escena final: el inspector introduce un bug de concurrencia (quitar un Lock) y la suite de tests LO DETECTA en rojo con 'contador=8700, esperado 10000'. Overlay: '7 defectos. 60 segundos. Auditoría de concurrencia.'",
     "trazabilidad": {
-      "libros_fuente": ["M2.2-009, M2.3-008, M3.1-007 (misma metodología aplicada a concurrencia)", "Python docs - threading, concurrent.futures", "Fluent Python Cap 18 (concurrency pitfalls)"],
-      "conceptos_clave": ["auditoría", "race-condition", "deadlock", "código-ia", "concurrencia", "checklist"]
+      "libros_fuente": [
+        "M2.2-009, M2.3-008, M3.1-007 (misma metodología aplicada a concurrencia)",
+        "Python docs - threading, concurrent.futures",
+        "Fluent Python Cap 18 (concurrency pitfalls)"
+      ],
+      "conceptos_clave": [
+        "auditoría",
+        "race-condition",
+        "deadlock",
+        "código-ia",
+        "concurrencia",
+        "checklist"
+      ]
     },
-    "tags_rag": ["python", "auditoría", "concurrencia", "race-condition", "deadlock", "código-ia"]
+    "tags_rag": [
+      "python",
+      "auditoría",
+      "concurrencia",
+      "race-condition",
+      "deadlock",
+      "código-ia"
+    ]
   },
   {
     "id": "M3.2-009",
@@ -383,17 +754,39 @@
       "setup_code": "import time\nimport threading\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\n\n# Contador de requests activos\nactivos = 0\nmax_activos = 0\nlock = threading.Lock()\n\ndef descargar_url(url, semaphore):\n    global activos, max_activos\n    with semaphore:\n        with lock:\n            activos += 1\n            max_activos = max(max_activos, activos)\n        \n        time.sleep(0.5)  # simula descarga de 0.5s\n        \n        with lock:\n            activos -= 1\n    \n    return f'contenido_de_{url}'",
       "codigo_inicial": "# Usa ThreadPoolExecutor + Semaphore para descargar 20 URLs con límite de 5 simultáneas.\n# Debes:\n# 1. Crear Semaphore(5)\n# 2. Crear ThreadPoolExecutor con max_workers=10\n# 3. Pasar el semaphore a descargar_url\n# 4. Verificar que max_activos <= 5\n#\n# PISTA:\n# semaphore = threading.Semaphore(5)\n# with ThreadPoolExecutor(max_workers=10) as executor:\n#     futures = [executor.submit(descargar_url, url, semaphore) for url in urls]\n#     resultados = [f.result() for f in futures]\n",
       "test_code": "urls = [f'url_{i}' for i in range(20)]\n\nt0 = time.time()\nresultados = descargar_con_limite(urls)\nt_total = time.time() - t0\n\nassert len(resultados) == 20, f'debiste descargar 20 URLs, descargaste {len(resultados)}'\nassert max_activos <= 5, f'max_activos={max_activos}: Semaphore no está limitando correctamente (debe ser <= 5)'\nassert t_total < 3.0, f'tardaste {t_total:.2f}s: con 5 concurrentes y 20 URLs de 0.5s, debe tardar ~2s'\nprint('OK')",
-      "asserts_concurrency": ["todas_las_descargas_completadas", "max_concurrent <= 5"],
+      "asserts_concurrency": [
+        "todas_las_descargas_completadas",
+        "max_concurrent <= 5"
+      ],
       "asserts_forbidden": [],
       "solucion": "def descargar_con_limite(urls):\n    semaphore = threading.Semaphore(5)\n    with ThreadPoolExecutor(max_workers=10) as executor:\n        futures = [executor.submit(descargar_url, url, semaphore) for url in urls]\n        return [f.result() for f in futures]"
     },
     "audio_script": "El scraping es el caso de uso clásico de concurrencia I/O bound. Cada request tarda aproximadamente cien milisegundos en red, pero solo un milisegundo en CPU. Con mil páginas secuenciales, tardas cien segundos. Con veinte threads, tardas cinco segundos, un speedup de veinte x. Pero sin rate limiting, saturas el servidor y te bloquean. El patrón profesional tiene cinco piezas. Primero: ThreadPoolExecutor con max workers igual veinte para manejar el pool de threads. Segundo: Semaphore de diez para limitar concurrencia a diez requests simultáneos, así no saturar el servidor. Tercero: sleep de cero punto uno segundos entre requests para limitar tasa a diez requests por segundo. Cuarto: retry con backoff exponencial para manejar cuatrocientos veintinueve Too Many Requests y errores de red. Quinto: manejo de excepciones para que una URL que falla no aborte todo el scraper. La implementación usa una clase Scraper Concurrente que encapsula todo esto. El método fetch descarga una URL con retry y backoff. El método fetch con rate limit adquiere el semaphore, hace sleep para rate limiting, y llama a fetch. El método scrape usa ThreadPoolExecutor para ejecutar fetch con rate limit en paralelo, y as completed para procesar resultados cuando terminan. Las estadísticas se actualizan con locks para evitar race conditions. Una optimización importante es usar requests punto Session en vez de requests punto get directo, porque Session reutiliza conexiones TCP al mismo host, reduciendo el overhead de handshake. Para miles de conexiones concurrentes, asyncio con aiohttp es más eficiente que threading, pero requiere reescribir todo como async. La regla práctica es ThreadPoolExecutor para menos de cien URLs, asyncio para más de cien URLs o servidores de alto rendimiento.",
     "video_prompt": "Video de 110 segundos. ESCENA 1 (secuencial): 1000 URLs se descargan una tras otra. Cada request tarda 100ms. Tiempo total: 100 segundos. Visualización: una sola línea de requests secuenciales. ESCENA 2 (concurrente sin rate limiting): 20 threads descargan en paralelo, pero sin límite. 200 requests/segundo saturan el servidor. El servidor responde 429 Too Many Requests y bloquea la IP. ESCENA 3 (concurrente con rate limiting): ThreadPoolExecutor con 20 workers, Semaphore(10) limita a 10 simultáneos, sleep(0.1) limita a 10 req/s. Visualización: 10 requests activos, 10 en cola, reloj marcando 0.1s entre requests. Tiempo total: 5 segundos, sin bloqueos. ESCENA 4 (retry con backoff): servidor responde 429, cliente espera 1s, reintenta; 429 otra vez, espera 2s, reintenta; éxito. ESCENA 5 (Session vs get directo): lado a lado, requests.get hace TCP handshake por cada request (lento), Session reutiliza conexiones (rápido). Speedup 2-5x. Overlay: 'ThreadPoolExecutor + Semaphore + sleep + retry + Session = scraper profesional.'",
     "trazabilidad": {
-      "libros_fuente": ["M2.3 (scraping)", "Python docs - concurrent.futures, requests", "Web Scraping with Python (Ryan Mitchell)"],
-      "conceptos_clave": ["scraping-concurrente", "threadpoolexecutor", "semaphore", "rate-limiting", "retry", "session", "microproyecto"]
+      "libros_fuente": [
+        "M2.3 (scraping)",
+        "Python docs - concurrent.futures, requests",
+        "Web Scraping with Python (Ryan Mitchell)"
+      ],
+      "conceptos_clave": [
+        "scraping-concurrente",
+        "threadpoolexecutor",
+        "semaphore",
+        "rate-limiting",
+        "retry",
+        "session",
+        "microproyecto"
+      ]
     },
-    "tags_rag": ["python", "scraping", "concurrencia", "threadpoolexecutor", "rate-limiting", "microproyecto"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "concurrencia",
+      "threadpoolexecutor",
+      "rate-limiting",
+      "microproyecto"
+    ]
   },
   {
     "id": "M3.2-010",
@@ -427,16 +820,40 @@
       "setup_code": "import time\nimport threading\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\n\n# Contador de requests activos\nactivos = 0\nmax_activos = 0\nlock = threading.Lock()\n\ndef descargar_url(url, semaphore, rate_delay):\n    global activos, max_activos\n    with semaphore:\n        with lock:\n            activos += 1\n            max_activos = max(max_activos, activos)\n        \n        time.sleep(0.5)  # simula descarga de 0.5s\n        \n        with lock:\n            activos -= 1\n    \n    time.sleep(rate_delay)  # rate limiting\n    return f'contenido_de_{url}'",
       "codigo_inicial": "# Implementa un scraper concurrente con rate limiting.\n# Debes:\n# 1. Crear Semaphore(5) para limitar a 5 simultáneos\n# 2. Usar rate_delay = 0.5 (2 req/s)\n# 3. Usar ThreadPoolExecutor con max_workers=10\n# 4. Pasar semaphore y rate_delay a descargar_url\n# 5. Retornar lista de resultados\n#\n# PISTA:\n# def scraper(urls):\n#     semaphore = threading.Semaphore(5)\n#     rate_delay = 0.5\n#     with ThreadPoolExecutor(max_workers=10) as executor:\n#         futures = [executor.submit(descargar_url, url, semaphore, rate_delay) for url in urls]\n#         return [f.result() for f in futures]\n",
       "test_code": "urls = [f'url_{i}' for i in range(50)]\n\nt0 = time.time()\nresultados = scraper(urls)\nt_total = time.time() - t0\n\nassert len(resultados) == 50, f'debiste descargar 50 URLs, descargaste {len(resultados)}'\nassert max_activos <= 5, f'max_activos={max_activos}: Semaphore no está limitando correctamente (debe ser <= 5)'\nassert t_total < 15.0, f'tardaste {t_total:.2f}s: con 5 concurrentes, 50 URLs de 0.5s, y rate delay 0.5s, debe tardar ~12s'\nprint('OK')",
-      "asserts_concurrency": ["todas_las_descargas_completadas", "max_concurrent <= 5"],
+      "asserts_concurrency": [
+        "todas_las_descargas_completadas",
+        "max_concurrent <= 5"
+      ],
       "asserts_forbidden": [],
       "solucion": "def scraper(urls):\n    semaphore = threading.Semaphore(5)\n    rate_delay = 0.5\n    with ThreadPoolExecutor(max_workers=10) as executor:\n        futures = [executor.submit(descargar_url, url, semaphore, rate_delay) for url in urls]\n        return [f.result() for f in futures]"
     },
     "audio_script": "Este es el microproyecto integrador del módulo de concurrencia, y construye un scraper concurrente completo que descarga mil páginas en aproximadamente veinte segundos con rate limiting, retry, manejo de errores y estadísticas. Aplica todo lo aprendido en el módulo. ThreadPoolExecutor para manejar el pool de threads sin boilerplate. Semaphore para limitar concurrencia a diez requests simultáneos, así no saturar el servidor. Sleep de cero punto uno segundos entre requests para limitar tasa a diez requests por segundo. Retry con backoff exponencial para manejar cuatrocientos veintinueve Too Many Requests y errores de red. Session de requests para reutilizar conexiones TCP y reducir overhead. Y locks para proteger estado compartido como las estadísticas de éxito y fallo. La implementación usa una clase Scraper Concurrente que encapsula todo esto. El constructor configura el session, semaphore, rate delay, timeout, max retries, y estadísticas con lock. El método fetch descarga una URL con retry y backoff. Si el servidor responde cuatrocientos veintinueve, espera dos a la attempt segundos antes de reintentar. Si falla después de max retries, registra el error y retorna None. El método fetch con rate limit adquiere el semaphore, hace sleep para rate limiting, y llama a fetch. El método scrape usa ThreadPoolExecutor para ejecutar fetch con rate limit en paralelo, y as completed para procesar resultados cuando terminan. Las estadísticas se actualizan con locks para evitar race conditions. Una extensión importante es guardar resultados incrementalmente, después de cada URL, usando escritura atómica. Si el scraper crashea a mitad, no pierdes el trabajo ya hecho, solo reanudas desde donde quedó. Otra extensión es parseo concurrente con ProcessPoolExecutor, porque parsear HTML con BeautifulSoup es CPU bound y se beneficia de multiprocessing. Y para monitoreo en tiempo real, puedes usar tqdm para barra de progreso y estadísticas en vivo. Este scraper es de producción, listo para recolectar datos a escala con resiliencia y observabilidad.",
     "video_prompt": "Video de 130 segundos, el cierre del módulo 3.2. ESCENA 1 (el problema): 1000 URLs se descargan secuencialmente, una tras otra. Tiempo: 100 segundos. El servidor responde 429 Too Many Requests porque no hay rate limiting. Una URL con timeout bloquea todo el scraper. ESCENA 2 (la solución): el scraper concurrente con 5 componentes. (1) ThreadPoolExecutor crea 20 workers. (2) Semaphore(10) limita a 10 requests simultáneos. (3) sleep(0.1) limita a 10 req/s. (4) Retry con backoff maneja 429 y errores. (5) Session reutiliza conexiones TCP. ESCENA 3 (ejecución): los 20 workers descargan en paralelo, pero Semaphore deja pasar solo 10 a la vez. Cada request tarda 0.5s + 0.1s de rate delay. Tiempo total: 5 segundos para 100 URLs. ESCENA 4 (persistencia incremental): cada resultado se guarda inmediatamente en disco con escritura atómica. Si el scraper crashea en URL 500, las 499 anteriores están guardadas y se pueden reanudar. ESCENA 5 (parseo CPU-bound): los HTMLs descargados se parsean con BeautifulSoup en ProcessPoolExecutor (4 procesos, bypasea GIL). Tiempo de parseo: 2 segundos en vez de 8 segundos con threads. ESCENA 6 (estadísticas finales): exitosos 980, fallidos 20, retries 15, tiempo total 22 segundos. Overlay: 'ThreadPoolExecutor + Semaphore + sleep + retry + Session + persistencia = scraper de producción.'",
     "trazabilidad": {
-      "libros_fuente": ["M3.2-001 a M3.2-009 (síntesis)", "Web Scraping with Python (Ryan Mitchell)", "Python docs - concurrent.futures, requests"],
-      "conceptos_clave": ["microproyecto", "scraper-concurrente", "threadpoolexecutor", "semaphore", "rate-limiting", "retry", "persistencia", "integrador"]
+      "libros_fuente": [
+        "M3.2-001 a M3.2-009 (síntesis)",
+        "Web Scraping with Python (Ryan Mitchell)",
+        "Python docs - concurrent.futures, requests"
+      ],
+      "conceptos_clave": [
+        "microproyecto",
+        "scraper-concurrente",
+        "threadpoolexecutor",
+        "semaphore",
+        "rate-limiting",
+        "retry",
+        "persistencia",
+        "integrador"
+      ]
     },
-    "tags_rag": ["python", "scraping", "concurrencia", "microproyecto", "threadpoolexecutor", "rate-limiting", "integrador"]
+    "tags_rag": [
+      "python",
+      "scraping",
+      "concurrencia",
+      "microproyecto",
+      "threadpoolexecutor",
+      "rate-limiting",
+      "integrador"
+    ]
   }
 ]
