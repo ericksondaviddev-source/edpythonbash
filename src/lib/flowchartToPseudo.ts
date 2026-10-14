@@ -6,6 +6,8 @@ export interface FlowchartCode {
   pseudo: string
   /** Esqueleto con sintaxis Python (ilustrativo, no ejecutable). */
   python: string
+  /** Esqueleto con sintaxis JavaScript (ilustrativo, no ejecutable). */
+  javascript: string
   /** false si el diagrama tiene callejones o ciclos sin resolver. */
   complete: boolean
 }
@@ -18,17 +20,18 @@ function sortedOutgoing(data: FlowchartData, nodeId: string): FlowchartEdge[] {
 }
 
 /**
- * Recorre el grafo desde el primer nodo Start y genera pseudocódigo + Python.
+ * Recorre el grafo desde el primer nodo Start y genera pseudocódigo + Python + JavaScript.
  * Detecta el nodo de unión para no repetir la cola común de varias ramas.
  * Puro y determinista; nunca ejecuta código.
  */
 export function flowchartToCode(data: FlowchartData): FlowchartCode {
   const byId = new Map(data.nodes.map(n => [n.id, n]))
   const start = data.nodes.find(n => n.type === 'start')
-  if (!start) return { pseudo: '', python: '', complete: false }
+  if (!start) return { pseudo: '', python: '', javascript: '', complete: false }
 
   const pseudo: string[] = []
   const python: string[] = []
+  const js: string[] = []
   const onPath = new Set<string>()
   let complete = true
 
@@ -83,6 +86,7 @@ export function flowchartToCode(data: FlowchartData): FlowchartCode {
     if (onPath.has(id)) {
       pseudo.push(`${pad(depth)}⤴ volver a "${node.data.label}"`)
       python.push(`${pad(depth)}# volver a: ${node.data.label}`)
+      js.push(`${pad(depth)}// volver a: ${node.data.label}`)
       return
     }
     onPath.add(id)
@@ -90,12 +94,14 @@ export function flowchartToCode(data: FlowchartData): FlowchartCode {
     if (node.type === 'start') {
       pseudo.push('INICIO')
       python.push('# INICIO')
+      js.push('// INICIO')
       const outs = sortedOutgoing(data, id)
       if (outs.length === 0) complete = false
       outs.forEach(e => walk(e.target, depth, stopAt))
     } else if (node.type === 'process') {
       pseudo.push(`${pad(depth)}${node.data.label}`)
       python.push(`${pad(depth)}# ${node.data.label}`)
+      js.push(`${pad(depth)}// ${node.data.label}`)
       const outs = sortedOutgoing(data, id)
       if (outs.length === 0) complete = false
       outs.forEach(e => walk(e.target, depth, stopAt))
@@ -115,17 +121,22 @@ export function flowchartToCode(data: FlowchartData): FlowchartCode {
         if (first) {
           pseudo.push(`${pad(depth)}SI ${cond} ENTONCES`)
           python.push(`${pad(depth)}if ${cond}:`)
+          js.push(`${pad(depth)}if (${cond}) {`)
         } else if (last) {
           pseudo.push(`${pad(depth)}SINO`)
           python.push(`${pad(depth)}else:`)
+          js.push(`${pad(depth)}} else {`)
         } else {
           pseudo.push(`${pad(depth)}SINO SI ${cond} ENTONCES`)
           python.push(`${pad(depth)}elif ${cond}:`)
+          js.push(`${pad(depth)}} else if (${cond}) {`)
         }
         walk(e.target, depth + 1, innerStop)
       })
 
       pseudo.push(`${pad(depth)}FIN SI`)
+      python.push('')
+      js.push(`${pad(depth)}}`)
       if (join) walk(join, depth, stopAt)
     }
 
@@ -136,6 +147,7 @@ export function flowchartToCode(data: FlowchartData): FlowchartCode {
 
   pseudo.push('FIN')
   python.push('# FIN')
+  js.push('// FIN')
 
-  return { pseudo: pseudo.join('\n'), python: python.join('\n'), complete }
+  return { pseudo: pseudo.join('\n'), python: python.join('\n'), javascript: js.join('\n'), complete }
 }

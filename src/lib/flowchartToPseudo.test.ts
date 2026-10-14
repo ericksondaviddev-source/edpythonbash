@@ -25,6 +25,7 @@ describe('flowchartToCode', () => {
     const out = flowchartToCode(d)
     expect(out.pseudo).toBe('INICIO\nleer entrada\nFIN')
     expect(out.python).toBe('# INICIO\n# leer entrada\n# FIN')
+    expect(out.javascript).toBe('// INICIO\n// leer entrada\n// FIN')
     expect(out.complete).toBe(true)
   })
 
@@ -53,6 +54,9 @@ describe('flowchartToCode', () => {
     )
     expect(out.python).toContain('if ¿llueve? (Sí):')
     expect(out.python).toContain('else:')
+    expect(out.javascript).toContain('if (¿llueve? (Sí)) {')
+    expect(out.javascript).toContain('} else {')
+    expect(out.javascript).toMatch(/\}\s*\n\/\/ FIN$/)
     expect(out.complete).toBe(true)
   })
 
@@ -101,6 +105,8 @@ describe('flowchartToCode', () => {
     const d: FlowchartData = { nodes: [n('p', 'process', 'x')], edges: [] }
     const out = flowchartToCode(d)
     expect(out.pseudo).toBe('')
+    expect(out.python).toBe('')
+    expect(out.javascript).toBe('')
     expect(out.complete).toBe(false)
   })
 

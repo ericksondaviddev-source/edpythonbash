@@ -55,8 +55,15 @@ export default function FlowchartCodePanel({
           <h4 className="text-xs font-semibold text-[var(--accent)] mb-1">
             {t('flowchart.codigo_python')}
           </h4>
-          <pre className="bg-[var(--code-bg)] text-[var(--code-text)] p-3 rounded-lg overflow-x-auto text-xs font-mono whitespace-pre-wrap">
+          <pre className="bg-[var(--code-bg)] text-[var(--code-text)] p-3 rounded-lg overflow-x-auto text-xs font-mono whitespace-pre-wrap mb-3">
             {code.python || t('flowchart.sin_diagrama')}
+          </pre>
+
+          <h4 className="text-xs font-semibold text-[var(--accent)] mb-1">
+            {t('flowchart.codigo_javascript')}
+          </h4>
+          <pre className="bg-[var(--code-bg)] text-[var(--code-text)] p-3 rounded-lg overflow-x-auto text-xs font-mono whitespace-pre-wrap">
+            {code.javascript || t('flowchart.sin_diagrama')}
           </pre>
         </div>
       )}

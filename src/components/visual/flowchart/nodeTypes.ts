@@ -8,15 +8,17 @@ export const flowchartNodeTypes = {
   end: EndNode,
 } as const
 
-export function labelFor(type: FlowchartNodeType): string {
+type Translate = (key: string) => string
+
+export function labelFor(type: FlowchartNodeType, t: Translate): string {
   switch (type) {
     case 'start':
-      return 'Inicio'
+      return t('flowchart.label_inicio')
     case 'end':
-      return 'Fin'
+      return t('flowchart.label_fin')
     case 'decision':
-      return '¿Pregunta?'
+      return t('flowchart.label_decision')
     default:
-      return 'Acción'
+      return t('flowchart.label_proceso')
   }
 }

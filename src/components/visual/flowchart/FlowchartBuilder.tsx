@@ -56,11 +56,11 @@ export default function FlowchartBuilder({ starter, objetivo, rules }: Flowchart
       const n = counter.current++
       const id = `${type}-${n}-${Math.random().toString(36).slice(2, 7)}`
       const position = { x: 70 + (n % 3) * 245, y: 55 + Math.floor(n / 3) * 150 }
-      setNodes(prev => [...prev, { id, type, position, data: { label: labelFor(type) } }])
+      setNodes(prev => [...prev, { id, type, position, data: { label: labelFor(type, t) } }])
       setSelNode(id)
       setSelEdge(null)
     },
-    [setNodes]
+    [setNodes, t]
   )
 
   const onConnect = useCallback(

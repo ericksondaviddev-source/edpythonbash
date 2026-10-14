@@ -411,6 +411,7 @@
       "map",
       "find"
     ],
+    "flowchart_mode": "view",
     "file": "F0.3.json"
   },
   {
@@ -426,6 +427,7 @@
       "this",
       "poo"
     ],
+    "flowchart_mode": "view",
     "file": "F0.3.json"
   },
   {
@@ -458,6 +460,7 @@
       "promesas",
       "http"
     ],
+    "flowchart_mode": "view",
     "file": "F0.3.json"
   },
   {
