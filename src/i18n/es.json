@@ -1,15 +1,6 @@
 {
   "common": {
-    "appName": "Python-bash Learning",
     "loading": "Cargando...",
-    "error": "Error",
-    "success": "Éxito",
-    "cancel": "Cancelar",
-    "save": "Guardar",
-    "close": "Cerrar",
-    "back": "Volver",
-    "next": "Siguiente",
-    "previous": "Anterior",
     "skip": "Saltar",
     "run": "Ejecutar",
     "reset": "Reiniciar",
@@ -27,16 +18,12 @@
     "mindmap": "Mapa Mental",
     "aiTutor": "Tutor IA",
     "modules": "Módulos",
-    "search": "Buscar lecciones...",
-    "progress": "Progreso",
-    "settings": "Configuración",
     "home": "Inicio"
   },
   "dashboard": {
     "title": "Panel de Aprendizaje",
     "welcome": "Bienvenido de vuelta",
     "continue": "Continuar aprendiendo",
-    "start": "Empezar",
     "xp": "XP",
     "level": "Nivel",
     "streak": "Racha",
@@ -55,7 +42,6 @@
   },
   "lesson": {
     "title": "Lección",
-    "objectives": "Objetivos",
     "mentalModel": "Modelo Mental",
     "brokenCode": "Código Roto",
     "diagnosis": "Diagnóstico",
@@ -66,12 +52,9 @@
     "quiz": "Quiz",
     "simulator": "Simulador",
     "audio": "Audio",
-    "video": "Video",
-    "markComplete": "Marcar como completada",
     "completed": "Completada",
     "lessonPosition": "Lección {{current}} de {{total}}",
     "previousLesson": "Anterior",
-    "nextLesson": "Siguiente",
     "goToNextLesson": "Ir a la siguiente lección →",
     "courseCompleted": "¡Has completado el curso! 🎉",
     "quizGatingHint": "Completa el quiz con al menos 70% de aciertos para marcar esta lección como completada",
@@ -79,13 +62,9 @@
     "quizBest": "Mejor: {{score}}/{{total}}"
   },
   "quiz": {
-    "title": "Quiz",
-    "question": "Pregunta",
-    "options": "Opciones",
     "correct": "¡Correcto!",
     "incorrect": "Incorrecto",
     "explanation": "Explicación",
-    "nextQuestion": "Siguiente pregunta",
     "next": "Siguiente",
     "finish": "Finalizar",
     "score": "Puntuación",
@@ -107,8 +86,6 @@
     "showSolution": "Mostrar solución",
     "hideSolution": "Ocultar solución",
     "tests": "Verificación automática",
-    "passed": "Tests pasados",
-    "failed": "Tests fallidos",
     "verify": "Verificar",
     "challengePassed": "¡Reto superado!",
     "fallbackHint": "Este simulador no ejecuta código todavía. Compara tu solución con la solución modelo y verifica manualmente cada criterio.",
@@ -183,11 +160,7 @@
     "clearHint": "Ctrl+L limpia · ↑/↓ historial · Tab autocompleta"
   },
   "video": {
-    "title": "Video",
-    "play": "Reproducir",
-    "pause": "Pausar",
-    "skip": "Saltar animación",
-    "speed": "Velocidad"
+    "skip": "Saltar animación"
   },
   "tutor": {
     "title": "Tutor",
@@ -231,11 +204,8 @@
     "running": "Ejecutando…",
     "pythonHint": "Ejecuta el código corregido línea por línea y observa las variables.",
     "pressRun": "Pulsa «Ejecutar traza» para ver el código en acción.",
-    "runJs": "Ejecutar código JS",
     "runJsTrace": "Ejecutar traza JS",
-    "jsHint": "Ejecuta el código corregido paso a paso y observa las variables.",
-    "jsConsole": "Consola",
-    "jsNoOutput": "El código terminó sin imprimir nada en la consola. Es normal en lecciones de DOM, eventos o asincronía: el efecto ocurre dentro del entorno aislado, no en la consola."
+    "jsHint": "Ejecuta el código corregido paso a paso y observa las variables."
   },
   "audio": {
     "playing": "Reproduciendo…",
@@ -256,11 +226,6 @@
     "pseudocodigo": "Pseudocódigo",
     "codigo_python": "Código Python",
     "codigo_javascript": "Código JavaScript",
-    "guardar": "Guardar",
-    "nodo_inicio": "Nodo de inicio",
-    "nodo_proceso": "Nodo de proceso",
-    "nodo_decision": "Nodo de decisión",
-    "nodo_fin": "Nodo de fin",
     "label_inicio": "Inicio",
     "label_proceso": "Acción",
     "label_decision": "¿Pregunta?",
@@ -297,8 +262,6 @@
     }
   },
   "theme": {
-    "light": "Modo claro",
-    "dark": "Modo oscuro",
     "toggle": "Cambiar tema"
   },
   "header": {
@@ -335,10 +298,5 @@
     "needsCode": "Agrega bloques primero para poder revisar el código.",
     "systemPrompt": "Eres un tutor experto de Python y Bash. El estudiante construyó código con bloques visuales. Sigue el flujo pedagógico: (1) CREAR: valida que el código construido sea sintácticamente correcto. (2) LEER: explica qué hace el código paso a paso. (3) CORREGIR: señala errores o mejoras concretas con el código corregido. (4) OPTIMIZAR: muestra la versión optimizada siguiendo mejores prácticas. Responde en español, formato claro con secciones numeradas 1-4. Sé conciso.",
     "userPrompt": "Revisa este código {{language}} que construí con bloques:\n\n```{{langCode}}\n{{code}}\n```"
-  },
-  "language": {
-    "title": "Idioma",
-    "es": "Español",
-    "en": "Inglés"
   }
 }

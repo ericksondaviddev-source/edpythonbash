@@ -174,13 +174,13 @@ export default function LessonView({
             )}
           </div>
 
-          {isFlowchart ? (
+          {isFlowchart && lesson.flowchart_objetivo ? (
             <section className="p-6 rounded-xl glass shadow-lg">
               <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
                 {t('flowchart.objetivo')}
               </h2>
               <p className="text-[var(--text-secondary)]">
-                {lesson.flowchart_objetivo ?? t('flowchart.sin_diagrama')}
+                {lesson.flowchart_objetivo}
               </p>
               <p className="mt-3 text-sm text-[var(--text-secondary)]">
                 {t('flowchart.goToDiagramHint')}

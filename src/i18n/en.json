@@ -1,15 +1,6 @@
 {
   "common": {
-    "appName": "Python-bash Learning",
     "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "cancel": "Cancel",
-    "save": "Save",
-    "close": "Close",
-    "back": "Back",
-    "next": "Next",
-    "previous": "Previous",
     "skip": "Skip",
     "run": "Run",
     "reset": "Reset",
@@ -27,16 +18,12 @@
     "mindmap": "Mind Map",
     "aiTutor": "AI Tutor",
     "modules": "Modules",
-    "search": "Search lessons...",
-    "progress": "Progress",
-    "settings": "Settings",
     "home": "Home"
   },
   "dashboard": {
     "title": "Learning Dashboard",
     "welcome": "Welcome back",
     "continue": "Continue learning",
-    "start": "Start",
     "xp": "XP",
     "level": "Level",
     "streak": "Streak",
@@ -55,7 +42,6 @@
   },
   "lesson": {
     "title": "Lesson",
-    "objectives": "Objectives",
     "mentalModel": "Mental Model",
     "brokenCode": "Broken Code",
     "diagnosis": "Diagnosis",
@@ -66,12 +52,9 @@
     "quiz": "Quiz",
     "simulator": "Simulator",
     "audio": "Audio",
-    "video": "Video",
-    "markComplete": "Mark as complete",
     "completed": "Completed",
     "lessonPosition": "Lesson {{current}} of {{total}}",
     "previousLesson": "Previous",
-    "nextLesson": "Next",
     "goToNextLesson": "Go to next lesson →",
     "courseCompleted": "You completed the course! 🎉",
     "quizGatingHint": "Pass the quiz with at least 70% to mark this lesson as completed",
@@ -79,13 +62,9 @@
     "quizBest": "Best: {{score}}/{{total}}"
   },
   "quiz": {
-    "title": "Quiz",
-    "question": "Question",
-    "options": "Options",
     "correct": "Correct!",
     "incorrect": "Incorrect",
     "explanation": "Explanation",
-    "nextQuestion": "Next question",
     "next": "Next",
     "finish": "Finish",
     "score": "Score",
@@ -107,8 +86,6 @@
     "showSolution": "Show solution",
     "hideSolution": "Hide solution",
     "tests": "Automatic verification",
-    "passed": "Tests passed",
-    "failed": "Tests failed",
     "verify": "Verify",
     "challengePassed": "Challenge passed!",
     "fallbackHint": "This simulator cannot run code yet. Compare your solution with the model solution and manually verify each criterion.",
@@ -183,11 +160,7 @@
     "clearHint": "Ctrl+L clears · ↑/↓ history · Tab completes"
   },
   "video": {
-    "title": "Video",
-    "play": "Play",
-    "pause": "Pause",
-    "skip": "Skip animation",
-    "speed": "Speed"
+    "skip": "Skip animation"
   },
   "tutor": {
     "title": "Tutor",
@@ -231,11 +204,8 @@
     "running": "Running…",
     "pythonHint": "Run the fixed code line by line and watch the variables.",
     "pressRun": "Press «Run trace» to see the code in action.",
-    "runJs": "Run JS code",
     "runJsTrace": "Run JS trace",
-    "jsHint": "Run the fixed code step by step and watch the variables.",
-    "jsConsole": "Console",
-    "jsNoOutput": "The code finished without printing anything to the console. This is normal in DOM, events, or async lessons: the effect happens inside the isolated environment, not in the console."
+    "jsHint": "Run the fixed code step by step and watch the variables."
   },
   "audio": {
     "playing": "Playing…",
@@ -256,11 +226,6 @@
     "pseudocodigo": "Pseudocode",
     "codigo_python": "Python code",
     "codigo_javascript": "JavaScript code",
-    "guardar": "Save",
-    "nodo_inicio": "Start node",
-    "nodo_proceso": "Process node",
-    "nodo_decision": "Decision node",
-    "nodo_fin": "End node",
     "label_inicio": "Start",
     "label_proceso": "Action",
     "label_decision": "Question?",
@@ -297,8 +262,6 @@
     }
   },
   "theme": {
-    "light": "Light mode",
-    "dark": "Dark mode",
     "toggle": "Toggle theme"
   },
   "header": {
@@ -335,10 +298,5 @@
     "needsCode": "Add blocks first so the code can be reviewed.",
     "systemPrompt": "You are an expert Python and Bash tutor. The student built code with visual blocks. Follow the pedagogical flow: (1) CREATE: validate that the built code is syntactically correct. (2) READ: explain what the code does step by step. (3) FIX: point out concrete errors or improvements with the corrected code. (4) OPTIMIZE: show the optimized version following best practices. Answer in English, clear format with numbered sections 1-4. Be concise.",
     "userPrompt": "Review this {{language}} code I built with blocks:\n\n```{{langCode}}\n{{code}}\n```"
-  },
-  "language": {
-    "title": "Language",
-    "es": "Spanish",
-    "en": "English"
   }
 }
