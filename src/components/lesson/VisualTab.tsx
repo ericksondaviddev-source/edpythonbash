@@ -7,11 +7,12 @@ import TracePanel from '../visual/TracePanel'
 import IframePreview from '../visual/IframePreview'
 import { Button } from '../atoms'
 
-type LessonLang = 'python' | 'bash' | 'html'
+type LessonLang = 'python' | 'bash' | 'html' | 'js'
 
 function getLessonLanguage(lesson: Lesson): LessonLang {
   if (lesson.id.startsWith('M3.7')) return 'bash'
-  if (lesson.id.startsWith('F0.2') || lesson.id.startsWith('F0.3')) return 'html'
+  if (lesson.id.startsWith('F0.3')) return 'js'
+  if (lesson.id.startsWith('F0.2')) return 'html'
   return 'python'
 }
 
@@ -21,6 +22,9 @@ export default function VisualTab({ lesson }: { lesson: Lesson }) {
   const [steps, setSteps] = useState<TraceStep[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [jsOutput, setJsOutput] = useState<string | null>(null)
+  const [jsError, setJsError] = useState<string | null>(null)
+  const [jsLoading, setJsLoading] = useState(false)
 
   const runTrace = async () => {
     setLoading(true)
@@ -33,6 +37,22 @@ export default function VisualTab({ lesson }: { lesson: Lesson }) {
       setError(e?.message ?? String(e))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const runJs = async () => {
+    setJsLoading(true)
+    setJsError(null)
+    setJsOutput('')
+    try {
+      const { getJsEngine } = await import('../../services/jsEngine')
+      const result = await getJsEngine().run(lesson.codigo_corregido)
+      setJsOutput(result.output)
+      if (result.error) setJsError(result.error)
+    } catch (e: any) {
+      setJsError(e?.message ?? String(e))
+    } finally {
+      setJsLoading(false)
     }
   }
 
@@ -56,6 +76,50 @@ export default function VisualTab({ lesson }: { lesson: Lesson }) {
             <IframePreview code={lesson.codigo_corregido} title={t('lesson.fixedCode')} />
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (lang === 'js') {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={runJs} disabled={jsLoading}>
+            {jsLoading ? t('visual.running') : t('visual.runJs')}
+          </Button>
+          <p className="text-sm text-[var(--text-secondary)]">
+            {t('visual.jsHint')}
+          </p>
+        </div>
+
+        {jsError ? (
+          <div className="rounded-lg border border-[var(--error)]/40 bg-[var(--error)]/10 p-3">
+            <p className="font-mono text-sm text-[var(--error)]">{jsError}</p>
+          </div>
+        ) : null}
+
+        {jsOutput ? (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-[var(--text-primary)]">
+              {t('visual.jsConsole')}
+            </h3>
+            <pre className="rounded-lg bg-[var(--code-bg)] p-4 font-mono text-sm text-[var(--code-text)] whitespace-pre-wrap">
+              {jsOutput}
+            </pre>
+          </div>
+        ) : jsOutput !== null && !jsError ? (
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] p-3">
+            <p className="text-sm text-[var(--text-secondary)]">{t('visual.jsNoOutput')}</p>
+          </div>
+        ) : (
+          !jsLoading && (
+            <div className="rounded-xl glass p-6 text-center">
+              <p className="text-sm text-[var(--text-secondary)]">
+                {t('visual.pressRun')}
+              </p>
+            </div>
+          )
+        )}
       </div>
     )
   }

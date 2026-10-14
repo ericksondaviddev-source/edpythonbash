@@ -114,7 +114,7 @@
     "fallbackHint": "This simulator cannot run code yet. Compare your solution with the model solution and manually verify each criterion.",
     "notImplemented": "Simulator not implemented for this engine. Use the model solution as reference.",
     "verifyError": "Could not verify the code",
-    "noOutput": "(no output: the code ran without printing anything)",
+    "noOutput": "The code ran successfully but printed nothing to the console. Some lessons have effects (DOM, return values) without using print or console.log.",
     "showBlocks": "Block Editor",
     "hideBlocks": "Hide Blocks",
     "failedTwiceHint": "💡 Hint: {{hint}}"
@@ -216,7 +216,11 @@
     "runTrace": "Run trace",
     "running": "Running…",
     "pythonHint": "Run the fixed code line by line and watch the variables.",
-    "pressRun": "Press «Run trace» to see the code in action."
+    "pressRun": "Press «Run trace» to see the code in action.",
+    "runJs": "Run JS code",
+    "jsHint": "Run the fixed code in an isolated environment and watch the console.",
+    "jsConsole": "Console",
+    "jsNoOutput": "The code finished without printing anything to the console. This is normal in DOM, events, or async lessons: the effect happens inside the isolated environment, not in the console."
   },
   "flowchart": {
     "tab": "Diagram",

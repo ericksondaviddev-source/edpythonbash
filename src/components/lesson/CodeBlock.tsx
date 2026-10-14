@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import Prism from 'prismjs'
-import 'prismjs/components/prism-python'
-import 'prismjs/components/prism-bash'
-import 'prismjs/components/prism-markup'
-import 'prismjs/components/prism-css'
-import 'prismjs/components/prism-javascript'
+import Prism from '../../lib/prismCore'
+import { ensurePrismLanguages } from '../../lib/prismLanguages'
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
 
 interface CodeBlockProps {
   code: string
@@ -31,7 +31,18 @@ export default function CodeBlock({
   const [isTyping, setIsTyping] = useState(false)
   const [, setIsComplete] = useState(!animate)
   const [copied, setCopied] = useState(false)
+  const [prismReady, setPrismReady] = useState(false)
   const intervalRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    ensurePrismLanguages().then(() => {
+      if (alive) setPrismReady(true)
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!animate) {
@@ -114,7 +125,15 @@ export default function CodeBlock({
         <pre className="text-sm font-mono">
           <code
             className={`text-[var(--code-text)] language-${language}`}
-            dangerouslySetInnerHTML={{ __html: Prism.highlight(displayedCode, Prism.languages[language] || Prism.languages.plain, language) }}
+            dangerouslySetInnerHTML={{
+              __html: prismReady
+                ? Prism.highlight(
+                    displayedCode,
+                    Prism.languages[language] || Prism.languages.plain,
+                    language
+                  )
+                : escapeHtml(displayedCode),
+            }}
           />
           {isTyping && <span className="code-cursor">|</span>}
         </pre>

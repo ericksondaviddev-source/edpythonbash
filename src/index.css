@@ -1,60 +1,143 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════
+   SOLAR PRECISION — sistema de diseño "Apple-like" con identidad
+   de oro solar. Vidrio esmerilado, profundidad por capas,
+   espacio generoso y tipografía precisa. Offline-first: sin
+   fuentes remotas, se usa la pila del sistema (SF Pro en Apple).
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
-  --bg-primary: #FDFBF3;
-  --bg-secondary: #F5F1E3;
-  --bg-tertiary: #EAE4D0;
-  --text-primary: #1A1A2E;
-  --text-secondary: #4A4A68;
+  /* ── Color (compatibilidad con componentes existentes) ──────── */
+  --bg-primary: #FBF8EE;
+  --bg-secondary: #F4EFDF;
+  --bg-tertiary: #EAE3CC;
+  --text-primary: #16151F;
+  --text-secondary: #4A4860;
+  --text-tertiary: #6E6B85;
   --accent: #F7D117;
   --accent-hover: #E5C211;
-  --accent-ink: #1A1A2E;
+  --accent-ink: #16151F;
   --accent-2: #0033AB;
   --accent-2-hover: #002A8C;
   --danger: #CF142B;
-  --success: #2ECC71;
+  --success: #24B36B;
   --error: #CF142B;
-  --warning: #F39C12;
-  --code-bg: #1E1E2E;
+  --warning: #E8930C;
+  --code-bg: #17171F;
   --code-text: #CDD6F4;
-  --border: #DCD2B8;
-  --surface-glass: rgba(255, 255, 255, 0.55);
-  --border-glass: rgba(26, 26, 46, 0.12);
+  --border: rgba(22, 21, 31, 0.10);
+  --border-strong: rgba(22, 21, 31, 0.18);
+  --surface-glass: rgba(255, 255, 255, 0.62);
+  --border-glass: rgba(22, 21, 31, 0.08);
   --grad-solar: linear-gradient(135deg, #F7D117, #FF6B35);
   --grad-tricolor: linear-gradient(180deg, #F7D117 0 33%, #0033AB 33% 66%, #CF142B 66% 100%);
-  --ring: 0 0 0 3px rgba(247, 209, 23, 0.35);
+  --ring: 0 0 0 3.5px rgba(247, 209, 23, 0.4);
+
+  /* ── Radios (curvatura continua estilo Apple) ───────────────── */
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* ── Profundidad (sombras en capas, luz suave y difusa) ─────── */
+  --shadow-xs: 0 1px 1px rgba(22, 21, 31, 0.03);
+  --shadow-sm: 0 1px 2px rgba(22, 21, 31, 0.04), 0 1px 3px rgba(22, 21, 31, 0.03);
+  --shadow-md: 0 2px 4px rgba(22, 21, 31, 0.04), 0 4px 12px rgba(22, 21, 31, 0.05);
+  --shadow-lg: 0 4px 8px rgba(22, 21, 31, 0.04), 0 12px 28px rgba(22, 21, 31, 0.07);
+  --shadow-xl: 0 8px 16px rgba(22, 21, 31, 0.05), 0 24px 52px rgba(22, 21, 31, 0.10);
+  --shadow-focus: 0 0 0 3.5px rgba(247, 209, 23, 0.45);
+
+  /* ── Movimiento (curvas Apple: respuesta inmediata y suave) ── */
+  --ease-out: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --duration-fast: 140ms;
+  --duration-base: 240ms;
+  --duration-slow: 420ms;
+
+  /* ── Vidrio esmerilado ──────────────────────────────────────── */
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+
+  /* ── Tipografía ─────────────────────────────────────────────── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'Segoe UI Variable Text', 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono',
+    Menlo, Consolas, monospace;
+  --tracking-tight: -0.022em;
+  --tracking-snug: -0.012em;
+  --tracking-normal: -0.005em;
 }
 
 [data-theme="dark"] {
-  --bg-primary: #14120E;
-  --bg-secondary: #1E1A12;
-  --bg-tertiary: #282216;
-  --text-primary: #FDFBF3;
-  --text-secondary: #C8C0A8;
+  --bg-primary: #12100C;
+  --bg-secondary: #1B180F;
+  --bg-tertiary: #262113;
+  --text-primary: #FBF8EE;
+  --text-secondary: #C6BDA4;
+  --text-tertiary: #8F876F;
   --accent: #F7D117;
   --accent-hover: #FFDE4D;
-  --accent-ink: #1A1A2E;
+  --accent-ink: #16151F;
   --accent-2: #FF8C42;
   --accent-2-hover: #FFAD6B;
   --danger: #FF6B7A;
   --success: #4ADE80;
   --error: #FF6B7A;
   --warning: #F7D117;
-  --code-bg: #0D0C0A;
+  --code-bg: #0B0A08;
   --code-text: #E8E0D0;
-  --border: #3D3424;
-  --surface-glass: rgba(20, 18, 14, 0.7);
-  --border-glass: rgba(247, 209, 23, 0.15);
+  --border: rgba(251, 248, 238, 0.10);
+  --border-strong: rgba(251, 248, 238, 0.18);
+  --surface-glass: rgba(27, 24, 15, 0.66);
+  --border-glass: rgba(247, 209, 23, 0.12);
   --grad-solar: linear-gradient(135deg, #F7D117, #FF8C42);
   --grad-tricolor: linear-gradient(180deg, #F7D117 0 33%, #FF8C42 33% 66%, #FF6B7A 66% 100%);
-  --ring: 0 0 0 3px rgba(247, 209, 23, 0.35);
+  --ring: 0 0 0 3.5px rgba(247, 209, 23, 0.4);
+
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.25);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.32), 0 12px 28px rgba(0, 0, 0, 0.34);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.36), 0 24px 52px rgba(0, 0, 0, 0.44);
+  --shadow-focus: 0 0 0 3.5px rgba(247, 209, 23, 0.5);
+
+  --glass-blur: 24px;
+  --glass-saturate: 160%;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis-weight: none;
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: var(--tracking-normal);
+  font-weight: 400;
+  transition: background-color var(--duration-slow) var(--ease-out),
+    color var(--duration-slow) var(--ease-out);
+}
+
+/* Escala tipográfica Apple-like (óptica, no aritmética) */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: var(--tracking-tight);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
 }
 
 button, a, input, textarea, select {
@@ -147,13 +230,89 @@ button, a, input, textarea, select {
   }
 }
 
-/* Solarpunk utilities */
+/* ── Solar Precision: utilidades de material ──────────────────── */
 .glass {
   background: var(--surface-glass);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-sm);
 }
+
+/* Vidrio elevado: superficie principal (cards, paneles) */
+.surface {
+  background: var(--surface-glass);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-md);
+}
+
+.surface-raised {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Sombra Apple por capas aplicable a cualquier elemento */
+.shadow-apple-xs { box-shadow: var(--shadow-xs); }
+.shadow-apple-sm { box-shadow: var(--shadow-sm); }
+.shadow-apple-md { box-shadow: var(--shadow-md); }
+.shadow-apple-lg { box-shadow: var(--shadow-lg); }
+.shadow-apple-xl { box-shadow: var(--shadow-xl); }
+
+/* Movimiento Apple: respuesta táctil inmediata */
+.press {
+  transition: transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+.press:hover { transform: translateY(-1px); }
+.press:active { transform: translateY(0) scale(0.985); }
+
+/* Aparición suave escalonada (entrada de página / listas) */
+.reveal {
+  animation: reveal-up var(--duration-slow) var(--ease-out) both;
+}
+.reveal-1 { animation-delay: 40ms; }
+.reveal-2 { animation-delay: 80ms; }
+.reveal-3 { animation-delay: 120ms; }
+.reveal-4 { animation-delay: 160ms; }
+.reveal-5 { animation-delay: 200ms; }
+
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in { animation: fade-in var(--duration-base) var(--ease-out) both; }
+.animate-scale-in { animation: scale-in var(--duration-base) var(--ease-spring) both; }
+
+/* Enfoque consistente y refinado (Apple-like) */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Texto display para encabezados hero */
+.text-display {
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.1;
+}
+
+.text-balance { text-wrap: balance; }
 
 .inti-rays {
   background-image: repeating-conic-gradient(from 0deg, rgba(247, 209, 23, 0.07) 0deg 6deg, transparent 6deg 12deg);

@@ -34,19 +34,19 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="w-8" aria-hidden="true" />
-        <div className="flex gap-2">
+        <div className="flex gap-1 p-1 rounded-[var(--radius-md)] bg-[var(--bg-tertiary)]/70 border border-[var(--border)]">
           <button
             onClick={() => setView('dashboard')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              view === 'dashboard' ? accentBtn : idleBtn
+            className={`px-4 py-1.5 rounded-[var(--radius-sm)] text-sm font-medium press transition-colors ${
+              view === 'dashboard' ? accentBtn + ' shadow-apple-xs' : idleBtn
             }`}
           >
             {t('nav.dashboard')}
           </button>
           <button
             onClick={() => setView('mindmap')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              view === 'mindmap' ? accentBtn : idleBtn
+            className={`px-4 py-1.5 rounded-[var(--radius-sm)] text-sm font-medium press transition-colors ${
+              view === 'mindmap' ? accentBtn + ' shadow-apple-xs' : idleBtn
             }`}
           >
             {t('nav.mindmap')}
@@ -74,14 +74,16 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 reveal reveal-1">
               <HeroCard completedCount={completedLessons.length} total={lessons.length} />
             </div>
-            <ApiKeyCard onOpenSettings={onOpenSettings} />
+            <div className="reveal reveal-2">
+              <ApiKeyCard onOpenSettings={onOpenSettings} />
+            </div>
 
             {nextLesson && (
-              <div className="md:col-span-2 p-6 rounded-xl glass shadow-lg">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+              <div className="md:col-span-2 p-6 rounded-[var(--radius-lg)] glass shadow-apple-md reveal reveal-3">
+                <h2 className="text-[17px] font-semibold tracking-[var(--tracking-tight)] text-[var(--text-primary)] mb-4">
                   {t('dashboard.continue')}
                 </h2>
                 <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -95,8 +97,8 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
                 </div>
               </div>
             )}
-            <div className="p-6 rounded-xl glass shadow-lg flex flex-col justify-center gap-2">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+            <div className="p-6 rounded-[var(--radius-lg)] glass shadow-apple-md flex flex-col justify-center gap-2 reveal reveal-4">
+              <h2 className="text-[17px] font-semibold tracking-[var(--tracking-tight)] text-[var(--text-primary)]">
                 {t('nav.mindmap')}
               </h2>
               <p className="text-sm text-[var(--text-secondary)]">
@@ -107,7 +109,7 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
               </Button>
             </div>
 
-            <div className="md:col-span-2 lg:col-span-3">
+            <div className="md:col-span-2 lg:col-span-3 reveal reveal-5">
               <ProgressBar
                 xp={xp}
                 level={level}
@@ -117,7 +119,7 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
               />
             </div>
 
-            <div className="md:col-span-2 lg:col-span-3">
+            <div className="md:col-span-2 lg:col-span-3 reveal reveal-5">
               <VideosCard lang={lang} />
             </div>
           </div>
@@ -132,18 +134,18 @@ export default function Dashboard({ modules, lessons, onLessonSelect, initialVie
                 <button
                   key={module.id}
                   onClick={() => onLessonSelect(module.lecciones[0])}
-                  className="text-left p-4 rounded-xl glass shadow hover:border-[var(--accent)] transition-colors"
+                  className="text-left p-4 rounded-[var(--radius-lg)] glass shadow-apple-sm press hover:border-[var(--accent)] hover:shadow-apple-md"
                 >
-                  <h3 className="font-semibold text-[var(--text-primary)] mb-2 text-sm">
+                  <h3 className="font-semibold text-[var(--text-primary)] mb-2 text-[14px] tracking-[var(--tracking-tight)]">
                     {module.nombre}
                   </h3>
-                  <div className="flex items-center justify-between text-sm text-[var(--text-secondary)] mb-2">
+                  <div className="flex items-center justify-between text-[13px] text-[var(--text-secondary)] mb-2">
                     <span>{moduleCompleted}/{moduleTotal} {t('dashboard.lessonsCompleted')}</span>
-                    <span>{modulePercent}%</span>
+                    <span className="font-semibold text-[var(--accent)]">{modulePercent}%</span>
                   </div>
-                  <div className="w-full h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
                     <div
-                      className="h-full tricolor-bar transition-all duration-500"
+                      className="h-full tricolor-bar transition-all duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
                       style={{ width: `${modulePercent}%` }}
                     />
                   </div>

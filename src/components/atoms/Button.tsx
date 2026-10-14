@@ -8,19 +8,26 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'primary', size = 'md', className = '', ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+    const baseStyles =
+      'inline-flex items-center justify-center font-medium rounded-[var(--radius-md)] press focus-ring ' +
+      'disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none ' +
+      'select-none whitespace-nowrap'
 
     const variants = {
-      primary: 'bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]',
-      secondary: 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--border)]',
-      ghost: 'bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]',
-      danger: 'bg-[var(--danger)] text-white hover:opacity-90'
+      primary:
+        'bg-[var(--accent)] text-[var(--accent-ink)] shadow-apple-sm hover:shadow-apple-md hover:bg-[var(--accent-hover)] active:bg-[var(--accent)]',
+      secondary:
+        'bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border)] shadow-apple-xs hover:bg-[var(--border)] hover:border-[var(--border-strong)]',
+      ghost:
+        'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]',
+      danger:
+        'bg-[var(--danger)] text-white shadow-apple-sm hover:opacity-90 active:opacity-100'
     }
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2 text-sm',
-      lg: 'px-6 py-3 text-base'
+      sm: 'px-3 py-1.5 text-[13px] gap-1.5',
+      md: 'px-4 py-2 text-sm gap-2',
+      lg: 'px-6 py-3 text-[15px] gap-2'
     }
 
     return (

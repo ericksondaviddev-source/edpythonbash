@@ -17,22 +17,27 @@ export default function Tabs({ tabs, defaultTab, className = '' }: TabsProps) {
 
   return (
     <div className={className}>
-      <div className="flex gap-2 mb-4 border-b border-[var(--border)]">
+      <div
+        role="tablist"
+        className="flex gap-1 mb-4 p-1 rounded-[var(--radius-md)] bg-[var(--bg-tertiary)]/70 border border-[var(--border)] w-fit max-w-full overflow-x-auto"
+      >
         {tabs.map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-1.5 text-sm font-medium rounded-[var(--radius-sm)] press whitespace-nowrap transition-colors ${
               activeTab === tab.id
-                ? 'border-[var(--accent)] text-[var(--accent)]'
-                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-apple-xs'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             {tab.label}
           </button>
         ))}
       </div>
-      <div>
+      <div role="tabpanel">
         {tabs.find((tab) => tab.id === activeTab)?.content}
       </div>
     </div>

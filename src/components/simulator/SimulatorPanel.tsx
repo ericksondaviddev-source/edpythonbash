@@ -38,7 +38,8 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
       simulator.asserts_exception?.length ||
       simulator.asserts_forbidden?.length
   )
-  const isRunnable = simulator.engine === 'pyodide' || simulator.engine === 'bash_sim'
+  const isRunnable =
+    simulator.engine === 'pyodide' || simulator.engine === 'bash_sim' || simulator.engine === 'js'
 
   const handleRun = async () => {
     setIsRunning(true)
@@ -54,6 +55,12 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
         }
         const result = await runner.run(code)
         setOutput(result)
+      } else if (simulator.engine === 'js') {
+        const { getJsEngine } = await import('../../services/jsEngine')
+        const engine = getJsEngine()
+        const setup = simulator.setup_code ? simulator.setup_code + '\n' : ''
+        const result = await engine.run(setup + code)
+        setOutput(result.error ? `${result.output}\nError: ${result.error}`.trim() : result.output)
       } else if (simulator.engine === 'bash_sim') {
         const sim = new BashSim()
         const result = sim.run(code)
@@ -69,14 +76,15 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
   }
 
   const handleVerify = async () => {
-    if (!hasTests || simulator.engine !== 'pyodide') return
+    if (!hasTests || (simulator.engine !== 'pyodide' && simulator.engine !== 'js')) return
     setIsVerifying(true)
     setVerifyResults(null)
 
     try {
-      const { getPyodideRunner } = await import('../../services/pyodide')
-      const runner = getPyodideRunner()
-      const results = await runner.verify(simulator, code)
+      const results =
+        simulator.engine === 'js'
+          ? await (await import('../../services/jsEngine')).getJsEngine().verify(simulator, code)
+          : await (await import('../../services/pyodide')).getPyodideRunner().verify(simulator, code)
       setVerifyResults(results)
       const allPassed = results.length > 0 && results.every(r => r.passed)
       if (allPassed) {
@@ -119,7 +127,7 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
         <Button onClick={handleRun} disabled={isRunning}>
           {isRunning ? t('common.loading') : t('common.run')}
         </Button>
-        {isRunnable && hasTests && simulator.engine === 'pyodide' && (
+        {isRunnable && hasTests && (simulator.engine === 'pyodide' || simulator.engine === 'js') && (
           <Button onClick={handleVerify} disabled={isVerifying} className="bg-[var(--success)] hover:opacity-90">
             {isVerifying ? t('common.loading') : t('simulator.verify')}
           </Button>
@@ -130,9 +138,11 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
         <Button variant="ghost" onClick={() => setShowSolution(!showSolution)}>
           {showSolution ? t('simulator.hideSolution') : t('simulator.showSolution')}
         </Button>
-        <Button variant="ghost" onClick={() => setShowBlockEditor(!showBlockEditor)}>
-          {showBlockEditor ? t('simulator.hideBlocks') : t('simulator.showBlocks')}
-        </Button>
+        {simulator.engine !== 'js' && (
+          <Button variant="ghost" onClick={() => setShowBlockEditor(!showBlockEditor)}>
+            {showBlockEditor ? t('simulator.hideBlocks') : t('simulator.showBlocks')}
+          </Button>
+        )}
       </div>
 
       {showBlockEditor && (
@@ -161,13 +171,19 @@ export default function SimulatorPanel({ simulator, lessonId, nextLessonId, hint
           <p className="text-sm font-medium text-[var(--text-primary)] mb-2">
             {t('simulator.output')}
           </p>
-          <pre className="p-4 bg-[var(--code-bg)] text-[var(--code-text)] rounded-lg font-mono text-sm overflow-x-auto whitespace-pre-wrap">
-            {output || t('simulator.noOutput')}
-          </pre>
+          {output ? (
+            <pre className="p-4 bg-[var(--code-bg)] text-[var(--code-text)] rounded-lg font-mono text-sm overflow-x-auto whitespace-pre-wrap">
+              {output}
+            </pre>
+          ) : (
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] p-3">
+              <p className="text-sm text-[var(--text-secondary)]">{t('simulator.noOutput')}</p>
+            </div>
+          )}
         </div>
       )}
 
-      {isRunnable && (
+      {(simulator.engine === 'pyodide' || simulator.engine === 'bash_sim') && (
         <TerminalPanel
           lessonId={lessonId ?? simulator.engine}
           engine={simulator.engine}

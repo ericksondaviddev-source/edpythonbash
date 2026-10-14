@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import Prism from 'prismjs'
-import 'prismjs/components/prism-python'
-import 'prismjs/components/prism-bash'
+import Prism from '../../lib/prismCore'
+import { ensurePrismLanguages } from '../../lib/prismLanguages'
 import {
   DndContext,
   closestCenter,
@@ -77,6 +76,10 @@ export default function BlockEditor({ language, onCodeChange }: BlockEditorProps
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
     useSensor(KeyboardSensor)
   )
+
+  useEffect(() => {
+    ensurePrismLanguages()
+  }, [])
 
   useEffect(() => {
     onCodeChange(buildCode(placed))

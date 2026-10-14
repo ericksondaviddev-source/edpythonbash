@@ -114,7 +114,7 @@
     "fallbackHint": "Este simulador no ejecuta código todavía. Compara tu solución con la solución modelo y verifica manualmente cada criterio.",
     "notImplemented": "Simulador no implementado para este engine. Usa la solución modelo como referencia.",
     "verifyError": "No se pudo verificar el código",
-    "noOutput": "(sin salida: el código se ejecutó sin imprimir nada)",
+    "noOutput": "El código se ejecutó correctamente, pero no imprimió nada en la consola. Algunas lecciones producen efectos (DOM, valores de retorno) sin usar print o console.log.",
     "showBlocks": "Editor de Bloques",
     "hideBlocks": "Ocultar Bloques",
     "failedTwiceHint": "💡 Pista: {{hint}}"
@@ -216,7 +216,11 @@
     "runTrace": "Ejecutar traza",
     "running": "Ejecutando…",
     "pythonHint": "Ejecuta el código corregido línea por línea y observa las variables.",
-    "pressRun": "Pulsa «Ejecutar traza» para ver el código en acción."
+    "pressRun": "Pulsa «Ejecutar traza» para ver el código en acción.",
+    "runJs": "Ejecutar código JS",
+    "jsHint": "Ejecuta el código corregido en un entorno aislado y observa la consola.",
+    "jsConsole": "Consola",
+    "jsNoOutput": "El código terminó sin imprimir nada en la consola. Es normal en lecciones de DOM, eventos o asincronía: el efecto ocurre dentro del entorno aislado, no en la consola."
   },
   "flowchart": {
     "tab": "Diagrama",

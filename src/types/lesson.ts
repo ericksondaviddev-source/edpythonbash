@@ -17,6 +17,7 @@ export interface Simulator {
   engine:
     | 'pyodide'
     | 'bash_sim'
+    | 'js'
     | 'subprocess_sim'
     | 'profiling_sim'
     | 'bs4_fixture'

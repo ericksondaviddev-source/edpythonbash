@@ -13,33 +13,33 @@ export default function ProgressBar({ xp, level, streak, lessonsCompleted, total
   const progressPercent = totalLessons > 0 ? Math.round((lessonsCompleted / totalLessons) * 100) : 0
 
   return (
-    <div className="p-6 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-[var(--accent)]">{xp}</div>
-          <div className="text-sm text-[var(--text-secondary)]">{t('dashboard.xp')}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-[var(--accent)]">{level}</div>
-          <div className="text-sm text-[var(--text-secondary)]">{t('dashboard.level')}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-[var(--accent)]">{streak}</div>
-          <div className="text-sm text-[var(--text-secondary)]">{t('dashboard.streak')} ({t('dashboard.days')})</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-[var(--accent)]">{progressPercent}%</div>
-          <div className="text-sm text-[var(--text-secondary)]">{t('dashboard.lessonsCompleted')}</div>
-        </div>
+    <div className="p-6 rounded-[var(--radius-lg)] glass shadow-apple-md">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { value: xp, label: t('dashboard.xp') },
+          { value: level, label: t('dashboard.level') },
+          { value: streak, label: `${t('dashboard.streak')} (${t('dashboard.days')})` },
+          { value: `${progressPercent}%`, label: t('dashboard.lessonsCompleted') },
+        ].map((stat, i) => (
+          <div
+            key={i}
+            className="text-center p-4 rounded-[var(--radius-md)] bg-[var(--bg-secondary)]/70 border border-[var(--border)]"
+          >
+            <div className="text-display text-[26px] text-[var(--accent)] leading-none">{stat.value}</div>
+            <div className="mt-1.5 text-[12px] font-medium text-[var(--text-secondary)] leading-tight">
+              {stat.label}
+            </div>
+          </div>
+        ))}
       </div>
       <div className="mt-4">
-        <div className="w-full h-3 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
           <div
-            className="h-full bg-[var(--accent)] transition-all duration-500"
+            className="h-full bg-[var(--accent)] transition-all duration-500 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <div className="flex justify-between mt-1 text-xs text-[var(--text-secondary)]">
+        <div className="flex justify-between mt-1.5 text-[12px] font-medium text-[var(--text-secondary)]">
           <span>{lessonsCompleted} {t('dashboard.of')} {totalLessons}</span>
           <span>{progressPercent}%</span>
         </div>
